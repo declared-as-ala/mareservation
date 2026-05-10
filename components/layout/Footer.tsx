@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin, ArrowUpRight, Heart } from 'lucide-react';
 
 const categories = [
-  { label: 'Explorer les lieux', href: '/explorer' },
+  { label: 'Explorer en 360°', href: '/explorer' },
   { label: 'Cafés', href: '/cafes' },
   { label: 'Restaurants', href: '/restaurants' },
   { label: 'Hôtels', href: '/hotels' },

@@ -69,7 +69,7 @@ export function HomeHero() {
           </div>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg" className="bg-white text-foreground hover:bg-white/90">
-              <Link href="/explorer">Explorer les lieux</Link>
+              <Link href="/explorer">Explorer en 360°</Link>
             </Button>
             {user ? (
               <Button variant="outline" size="lg" asChild className="border-white/60 text-white hover:bg-white/20">

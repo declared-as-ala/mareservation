@@ -129,7 +129,7 @@ function SlideContent({
               href="/explorer"
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-semibold text-white/90 backdrop-blur-sm transition-all duration-200 hover:border-amber-400/30 hover:bg-amber-400/[0.04] sm:px-8 sm:py-3.5"
             >
-              Explorer les lieux
+              Explorer en 360°
             </Link>
           </div>
         </div>
@@ -153,7 +153,7 @@ function FallbackHero() {
             Ma Reservation
           </p>
           <h2 className="font-serif text-[30px] font-bold leading-[1.12] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
-            Réservez votre table et votre expérience avant d&apos;y aller
+            Réservez votre expérience avant d&apos;y aller
           </h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65 sm:mt-5 sm:text-[15px]">
             Découvrez, explorez et réservez les meilleurs lieux et expériences.
@@ -163,7 +163,7 @@ function FallbackHero() {
               href="/explorer"
               className="group inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 px-6 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-500/15 transition-all duration-300 hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0 sm:px-8 sm:py-3.5"
             >
-              Explorer les lieux
+              Explorer en 360°
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link

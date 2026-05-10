@@ -20,7 +20,7 @@ import { CartDrawer } from '@/components/layout/CartDrawer';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 
 const categories = [
-  { label: 'Explorer les lieux', href: '/explorer', icon: Compass },
+  { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
   { label: 'Événements', href: '/evenements', icon: CalendarDays },
 ];
 
