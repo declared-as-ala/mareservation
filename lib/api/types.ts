@@ -132,6 +132,89 @@ export interface Reservation {
   checkedInAt?: string;
 }
 
+// ── Hotel-specific types ─────────────────────────────────────────────────────
+
+export type HotelRoomType =
+  | 'STANDARD'
+  | 'SUPERIOR'
+  | 'DELUXE'
+  | 'SUITE'
+  | 'JUNIOR_SUITE'
+  | 'PRESIDENTIAL_SUITE'
+  | 'VILLA'
+  | 'APARTMENT'
+  | 'PENTHOUSE'
+  | 'BUNGALOW';
+
+export interface HotelRoom {
+  _id: string;
+  venueId: string;
+  name?: string;
+  roomNumber: number;
+  roomType: string;
+  capacityAdults?: number;
+  capacityChildren?: number;
+  capacity: number;
+  bedType?: string;
+  pricePerNight: number;
+  surface?: number;
+  floor?: number;
+  view?: string;
+  amenities: string[];
+  services?: string[];
+  isActive: boolean;
+  isReservable: boolean;
+  coverImage?: string;
+  gallery: string[];
+  description?: string;
+  hasVirtualTour?: boolean;
+  virtualTourUrl?: string;
+  defaultStatus?: 'available' | 'reserved' | 'blocked';
+  /** Dynamically computed when fetched with availability window */
+  status?: 'available' | 'reserved' | 'blocked';
+  isVip?: boolean;
+  bathroomType?: string;
+  hasBalcony?: boolean;
+  smokingAllowed?: boolean;
+  minimumNights?: number;
+}
+
+export interface HotelAvailabilityParams {
+  checkIn: string;
+  checkOut: string;
+  guests?: number;
+}
+
+export interface HotelBookingPayload {
+  venueId: string;
+  roomId: string;
+  startAt: string;
+  endAt: string;
+  partySize: number;
+  bookingType: 'ROOM';
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  guestEmail?: string;
+  specialRequests?: string;
+}
+
+export interface HotelAmenityGroup {
+  label: string;
+  icon: string;
+  items: string[];
+}
+
+export interface HotelSearchFilters {
+  governorate?: string;
+  q?: string;
+  priceMin?: number;
+  priceMax?: number;
+  starRating?: number;
+  hasVirtualTour?: boolean;
+  amenities?: string[];
+}
+
 export interface Scene {
   _id: string;
   venueId: string;
