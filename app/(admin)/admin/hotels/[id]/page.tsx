@@ -766,7 +766,7 @@ export default function HotelDetailAdminPage() {
               </div>
 
               <VirtualTourBuilder
-                hotelId={id}
+                venueId={id}
                 initialScenes={tourData?.scenes ?? []}
                 initialHotspots={tourData?.hotspots ?? []}
                 onUpdated={() => {

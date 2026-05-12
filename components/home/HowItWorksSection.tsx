@@ -22,7 +22,7 @@ const steps = [
     number: '03',
     title: 'Réservez et payez',
     text: 'Paiement sécurisé en ligne, confirmation instantanée.',
-    image: 'https://images.unsplash.com/photo-1560624052-449f5ddf0c31?w=1200&q=80&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     icon: CreditCard,
   },
 ];

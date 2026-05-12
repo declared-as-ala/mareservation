@@ -14,9 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadImageFile } from '@/lib/api/client';
 import {
-  createAdminHotelScene,
-  updateAdminHotelScene,
-  deleteAdminHotelScene,
+  createAdminVenueScene,
+  updateAdminVenueScene,
+  deleteAdminVenueScene,
   createAdminSceneHotspot,
   deleteAdminSceneHotspot,
   type AdminHotelScene,
@@ -33,7 +33,7 @@ interface PendingHotspot {
 }
 
 interface VirtualTourBuilderProps {
-  hotelId: string;
+  venueId: string;
   initialScenes: AdminHotelScene[];
   initialHotspots: AdminSceneHotspot[];
   onUpdated?: () => void;
@@ -191,11 +191,11 @@ function HotspotDot({
 // ── Add scene modal ────────────────────────────────────────────────────────────
 
 function AddSceneModal({
-  hotelId,
+  venueId,
   onClose,
   onCreated,
 }: {
-  hotelId: string;
+  venueId: string;
   onClose: () => void;
   onCreated: (scene: AdminHotelScene) => void;
 }) {
@@ -225,7 +225,7 @@ function AddSceneModal({
     }
     setSaving(true);
     try {
-      const scene = await createAdminHotelScene(hotelId, { name: name.trim(), image: imageUrl, description });
+      const scene = await createAdminVenueScene(venueId, { name: name.trim(), image: imageUrl, description });
       onCreated(scene);
       toast.success('Scène créée.');
     } catch {
@@ -349,14 +349,14 @@ function AddSceneModal({
 // ── Add hotspot modal ──────────────────────────────────────────────────────────
 
 function AddHotspotModal({
-  hotelId,
+  venueId,
   activeScene,
   scenes,
   position,
   onClose,
   onCreated,
 }: {
-  hotelId: string;
+  venueId: string;
   activeScene: AdminHotelScene;
   scenes: AdminHotelScene[];
   position: PendingHotspot;
@@ -377,7 +377,7 @@ function AddHotspotModal({
     setSaving(true);
     try {
       const hotspot = await createAdminSceneHotspot({
-        venueId: hotelId,
+        venueId: venueId,
         sceneId: activeScene._id,
         label: label.trim(),
         xPercent: position.xPercent,
@@ -495,7 +495,7 @@ function AddHotspotModal({
 
 // ── Main VirtualTourBuilder component ─────────────────────────────────────────
 
-export function VirtualTourBuilder({ hotelId, initialScenes, initialHotspots, onUpdated }: VirtualTourBuilderProps) {
+export function VirtualTourBuilder({ venueId, initialScenes, initialHotspots, onUpdated }: VirtualTourBuilderProps) {
   const [scenes, setScenes] = useState<AdminHotelScene[]>(initialScenes);
   const [hotspots, setHotspots] = useState<AdminSceneHotspot[]>(initialHotspots);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(initialScenes[0]?._id ?? null);
@@ -518,7 +518,7 @@ export function VirtualTourBuilder({ hotelId, initialScenes, initialHotspots, on
   async function handleDeleteScene(sceneId: string) {
     if (!confirm('Supprimer cette scène et tous ses hotspots ?')) return;
     try {
-      await deleteAdminHotelScene(sceneId);
+      await deleteAdminVenueScene(sceneId);
       setScenes((prev) => prev.filter((s) => s._id !== sceneId));
       setHotspots((prev) => prev.filter((h) => h.virtualTourId !== sceneId && h.targetId !== sceneId));
       if (activeSceneId === sceneId) setActiveSceneId(scenes.find((s) => s._id !== sceneId)?._id ?? null);
@@ -531,7 +531,7 @@ export function VirtualTourBuilder({ hotelId, initialScenes, initialHotspots, on
 
   async function handleRenameScene(sceneId: string, name: string) {
     try {
-      await updateAdminHotelScene(sceneId, { name });
+      await updateAdminVenueScene(sceneId, { name });
       setScenes((prev) => prev.map((s) => s._id === sceneId ? { ...s, name } : s));
     } catch {
       toast.error('Erreur lors du renommage.');
@@ -770,7 +770,7 @@ export function VirtualTourBuilder({ hotelId, initialScenes, initialHotspots, on
       <AnimatePresence>
         {showAddScene && (
           <AddSceneModal
-            hotelId={hotelId}
+            venueId={venueId}
             onClose={() => setShowAddScene(false)}
             onCreated={(scene) => {
               setScenes((prev) => [...prev, scene]);
@@ -782,7 +782,7 @@ export function VirtualTourBuilder({ hotelId, initialScenes, initialHotspots, on
         )}
         {pendingHotspot && activeScene && (
           <AddHotspotModal
-            hotelId={hotelId}
+            venueId={venueId}
             activeScene={activeScene}
             scenes={scenes}
             position={pendingHotspot}

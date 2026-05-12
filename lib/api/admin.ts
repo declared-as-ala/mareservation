@@ -613,6 +613,27 @@ export async function deleteAdminSceneHotspot(hotspotId: string): Promise<void> 
   await api.delete(`/admin/tour-hotspots/${hotspotId}`);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// VENUE SCENE API  (generic — works for all venue types)
+// ═══════════════════════════════════════════════════════════════
+
+export async function fetchAdminVenueScenes(venueId: string): Promise<{ scenes: AdminHotelScene[]; hotspots: AdminSceneHotspot[] }> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; scenes?: AdminHotelScene[]; hotspots?: AdminSceneHotspot[] }>(`/admin/venues/${venueId}/scenes`);
+    return { scenes: (res as any)?.scenes ?? [], hotspots: (res as any)?.hotspots ?? [] };
+  } catch {
+    return { scenes: [], hotspots: [] };
+  }
+}
+
+export async function createAdminVenueScene(venueId: string, payload: { name: string; image: string; description?: string }): Promise<AdminHotelScene> {
+  const res = await apiPostRaw<{ success?: boolean; data?: AdminHotelScene }>(`/admin/venues/${venueId}/scenes`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export const updateAdminVenueScene = updateAdminHotelScene;
+export const deleteAdminVenueScene = deleteAdminHotelScene;
+
 // ─── Public categories (for explorer filter) ─────────────────────────────────
 
 export interface PublicCategory {

@@ -28,7 +28,6 @@ import {
   Sparkles,
   QrCode,
   Layers,
-  BedDouble,
 } from 'lucide-react';
 
 type NavItem = {
@@ -52,7 +51,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
       { href: '/admin/venues', label: 'Lieux', icon: MapPin },
-      { href: '/admin/hotels', label: 'Hôtels', icon: BedDouble },
       { href: '/admin/events', label: 'Événements', icon: CalendarDays },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
     ],

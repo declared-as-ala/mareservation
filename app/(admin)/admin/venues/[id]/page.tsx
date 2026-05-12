@@ -17,6 +17,7 @@ import {
   createAdminTablePlacement,
   updateAdminTablePlacement,
   deleteAdminTablePlacement,
+  fetchAdminVenueScenes,
   type AdminTableRow,
   type AdminTablePlacement,
 } from '@/lib/api/admin';
@@ -39,7 +40,7 @@ import {
   MapPin, Move, X, Star, Users, BadgeCheck,
   ImageIcon, Info, Eye, LayoutGrid, Globe2,
   Phone, Hash, FileText, Building2, Camera,
-  Sparkles, ImagePlus, UtensilsCrossed,
+  Sparkles, ImagePlus, UtensilsCrossed, ScanLine,
 } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
@@ -51,6 +52,11 @@ import dynamic from 'next/dynamic';
 
 const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
+
+const VirtualTourBuilder = dynamic(
+  () => import('@/components/admin/hotel/VirtualTourBuilder').then((m) => ({ default: m.VirtualTourBuilder })),
   { ssr: false }
 );
 
@@ -205,6 +211,13 @@ export default function AdminVenueDetailPage() {
     queryFn: () => fetchAdminVenueMenu(id),
     enabled: !!id,
   });
+
+  const { data: tourData, refetch: refetchTour } = useQuery({
+    queryKey: ['admin-venue-tour', id],
+    queryFn: () => fetchAdminVenueScenes(id),
+    enabled: !!id,
+  });
+
   const { data: owners = [] } = useQuery({
     queryKey: ['admin-owners'],
     queryFn: fetchAdminOwners,
@@ -590,6 +603,14 @@ export default function AdminVenueDetailPage() {
             </TabsTrigger>
             <TabsTrigger value="menu" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
               <UtensilsCrossed className="size-3.5" /> Menu
+            </TabsTrigger>
+            <TabsTrigger value="tour360" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+              <ScanLine className="size-3.5" /> Visite 360°
+              {(tourData?.scenes?.length ?? 0) > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                  {tourData!.scenes.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1459,6 +1480,19 @@ export default function AdminVenueDetailPage() {
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          {/* ── TAB: Visite 360° ─────────────────────────────── */}
+          <TabsContent value="tour360" className="pt-5">
+            <VirtualTourBuilder
+              venueId={id}
+              initialScenes={tourData?.scenes ?? []}
+              initialHotspots={tourData?.hotspots ?? []}
+              onUpdated={() => {
+                refetchTour();
+                queryClient.invalidateQueries({ queryKey: ['venue', id] });
+              }}
+            />
           </TabsContent>
         </Tabs>
 
