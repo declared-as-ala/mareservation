@@ -418,6 +418,201 @@ export async function updateAdminSettings(payload: Partial<AdminSettings>): Prom
   return apiPatchRaw<AdminSettings>('/admin/settings', payload);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// HOTEL ADMIN API
+// ═══════════════════════════════════════════════════════════════
+
+export interface AdminHotel {
+  _id: string;
+  name: string;
+  slug: string;
+  city: string;
+  governorate?: string;
+  address: string;
+  phone?: string;
+  coverImage?: string;
+  gallery?: string[];
+  description: string;
+  shortDescription?: string;
+  startingPrice?: number;
+  priceRangeMin?: number;
+  priceRangeMax?: number;
+  amenities?: string[];
+  isPublished: boolean;
+  isFeatured: boolean;
+  hasVirtualTour?: boolean;
+  checkInPolicy?: string;
+  checkOutPolicy?: string;
+  roomCount?: number;
+  bookingCount?: number;
+  createdAt?: string;
+}
+
+export interface AdminHotelRoom {
+  _id: string;
+  venueId: string;
+  name?: string;
+  roomNumber: number;
+  roomType: string;
+  capacity: number;
+  capacityAdults?: number;
+  capacityChildren?: number;
+  bedType?: string;
+  pricePerNight: number;
+  surface?: number;
+  description?: string;
+  bathroomType?: string;
+  amenities: string[];
+  isActive: boolean;
+  isReservable: boolean;
+  isVip?: boolean;
+  hasBalcony?: boolean;
+  hasVirtualTour?: boolean;
+  status?: 'available' | 'reserved' | 'blocked';
+  coverImage?: string;
+  gallery?: string[];
+}
+
+export interface AdminHotelBooking {
+  _id: string;
+  venueId: string;
+  roomId?: { _id: string; name?: string; roomType: string; roomNumber: number; pricePerNight: number } | string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+  paymentStatus?: string;
+  totalPrice?: number;
+  partySize?: number;
+  confirmationCode?: string;
+  createdAt?: string;
+}
+
+export interface AdminHotelScene {
+  _id: string;
+  venueId: string;
+  name: string;
+  description?: string;
+  image: string;
+  order: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface AdminSceneHotspot {
+  _id: string;
+  venueId: string;
+  virtualTourId: string;
+  label: string;
+  targetType: string;
+  targetId: string;
+  xPercent: number;
+  yPercent: number;
+  yaw?: number;
+  pitch?: number;
+  isActive: boolean;
+}
+
+export async function fetchAdminHotels(params?: { q?: string; city?: string; page?: number }): Promise<{ hotels: AdminHotel[]; total: number }> {
+  try {
+    const sp = new URLSearchParams();
+    if (params?.q) sp.set('q', params.q);
+    if (params?.city) sp.set('city', params.city);
+    if (params?.page) sp.set('page', String(params.page));
+    const qs = sp.toString();
+    const res = await apiGetRaw<{ success?: boolean; hotels?: AdminHotel[]; total?: number }>(`/admin/hotels${qs ? `?${qs}` : ''}`);
+    return { hotels: (res as any)?.hotels ?? [], total: (res as any)?.total ?? 0 };
+  } catch {
+    return { hotels: [], total: 0 };
+  }
+}
+
+export async function fetchAdminHotelById(id: string): Promise<AdminHotel | null> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; data?: AdminHotel }>(`/admin/hotels/${id}`);
+    return (res as any)?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchAdminHotelRooms(hotelId: string): Promise<AdminHotelRoom[]> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; rooms?: AdminHotelRoom[] }>(`/admin/hotels/${hotelId}/rooms`);
+    return (res as any)?.rooms ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function createAdminHotelRoom(hotelId: string, payload: Partial<AdminHotelRoom>): Promise<AdminHotelRoom> {
+  const res = await apiPostRaw<{ success?: boolean; data?: AdminHotelRoom }>(`/admin/hotels/${hotelId}/rooms`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export async function updateAdminHotelRoom(roomId: string, payload: Partial<AdminHotelRoom>): Promise<AdminHotelRoom> {
+  const res = await apiPatchRaw<{ success?: boolean; data?: AdminHotelRoom }>(`/admin/rooms/${roomId}`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export async function deleteAdminHotelRoom(roomId: string): Promise<void> {
+  await api.delete(`/admin/rooms/${roomId}`);
+}
+
+export async function fetchAdminHotelBookings(hotelId: string, params?: { status?: string; page?: number }): Promise<{ bookings: AdminHotelBooking[]; total: number }> {
+  try {
+    const sp = new URLSearchParams();
+    if (params?.status) sp.set('status', params.status);
+    if (params?.page) sp.set('page', String(params.page));
+    const qs = sp.toString();
+    const res = await apiGetRaw<{ success?: boolean; bookings?: AdminHotelBooking[]; total?: number }>(`/admin/hotels/${hotelId}/bookings${qs ? `?${qs}` : ''}`);
+    return { bookings: (res as any)?.bookings ?? [], total: (res as any)?.total ?? 0 };
+  } catch {
+    return { bookings: [], total: 0 };
+  }
+}
+
+export async function fetchAdminHotelScenes(hotelId: string): Promise<{ scenes: AdminHotelScene[]; hotspots: AdminSceneHotspot[] }> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; scenes?: AdminHotelScene[]; hotspots?: AdminSceneHotspot[] }>(`/admin/hotels/${hotelId}/scenes`);
+    return { scenes: (res as any)?.scenes ?? [], hotspots: (res as any)?.hotspots ?? [] };
+  } catch {
+    return { scenes: [], hotspots: [] };
+  }
+}
+
+export async function createAdminHotelScene(hotelId: string, payload: { name: string; image: string; description?: string }): Promise<AdminHotelScene> {
+  const res = await apiPostRaw<{ success?: boolean; data?: AdminHotelScene }>(`/admin/hotels/${hotelId}/scenes`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export async function updateAdminHotelScene(sceneId: string, payload: Partial<AdminHotelScene>): Promise<AdminHotelScene> {
+  const res = await apiPatchRaw<{ success?: boolean; data?: AdminHotelScene }>(`/admin/scenes/${sceneId}`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export async function deleteAdminHotelScene(sceneId: string): Promise<void> {
+  await api.delete(`/admin/scenes/${sceneId}`);
+}
+
+export async function createAdminSceneHotspot(payload: {
+  venueId: string;
+  sceneId: string;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+  targetSceneId: string;
+}): Promise<AdminSceneHotspot> {
+  const res = await apiPostRaw<{ success?: boolean; data?: AdminSceneHotspot }>('/admin/scene-hotspots', payload);
+  return (res as any)?.data ?? res;
+}
+
+export async function deleteAdminSceneHotspot(hotspotId: string): Promise<void> {
+  await api.delete(`/admin/tour-hotspots/${hotspotId}`);
+}
+
 // ─── Public categories (for explorer filter) ─────────────────────────────────
 
 export interface PublicCategory {
