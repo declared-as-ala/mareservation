@@ -419,11 +419,186 @@ function RoomDetailView({
   );
 }
 
-/* ── Thin PanoramaEngine wrapper used inside room detail ─────────────── */
+/* ── Thin PanoramaEngine wrapper (SSR-safe) ──────────────────────────── */
 const PanoramaEngineClient = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
   { ssr: false }
 );
+
+/* ── Hotel immersive hero ────────────────────────────────────────────── */
+function HotelImmersiveHero({
+  rooms, hotelName, hotelCity, idx, onIdxChange, onRoomClick, onBack,
+}: {
+  rooms: HotelRoom[];
+  hotelName: string;
+  hotelCity?: string;
+  idx: number;
+  onIdxChange: (i: number) => void;
+  onRoomClick: (room: HotelRoom) => void;
+  onBack: () => void;
+}) {
+  const room = rooms[idx];
+  if (!room) return null;
+
+  const imageUrl = room.panoramicImages?.[0] ?? '';
+  const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
+  const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
+    room.roomType?.toUpperCase() ?? ''
+  );
+
+  return (
+    <div className="relative w-full overflow-hidden bg-zinc-950" style={{ height: '100svh', maxHeight: 860, minHeight: 520 }}>
+      {/* 360° panorama */}
+      <div className="absolute inset-0">
+        {imageUrl ? (
+          <PanoramaEngineClient imageUrl={imageUrl} markers={[]} mode="navigate" />
+        ) : room.coverImage ? (
+          <Image src={room.coverImage} alt={room.name ?? 'Chambre'} fill className="object-cover" sizes="100vw" priority />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <BedDouble className="size-16 text-zinc-700" />
+          </div>
+        )}
+      </div>
+
+      {/* Gradient layers */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-transparent via-40% to-black/90 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/20 pointer-events-none" />
+
+      {/* Top bar */}
+      <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-3 px-4 sm:px-6 pt-4 sm:pt-6">
+        <button
+          type="button"
+          onClick={onBack}
+          className="group flex items-center gap-2 rounded-full border border-white/15 bg-black/30 backdrop-blur-md px-4 py-2 text-sm font-medium text-white/80 hover:border-amber-400/40 hover:text-amber-400 transition-all"
+        >
+          <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+          Retour
+        </button>
+        <div className="flex-1 text-center min-w-0">
+          <p className="text-white font-bold text-base sm:text-lg truncate drop-shadow-md">{hotelName}</p>
+          {hotelCity && <p className="text-zinc-400 text-xs mt-0.5">{hotelCity}</p>}
+        </div>
+        {/* 360° badge */}
+        {imageUrl && (
+          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-black/40 border border-amber-400/35 backdrop-blur-sm px-3 py-1.5 text-[11px] font-bold text-amber-400">
+            <ScanLine className="size-3" /> 360°
+          </span>
+        )}
+      </div>
+
+      {/* Drag hint */}
+      {imageUrl && (
+        <div className="absolute top-[70px] left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/30 border border-white/10 backdrop-blur-sm px-3 py-1 text-[10px] font-medium text-white/60">
+            Glissez pour explorer
+          </span>
+        </div>
+      )}
+
+      {/* Prev arrow */}
+      {idx > 0 && (
+        <button
+          type="button"
+          aria-label="Chambre précédente"
+          onClick={() => onIdxChange(idx - 1)}
+          className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/50 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/40 transition-all duration-150 shadow-lg"
+        >
+          <ChevronLeft className="size-5" />
+        </button>
+      )}
+
+      {/* Next arrow */}
+      {idx < rooms.length - 1 && (
+        <button
+          type="button"
+          aria-label="Chambre suivante"
+          onClick={() => onIdxChange(idx + 1)}
+          className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/50 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/40 transition-all duration-150 shadow-lg"
+        >
+          <ChevronRight className="size-5" />
+        </button>
+      )}
+
+      {/* Bottom overlay */}
+      <div className="absolute bottom-0 inset-x-0 z-20 px-4 sm:px-6 pb-6 sm:pb-8">
+        {/* Room dots */}
+        {rooms.length > 1 && (
+          <div className="flex justify-center gap-1.5 mb-4">
+            {rooms.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Chambre ${i + 1}`}
+                onClick={() => onIdxChange(i)}
+                className={cn(
+                  'rounded-full transition-all duration-300',
+                  i === idx
+                    ? 'w-7 h-1.5 bg-amber-400'
+                    : 'w-1.5 h-1.5 bg-white/25 hover:bg-white/60'
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Room info card */}
+        <div className="mx-auto max-w-xl">
+          <div className="rounded-2xl bg-black/45 backdrop-blur-xl border border-white/[0.08] p-4 sm:p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                {/* Badges */}
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide border',
+                    isSuite
+                      ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
+                      : 'bg-white/10 text-white/80 border-white/10'
+                  )}>
+                    {isSuite && <Crown className="size-2.5" />}
+                    {typeLabel}
+                  </span>
+                  {room.status === 'available' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Disponible
+                    </span>
+                  )}
+                </div>
+                {/* Name */}
+                <h2 className="text-lg sm:text-xl font-bold text-white leading-tight">
+                  {room.name ?? `Chambre ${room.roomNumber}`}
+                </h2>
+                {/* Quick stats */}
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-zinc-300 flex-wrap">
+                  <span className="flex items-center gap-1"><Users className="size-3 text-zinc-400" />{room.capacityAdults ?? room.capacity ?? 2} pers.</span>
+                  {room.surface && <span className="flex items-center gap-1"><Maximize2 className="size-3 text-zinc-400" />{room.surface} m²</span>}
+                  {room.bedType && <span className="flex items-center gap-1"><BedDouble className="size-3 text-zinc-400" />{room.bedType}</span>}
+                </div>
+              </div>
+
+              {/* Price */}
+              <div className="shrink-0 text-right">
+                <p className="text-2xl font-black text-amber-400 leading-none">{room.pricePerNight}</p>
+                <p className="text-[10px] text-zinc-400 mt-0.5 font-medium">DT / nuit</p>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              type="button"
+              onClick={() => onRoomClick(room)}
+              className="mt-4 w-full rounded-xl bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold py-3 text-sm transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-400/25 flex items-center justify-center gap-2"
+            >
+              Explorer cette chambre
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function VenueDetailPage() {
   const router = useRouter();
@@ -438,6 +613,8 @@ export default function VenueDetailPage() {
   const [activeImmersiveSceneIdx, setActiveImmersiveSceneIdx] = useState(0);
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
   const [roomSceneIdx, setRoomSceneIdx] = useState(0);
+  const [heroRoomIdx, setHeroRoomIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const [selectedSlotStartAt] = useState(() =>
     new Date(Date.now() + RESERVATION_DURATION_MS).toISOString()
@@ -552,6 +729,9 @@ export default function VenueDetailPage() {
   const img = getVenueImage(venue);
   const allImages = getAllImages(venue);
 
+  const heroRooms = hotelRooms.filter((r) => (r.panoramicImages?.length ?? 0) > 0);
+  const showHotelHero = isHotelVenue && heroRooms.length > 0;
+
   const hasNewImmersive =
     !!venue.immersiveType &&
     venue.immersiveType !== 'none' &&
@@ -571,7 +751,8 @@ export default function VenueDetailPage() {
 
   const currentImmersiveScene = immersiveSceneList[activeImmersiveSceneIdx] ?? immersiveSceneList[0];
 
-  const tabsDefaultValue = hasAnyImmersive ? 'visite360' : 'apercu';
+  const tabsDefaultValue =
+    isHotelVenue && hotelRooms.length > 0 ? 'chambres' : hasAnyImmersive ? 'visite360' : 'apercu';
   const hasTablePlacements = allPlacements.length > 0;
 
   const panoramaMarkers = scenePlacements
@@ -646,49 +827,67 @@ export default function VenueDetailPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Back button */}
-      <div className="mx-auto max-w-5xl px-4 pt-4">
-        <button
-          onClick={() => router.back()}
-          className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all duration-200 hover:border-amber-400/40 hover:bg-amber-400/[0.08] hover:text-amber-400 hover:shadow-lg hover:shadow-amber-400/10"
-        >
-          <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
-          Retour
-        </button>
-      </div>
-
-      {/* Hero header */}
-      <div className="relative">
-        <DetailHeader
-          title={venue.name}
-          subtitle={[venue.city, venue.address].filter(Boolean).join(' — ')}
-          imageUrl={img}
-          imageAlt={venue.name}
-          badges={
-            <>
-              <TypeBadge type={venue.type} />
-              {venue.immersiveType === 'virtual-tour' && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-black/30 px-2 py-0.5 text-xs font-medium text-white">
-                  <Video className="size-3" /> Visite virtuelle
-                </span>
-              )}
-              {venue.immersiveType === 'view-360' && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-black/30 px-2 py-0.5 text-xs font-medium text-white">
-                  <Eye className="size-3" /> Vue 360°
-                </span>
-              )}
-            </>
-          }
-          metaRight={
-            <div className="flex flex-col items-end gap-2">
-              <ShareButton title={venue.name} />
-            </div>
-          }
+      {showHotelHero ? (
+        <HotelImmersiveHero
+          rooms={heroRooms}
+          hotelName={venue.name}
+          hotelCity={venue.city}
+          idx={heroRoomIdx}
+          onIdxChange={setHeroRoomIdx}
+          onRoomClick={(room) => {
+            setSelectedRoom(room);
+            setRoomSceneIdx(0);
+            setActiveTab('chambres');
+          }}
+          onBack={() => router.back()}
         />
-      </div>
+      ) : (
+        <>
+          {/* Back button */}
+          <div className="mx-auto max-w-5xl px-4 pt-4">
+            <button
+              onClick={() => router.back()}
+              className="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all duration-200 hover:border-amber-400/40 hover:bg-amber-400/[0.08] hover:text-amber-400 hover:shadow-lg hover:shadow-amber-400/10"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Retour
+            </button>
+          </div>
+
+          {/* Hero header */}
+          <div className="relative">
+            <DetailHeader
+              title={venue.name}
+              subtitle={[venue.city, venue.address].filter(Boolean).join(' — ')}
+              imageUrl={img}
+              imageAlt={venue.name}
+              badges={
+                <>
+                  <TypeBadge type={venue.type} />
+                  {venue.immersiveType === 'virtual-tour' && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-black/30 px-2 py-0.5 text-xs font-medium text-white">
+                      <Video className="size-3" /> Visite virtuelle
+                    </span>
+                  )}
+                  {venue.immersiveType === 'view-360' && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-black/30 px-2 py-0.5 text-xs font-medium text-white">
+                      <Eye className="size-3" /> Vue 360°
+                    </span>
+                  )}
+                </>
+              }
+              metaRight={
+                <div className="flex flex-col items-end gap-2">
+                  <ShareButton title={venue.name} />
+                </div>
+              }
+            />
+          </div>
+        </>
+      )}
 
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <Tabs defaultValue={tabsDefaultValue} className="space-y-4">
+        <Tabs value={activeTab ?? tabsDefaultValue} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu">Aperçu</TabsTrigger>
             {isHotelVenue && hotelRooms.length > 0 && (
