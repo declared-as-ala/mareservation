@@ -50,9 +50,9 @@ function SlideImage({
         sizes="100vw"
         priority={priority}
         onError={() => setErrored(true)}
-        onLoadingComplete={(img) => {
+        onLoad={(e) => {
+          const img = e.currentTarget;
           const ratio = img.naturalWidth / Math.max(1, img.naturalHeight);
-          // Narrow images crop too aggressively in hero; keep full image on mobile.
           setShouldContainOnMobile(ratio < 1.55);
         }}
         quality={85}

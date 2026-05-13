@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'http', hostname: '127.0.0.1' },
     ],
-    qualities: [75, 85],
+    qualities: [60, 75, 85],
     // In offline/local environments, avoid optimizer fetch timeouts for remote images.
     unoptimized: isDev,
   },

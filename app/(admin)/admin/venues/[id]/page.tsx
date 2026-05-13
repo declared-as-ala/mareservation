@@ -46,6 +46,7 @@ import {
   Phone, Hash, FileText, Building2, Camera,
   Sparkles, ImagePlus, UtensilsCrossed, ScanLine,
   BedDouble, Crown, DollarSign, Bath,
+  Film, CalendarDays, BookOpen, Clapperboard, PartyPopper,
 } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
@@ -228,7 +229,13 @@ export default function AdminVenueDetailPage() {
     enabled: !!id,
   });
 
-  const isHotel = form?.type === 'HOTEL' || (venue as any)?.type === 'HOTEL';
+  const venueType = form?.type || (venue as any)?.type || '';
+  const isHotel = venueType === 'HOTEL';
+  const isRestaurantOrCafe = venueType === 'RESTAURANT' || venueType === 'CAFE';
+  const isCinema = venueType === 'CINEMA';
+  const isEventSpace = venueType === 'EVENT_SPACE';
+  const showTables = isRestaurantOrCafe;
+  const showMenu = isRestaurantOrCafe;
   const { data: rooms = [], refetch: refetchRooms } = useQuery({
     queryKey: ['admin-hotel-rooms', id],
     queryFn: () => fetchAdminHotelRooms(id),
@@ -605,35 +612,18 @@ export default function AdminVenueDetailPage() {
 
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="info">
-          <TabsList className="bg-muted/50 backdrop-blur rounded-xl p-1 border border-border/30">
+          <TabsList className="flex flex-wrap h-auto gap-0.5 bg-muted/50 backdrop-blur rounded-xl p-1 border border-border/30">
             <TabsTrigger value="info" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
               <Info className="size-3.5" /> Informations
             </TabsTrigger>
             <TabsTrigger value="media" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
-              <Camera className="size-3.5" /> Média & 360°
+              <Camera className="size-3.5" /> Médias
             </TabsTrigger>
-            <TabsTrigger value="placements" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
-              <LayoutGrid className="size-3.5" /> Tables
-              {tables.length > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
-                  {tables.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="menu" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
-              <UtensilsCrossed className="size-3.5" /> Menu
-            </TabsTrigger>
-            <TabsTrigger value="tour360" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
-              <ScanLine className="size-3.5" /> Visite 360°
-              {(tourData?.scenes?.length ?? 0) > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
-                  {tourData!.scenes.length}
-                </span>
-              )}
-            </TabsTrigger>
+
+            {/* Hotel-only: Chambres & Suites */}
             {isHotel && (
               <TabsTrigger value="rooms" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
-                <BedDouble className="size-3.5" /> Chambres
+                <BedDouble className="size-3.5" /> Chambres & Suites
                 {rooms.length > 0 && (
                   <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
                     {rooms.length}
@@ -641,6 +631,54 @@ export default function AdminVenueDetailPage() {
                 )}
               </TabsTrigger>
             )}
+
+            {/* Restaurant/Café-only: Tables */}
+            {showTables && (
+              <TabsTrigger value="placements" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+                <LayoutGrid className="size-3.5" /> Tables
+                {tables.length > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                    {tables.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
+
+            {/* Restaurant/Café-only: Menu */}
+            {showMenu && (
+              <TabsTrigger value="menu" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+                <UtensilsCrossed className="size-3.5" /> Menu
+              </TabsTrigger>
+            )}
+
+            {/* Cinema-only: Films & Séances */}
+            {isCinema && (
+              <TabsTrigger value="films" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+                <Clapperboard className="size-3.5" /> Films & Séances
+              </TabsTrigger>
+            )}
+
+            {/* Event-only: Programme */}
+            {isEventSpace && (
+              <TabsTrigger value="programme" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+                <PartyPopper className="size-3.5" /> Programme
+              </TabsTrigger>
+            )}
+
+            {/* All types: Visite virtuelle 360° */}
+            <TabsTrigger value="tour360" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+              <ScanLine className="size-3.5" /> Visite virtuelle 360°
+              {(tourData?.scenes?.length ?? 0) > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                  {tourData!.scenes.length}
+                </span>
+              )}
+            </TabsTrigger>
+
+            {/* All types: Réservations */}
+            <TabsTrigger value="reservations" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+              <BookOpen className="size-3.5" /> Réservations
+            </TabsTrigger>
           </TabsList>
 
           {/* ── TAB: Informations ─────────────────────────────── */}
@@ -1556,44 +1594,71 @@ export default function AdminVenueDetailPage() {
                 </Card>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {rooms.map((room) => (
-                    <Card key={room._id} className="rounded-2xl border-border/40 hover:border-border/70 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          {room.coverImage ? (
-                            <div className="relative size-14 rounded-xl overflow-hidden shrink-0">
-                              <Image src={room.coverImage} alt={room.name ?? `Chambre ${room.roomNumber}`} fill className="object-cover" sizes="56px" />
-                            </div>
-                          ) : (
-                            <div className="size-14 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                              <BedDouble className="size-6 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <p className="font-semibold text-sm text-foreground truncate">
-                                {room.name ?? `Chambre ${room.roomNumber}`}
-                              </p>
-                              {room.isVip && <Crown className="size-3.5 text-amber-400 shrink-0" />}
-                            </div>
-                            <p className="text-[11px] text-muted-foreground">{room.roomType}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1"><Users className="size-3" />{room.capacityAdults ?? room.capacity}</span>
-                              <span className="flex items-center gap-1 font-semibold text-amber-400"><DollarSign className="size-3" />{room.pricePerNight} TND</span>
-                            </div>
+                  {rooms.map((room) => {
+                    const typeLabel = room.roomType === 'suite' ? 'Suite'
+                      : room.roomType === 'villa' ? 'Villa'
+                      : room.roomType === 'junior_suite' ? 'Junior Suite'
+                      : room.roomType === 'presidential' ? 'Presidential'
+                      : room.roomType === 'deluxe' ? 'Deluxe'
+                      : 'Chambre';
+                    const isSuiteOrAbove = ['suite', 'junior_suite', 'presidential', 'villa'].includes(room.roomType ?? '');
+                    return (
+                    <Card key={room._id} className={cn(
+                      "rounded-2xl border transition-all duration-200 group hover:-translate-y-0.5 hover:shadow-lg",
+                      isSuiteOrAbove ? "border-amber-400/20 hover:border-amber-400/40" : "border-border/40 hover:border-border/70"
+                    )}>
+                      {/* Room image */}
+                      <div className="relative h-32 rounded-t-2xl overflow-hidden bg-muted">
+                        {room.coverImage ? (
+                          <Image src={room.coverImage} alt={room.name ?? `Chambre ${room.roomNumber}`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 100vw, 33vw" />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <BedDouble className="size-8 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        {/* Type badge */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                          <span className={cn(
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur-sm",
+                            isSuiteOrAbove
+                              ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                              : "bg-black/40 text-white/90 border border-white/10"
+                          )}>
+                            {isSuiteOrAbove && <Crown className="size-2.5" />}
+                            {typeLabel}
+                          </span>
+                        </div>
+                        {/* Price badge */}
+                        <div className="absolute bottom-2 right-2">
+                          <span className="inline-flex items-center rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-2.5 py-1 text-[11px] font-bold text-amber-300">
+                            {room.pricePerNight} TND
+                            <span className="text-white/40 ml-1 font-normal">/nuit</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-foreground truncate">
+                              {room.name ?? `Chambre ${room.roomNumber}`}
+                            </p>
+                            {room.roomNumber && (
+                              <p className="text-[10px] text-muted-foreground">N° {room.roomNumber}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground">
+                            <Users className="size-3" />{room.capacityAdults ?? room.capacity ?? 2}
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-3 pt-3 border-t border-border/40">
-                          <Button size="sm" variant="outline" className="flex-1 rounded-lg text-xs" onClick={() => setEditingRoom(room)}>
-                            Modifier
-                          </Button>
-                          <Button size="sm" variant="ghost" className="rounded-lg text-xs" asChild>
-                            <Link href={`/admin/hotels/${id}`}>Détails</Link>
-                          </Button>
-                        </div>
+                        <Button size="sm" variant="outline" className="w-full rounded-lg text-xs h-7 mt-1" onClick={() => setEditingRoom(room)}>
+                          Modifier
+                        </Button>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -1626,6 +1691,70 @@ export default function AdminVenueDetailPage() {
               )}
             </TabsContent>
           )}
+
+          {/* ── TAB: Films & Séances (CINEMA only) ───────────────── */}
+          {isCinema && (
+            <TabsContent value="films" className="pt-5">
+              <Card className="rounded-2xl border-border/40">
+                <CardContent className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                  <div className="size-14 rounded-2xl bg-muted flex items-center justify-center">
+                    <Clapperboard className="size-7 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Films & Séances</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                      La gestion des films et séances sera disponible prochainement.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-400">
+                    <Sparkles className="size-3" /> Bientôt disponible
+                  </span>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* ── TAB: Programme (EVENT only) ──────────────────────── */}
+          {isEventSpace && (
+            <TabsContent value="programme" className="pt-5">
+              <Card className="rounded-2xl border-border/40">
+                <CardContent className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                  <div className="size-14 rounded-2xl bg-muted flex items-center justify-center">
+                    <PartyPopper className="size-7 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">Programme & Billets</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                      La gestion du programme et des billets sera disponible prochainement.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-400">
+                    <Sparkles className="size-3" /> Bientôt disponible
+                  </span>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* ── TAB: Réservations (all types) ────────────────────── */}
+          <TabsContent value="reservations" className="pt-5">
+            <Card className="rounded-2xl border-border/40">
+              <CardContent className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                <div className="size-14 rounded-2xl bg-muted flex items-center justify-center">
+                  <BookOpen className="size-7 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Réservations</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                    La gestion des réservations pour ce lieu sera disponible prochainement.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-400">
+                  <Sparkles className="size-3" /> Bientôt disponible
+                </span>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Bottom save bar - hidden, we use the header button */}

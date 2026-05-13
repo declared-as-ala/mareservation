@@ -44,6 +44,7 @@ export function Navbar() {
             width={520}
             height={150}
             className="h-[42px] w-auto object-contain sm:h-[50px] lg:h-[56px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
+            style={{ width: 'auto' }}
             priority
           />
         </Link>

@@ -94,6 +94,7 @@ export function HomeNavbar() {
               width={540}
               height={152}
               className="h-[42px] w-auto object-contain drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)] transition-transform duration-300 hover:scale-[1.02] sm:h-[50px] lg:h-[58px]"
+              style={{ width: 'auto' }}
               priority
             />
           </Link>
