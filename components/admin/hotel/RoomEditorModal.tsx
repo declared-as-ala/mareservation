@@ -7,6 +7,7 @@ import {
   X, BedDouble, Users, Square, Bath, DollarSign,
   Upload, Loader2, Plus, Trash2, Crown, Eye, Wind,
   Wifi, Car, Waves, Sparkles, Coffee, Check,
+  ScanLine, Navigation, ImagePlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,9 +64,11 @@ interface RoomEditorModalProps {
   room?: AdminHotelRoom | null;
   onClose: () => void;
   onSave: (payload: Partial<AdminHotelRoom>, isNew: boolean) => Promise<void>;
+  /** Called when user wants to manage the virtual tour for this room */
+  onOpenTour?: (room: AdminHotelRoom) => void;
 }
 
-export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorModalProps) {
+export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: RoomEditorModalProps) {
   const isNew = !room;
 
   const [form, setForm] = useState<Partial<AdminHotelRoom>>({
@@ -88,7 +91,11 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     isActive: room?.isActive !== false,
     status: room?.status ?? 'available',
     coverImage: room?.coverImage ?? '',
+    panoramicImages: room?.panoramicImages ?? [],
   });
+
+  const [panoramicUploading, setPanoramicUploading] = useState(false);
+  const [show360Picker, setShow360Picker] = useState(false);
 
   const [customAmenity, setCustomAmenity] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -120,6 +127,24 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     } finally {
       setUploadingCover(false);
     }
+  }
+
+  async function uploadPanoramic(file: File) {
+    setPanoramicUploading(true);
+    try {
+      const url = await uploadImageFile(file);
+      setForm((f) => ({ ...f, panoramicImages: [...(f.panoramicImages ?? []), url] }));
+      toast.success('Image 360° ajoutée.');
+    } catch {
+      toast.error("Erreur lors de l'upload.");
+    } finally {
+      setPanoramicUploading(false);
+      setShow360Picker(false);
+    }
+  }
+
+  function removePanoramic(url: string) {
+    setForm((f) => ({ ...f, panoramicImages: (f.panoramicImages ?? []).filter((u) => u !== url) }));
   }
 
   async function handleSave() {
@@ -404,6 +429,115 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
             ))}
           </div>
         </div>
+
+        {/* ── Expériences 360° (only for saved rooms) ─────────── */}
+        {!isNew && room && (
+          <div className="px-6 pb-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <ScanLine className="size-4 text-amber-400" />
+              <h3 className="text-sm font-semibold text-zinc-100">Expériences 360°</h3>
+            </div>
+            <p className="text-xs text-zinc-500">
+              Ajoutez des images panoramiques ou créez une visite virtuelle connectée pour cette chambre.
+            </p>
+
+            {/* Existing panoramic images */}
+            {(form.panoramicImages ?? []).length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {(form.panoramicImages ?? []).map((url) => (
+                  <div key={url} className="relative aspect-[2/1] rounded-lg overflow-hidden group border border-zinc-700">
+                    <Image src={url} alt="360°" fill className="object-cover" sizes="120px" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removePanoramic(url)}
+                        className="size-7 rounded-full bg-red-500/90 flex items-center justify-center"
+                      >
+                        <Trash2 className="size-3.5 text-white" />
+                      </button>
+                    </div>
+                    <div className="absolute top-1 left-1 rounded px-1 py-0.5 bg-black/60 text-[9px] font-bold text-amber-300 uppercase tracking-wide">
+                      360°
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Picker or action buttons */}
+            {show360Picker ? (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden divide-y divide-zinc-800">
+                {/* Option 1: single 360° image */}
+                <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-zinc-800/50 transition-colors group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPanoramic(f); }}
+                  />
+                  <div className="mt-0.5 size-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0 group-hover:bg-amber-400/20 transition-colors">
+                    {panoramicUploading ? <Loader2 className="size-4 text-amber-400 animate-spin" /> : <ImagePlus className="size-4 text-amber-400" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-100">Image 360° simple</p>
+                    <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                      Ajoutez une seule image panoramique que le client peut explorer en tournant la vue.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Option 2: virtual tour */}
+                <button
+                  type="button"
+                  onClick={() => { setShow360Picker(false); onOpenTour?.(room); }}
+                  className="w-full flex items-start gap-3 p-4 cursor-pointer hover:bg-zinc-800/50 transition-colors text-left group"
+                >
+                  <div className="mt-0.5 size-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0 group-hover:bg-amber-400/20 transition-colors">
+                    <Navigation className="size-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-100">Visite virtuelle</p>
+                    <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                      Créez une expérience composée de plusieurs images 360° connectées entre elles.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShow360Picker(false)}
+                  className="w-full py-2.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShow360Picker(true)}
+                  className="gap-1.5 rounded-lg border-zinc-700 text-zinc-300 hover:border-amber-400/40 hover:text-amber-300 text-xs"
+                >
+                  <Plus className="size-3.5" /> Ajouter une expérience 360°
+                </Button>
+                {onOpenTour && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onOpenTour(room)}
+                    className="gap-1.5 rounded-lg text-zinc-400 hover:text-amber-300 text-xs"
+                  >
+                    <ScanLine className="size-3.5" />
+                    {(room.hasVirtualTour) ? 'Gérer la visite' : 'Créer visite virtuelle'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm px-6 py-4">

@@ -169,6 +169,7 @@ export interface HotelRoom {
   description?: string;
   hasVirtualTour?: boolean;
   virtualTourUrl?: string;
+  panoramicImages?: string[];
   defaultStatus?: 'available' | 'reserved' | 'blocked';
   /** Dynamically computed when fetched with availability window */
   status?: 'available' | 'reserved' | 'blocked';

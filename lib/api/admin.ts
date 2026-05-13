@@ -471,6 +471,8 @@ export interface AdminHotelRoom {
   status?: 'available' | 'reserved' | 'blocked';
   coverImage?: string;
   gallery?: string[];
+  /** Single panoramic 360° images (rotate-in-place, no inter-scene nav) */
+  panoramicImages?: string[];
 }
 
 export interface AdminHotelBooking {
@@ -560,6 +562,27 @@ export async function updateAdminHotelRoom(roomId: string, payload: Partial<Admi
 export async function deleteAdminHotelRoom(roomId: string): Promise<void> {
   await api.delete(`/admin/rooms/${roomId}`);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ROOM-LEVEL SCENE API  (360° scenes scoped to a room/suite)
+// ═══════════════════════════════════════════════════════════════
+
+export async function fetchAdminRoomScenes(roomId: string): Promise<{ scenes: AdminHotelScene[]; hotspots: AdminSceneHotspot[] }> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; scenes?: AdminHotelScene[]; hotspots?: AdminSceneHotspot[] }>(`/admin/rooms/${roomId}/scenes`);
+    return { scenes: (res as any)?.scenes ?? [], hotspots: (res as any)?.hotspots ?? [] };
+  } catch {
+    return { scenes: [], hotspots: [] };
+  }
+}
+
+export async function createAdminRoomScene(roomId: string, payload: { name: string; image: string; description?: string }): Promise<AdminHotelScene> {
+  const res = await apiPostRaw<{ success?: boolean; data?: AdminHotelScene }>(`/admin/rooms/${roomId}/scenes`, payload);
+  return (res as any)?.data ?? res;
+}
+
+export const updateAdminRoomScene = updateAdminHotelScene;
+export const deleteAdminRoomScene = deleteAdminHotelScene;
 
 export async function fetchAdminHotelBookings(hotelId: string, params?: { status?: string; page?: number }): Promise<{ bookings: AdminHotelBooking[]; total: number }> {
   try {

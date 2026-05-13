@@ -1,5 +1,6 @@
 import { apiGetRaw } from './client';
 import type { HotelRoom } from './types';
+import type { VirtualScene, VirtualHotspot } from './venues';
 
 export interface RoomsQuery {
   checkIn?: string;
@@ -45,6 +46,23 @@ export async function fetchRoomById(roomId: string): Promise<HotelRoom | null> {
     return null;
   } catch {
     return null;
+  }
+}
+
+export async function fetchRoomScenes(
+  venueId: string,
+  roomId: string
+): Promise<{ scenes: VirtualScene[]; hotspots: VirtualHotspot[] }> {
+  try {
+    const data = await apiGetRaw<{ scenes?: VirtualScene[]; hotspots?: VirtualHotspot[] }>(
+      `/venues/${encodeURIComponent(venueId)}/rooms/${encodeURIComponent(roomId)}/scenes`
+    );
+    return {
+      scenes: data?.scenes ?? [],
+      hotspots: data?.hotspots ?? [],
+    };
+  } catch {
+    return { scenes: [], hotspots: [] };
   }
 }
 

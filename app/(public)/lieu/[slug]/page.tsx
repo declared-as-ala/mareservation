@@ -4,16 +4,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   fetchVenueByIdOrSlug,
   getVenueAvailabilityStreamUrl,
   fetchVenueTablePlacements,
   fetchVenueScenes,
   type PublicTablePlacement,
+  type VirtualScene,
+  type VirtualHotspot,
 } from '@/lib/api/venues';
 import { fetchScenes } from '@/lib/api/scenes';
+import { fetchVenueRooms, fetchRoomScenes, ROOM_TYPE_LABELS } from '@/lib/api/rooms';
+import type { HotelRoom } from '@/lib/api/types';
 import { DetailPageSkeleton } from '@/components/shared/skeletons';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { DetailHeader } from '@/components/detail/DetailHeader';
@@ -35,6 +41,15 @@ import {
   MapPin,
   Clock,
   Crown,
+  ChevronLeft,
+  ChevronRight,
+  ScanLine,
+  BedDouble,
+  Bath,
+  Maximize2,
+  Wifi,
+  Star,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TablePlacement } from '@/lib/api/types';
@@ -78,6 +93,338 @@ function getAllImages(venue: Venue): string[] {
   return result;
 }
 
+/* ── Room card (grid item) ───────────────────────────────────────────── */
+function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
+  const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
+  const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
+    room.roomType?.toUpperCase() ?? ''
+  );
+  const has360 = (room.panoramicImages?.length ?? 0) > 0 || room.hasVirtualTour;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group text-left rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden transition-all duration-200 hover:border-amber-400/30 hover:bg-white/[0.06] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-400/5"
+    >
+      {/* Image */}
+      <div className="relative h-44 bg-zinc-900 overflow-hidden">
+        {room.coverImage ? (
+          <Image
+            src={room.coverImage}
+            alt={room.name ?? `Chambre ${room.roomNumber}`}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, 33vw"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <BedDouble className="size-10 text-zinc-700" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        {/* Badges */}
+        <div className="absolute top-2.5 left-2.5 flex gap-1.5 flex-wrap">
+          <span className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur-sm border',
+            isSuite
+              ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
+              : 'bg-black/40 text-white/90 border-white/10'
+          )}>
+            {isSuite && <Crown className="size-2.5" />}
+            {typeLabel}
+          </span>
+          {has360 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/50 border border-amber-400/30 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+              <ScanLine className="size-2.5" /> 360°
+            </span>
+          )}
+        </div>
+        {/* Price */}
+        <div className="absolute bottom-2.5 right-2.5">
+          <span className="inline-flex items-center rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-2.5 py-1 text-[11px] font-bold text-amber-300">
+            {room.pricePerNight} DT
+            <span className="text-white/40 ml-1 font-normal">/nuit</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-4 space-y-2">
+        <div>
+          <p className="font-semibold text-sm text-white truncate">
+            {room.name ?? `Chambre ${room.roomNumber}`}
+          </p>
+          {room.roomNumber && <p className="text-[10px] text-zinc-500 mt-0.5">N° {room.roomNumber}</p>}
+        </div>
+        <div className="flex items-center gap-3 text-xs text-zinc-400">
+          <span className="flex items-center gap-1"><Users className="size-3" /> {room.capacityAdults ?? room.capacity ?? 2} pers.</span>
+          {room.surface && <span className="flex items-center gap-1"><Maximize2 className="size-3" /> {room.surface} m²</span>}
+          {room.bedType && <span className="flex items-center gap-1"><BedDouble className="size-3" /> {room.bedType}</span>}
+        </div>
+        {room.amenities?.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {room.amenities.slice(0, 3).map((a) => (
+              <span key={a} className="rounded-full bg-white/[0.06] border border-white/[0.06] px-2 py-0.5 text-[10px] text-zinc-400 capitalize">
+                {a}
+              </span>
+            ))}
+            {room.amenities.length > 3 && (
+              <span className="rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] text-zinc-500">
+                +{room.amenities.length - 3}
+              </span>
+            )}
+          </div>
+        )}
+        <p className="text-xs text-amber-400/70 font-medium group-hover:text-amber-400 transition-colors">
+          Voir la chambre →
+        </p>
+      </div>
+    </button>
+  );
+}
+
+/* ── Room detail view (after clicking a card) ────────────────────────── */
+function RoomDetailView({
+  room, tourScenes, tourHotspots, sceneIdx, onSceneIdxChange, onBack,
+}: {
+  room: HotelRoom;
+  tourScenes: VirtualScene[];
+  tourHotspots: VirtualHotspot[];
+  sceneIdx: number;
+  onSceneIdxChange: (i: number) => void;
+  onBack: () => void;
+}) {
+  const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
+  const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
+    room.roomType?.toUpperCase() ?? ''
+  );
+
+  // Build unified 360° scene list: virtual tour scenes first, then panoramic images
+  const immersiveScenes: { id: string; name: string; image: string }[] =
+    tourScenes.length > 0
+      ? tourScenes.map((s) => ({ id: s._id, name: s.name, image: s.image }))
+      : (room.panoramicImages ?? []).map((url, i) => ({
+          id: `pano-${i}`,
+          name: `Vue ${i + 1}`,
+          image: url,
+        }));
+
+  const currentScene = immersiveScenes[sceneIdx] ?? immersiveScenes[0];
+
+  // Navigation hotspots for current scene
+  const activeHotspots = tourHotspots.filter((h) => currentScene && h.virtualTourId === currentScene.id);
+  const psvNavHotspots = activeHotspots
+    .map((h) => {
+      const target = immersiveScenes.find((s) => s.id === h.targetId);
+      if (!target) return null;
+      return {
+        id: h._id,
+        yaw: (h.xPercent / 100 - 0.5) * 2 * Math.PI,
+        pitch: -(h.yPercent / 100 - 0.5) * Math.PI,
+        label: target.name,
+      };
+    })
+    .filter((h): h is NonNullable<typeof h> => h !== null);
+
+  return (
+    <div className="space-y-5">
+      {/* Back button */}
+      <button
+        type="button"
+        onClick={onBack}
+        className="group inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+      >
+        <ChevronLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+        Toutes les chambres
+      </button>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        {/* Left: 360° viewer */}
+        <div className="space-y-3">
+          {immersiveScenes.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <ScanLine className="size-4 text-amber-400" /> Vue 360°
+                </h3>
+                {immersiveScenes.length > 1 && (
+                  <span className="text-xs text-zinc-400">
+                    {sceneIdx + 1} / {immersiveScenes.length}
+                  </span>
+                )}
+              </div>
+              <div className="rounded-2xl overflow-hidden border border-zinc-800/60 bg-zinc-950 shadow-xl">
+                {/* Panorama */}
+                <div className="relative w-full" style={{ paddingBottom: '50%' }}>
+                  <div className="absolute inset-0">
+                    <PanoramaEngineClient
+                      imageUrl={currentScene.image}
+                      markers={[]}
+                      mode="navigate"
+                      navHotspots={psvNavHotspots}
+                      onNavHotspotClick={(id) => {
+                        const h = activeHotspots.find((x) => x._id === id);
+                        if (!h) return;
+                        const idx = immersiveScenes.findIndex((s) => s.id === h.targetId);
+                        if (idx !== -1) onSceneIdxChange(idx);
+                      }}
+                    />
+                  </div>
+                  {/* Scene label */}
+                  <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
+                      <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
+                      {currentScene.name}
+                    </span>
+                  </div>
+                  {/* Arrows */}
+                  {sceneIdx > 0 && (
+                    <button type="button" onClick={() => onSceneIdxChange(sceneIdx - 1)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 size-9 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all">
+                      <ChevronLeft className="size-4" />
+                    </button>
+                  )}
+                  {sceneIdx < immersiveScenes.length - 1 && (
+                    <button type="button" onClick={() => onSceneIdxChange(sceneIdx + 1)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 size-9 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all">
+                      <ChevronRight className="size-4" />
+                    </button>
+                  )}
+                  {/* Progress bar */}
+                  {immersiveScenes.length > 1 && (
+                    <div className="absolute bottom-0 inset-x-0 z-20 h-0.5 bg-zinc-800/60">
+                      <div className="h-full bg-amber-400 transition-all duration-300"
+                        style={{ width: `${((sceneIdx + 1) / immersiveScenes.length) * 100}%` }} />
+                    </div>
+                  )}
+                </div>
+                {/* Thumbnail strip */}
+                {immersiveScenes.length > 1 && (
+                  <div className="bg-zinc-900/80 backdrop-blur-md border-t border-zinc-800/60">
+                    <div className="flex gap-2 p-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                      {immersiveScenes.map((s, idx) => {
+                        const isActive = idx === sceneIdx;
+                        return (
+                          <button key={s.id} type="button" onClick={() => onSceneIdxChange(idx)}
+                            className={cn(
+                              'relative shrink-0 h-[52px] w-[78px] rounded-lg overflow-hidden border-2 transition-all',
+                              isActive ? 'border-amber-400 shadow-[0_0_10px_rgba(212,175,55,0.4)]' : 'border-transparent opacity-50 hover:opacity-80 hover:border-zinc-600'
+                            )}>
+                            <Image src={s.image} alt={s.name} fill className="object-cover" sizes="78px" />
+                            {isActive && <div className="absolute inset-0 bg-amber-400/10" />}
+                            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pb-0.5 pt-2 px-1">
+                              <p className="text-[8px] text-white font-medium truncate text-center">{s.name}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* No 360° — show gallery if available */
+            room.gallery?.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {room.gallery.slice(0, 4).map((url, i) => (
+                  <div key={i} className={cn('relative rounded-xl overflow-hidden bg-zinc-900', i === 0 && room.gallery.length > 1 ? 'col-span-2 h-56' : 'h-32')}>
+                    <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Right: room info */}
+        <div className="space-y-5">
+          {/* Header */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide border',
+                isSuite ? 'bg-amber-400/15 text-amber-300 border-amber-400/25' : 'bg-white/[0.06] text-zinc-300 border-white/[0.08]'
+              )}>
+                {isSuite && <Crown className="size-3" />}
+                {typeLabel}
+              </span>
+              {room.status === 'available' ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> Disponible
+                </span>
+              ) : room.status === 'reserved' ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-[10px] font-semibold text-red-400">
+                  Réservée
+                </span>
+              ) : null}
+            </div>
+            <h2 className="text-xl font-bold text-white">{room.name ?? `Chambre ${room.roomNumber}`}</h2>
+            <p className="text-2xl font-black text-amber-400 mt-1">
+              {room.pricePerNight} DT <span className="text-sm font-normal text-zinc-400">/ nuit</span>
+            </p>
+          </div>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { icon: Users, label: `${room.capacityAdults ?? room.capacity ?? 2} adultes` },
+              ...(room.surface ? [{ icon: Maximize2, label: `${room.surface} m²` }] : []),
+              ...(room.bedType ? [{ icon: BedDouble, label: room.bedType }] : []),
+              ...(room.bathroomType ? [{ icon: Bath, label: room.bathroomType }] : []),
+              ...(room.floor != null ? [{ icon: Star, label: `Étage ${room.floor}` }] : []),
+              ...(room.view ? [{ icon: Eye, label: room.view }] : []),
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-2 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2">
+                <Icon className="size-3.5 text-amber-400/70 shrink-0" />
+                <span className="text-xs text-zinc-300 truncate">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Description */}
+          {room.description && (
+            <div>
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Description</h4>
+              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{room.description}</p>
+            </div>
+          )}
+
+          {/* Amenities */}
+          {room.amenities?.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Équipements</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {room.amenities.map((a) => (
+                  <span key={a} className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] border border-white/[0.07] px-2.5 py-1 text-xs text-zinc-300 capitalize">
+                    <Wifi className="size-2.5 text-zinc-500" />
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reserve CTA */}
+          <button
+            type="button"
+            className="w-full rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-bold py-3.5 text-sm transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-400/20"
+          >
+            Réserver cette chambre
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Thin PanoramaEngine wrapper used inside room detail ─────────────── */
+const PanoramaEngineClient = dynamic(
+  () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
+
 export default function VenueDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -88,6 +435,9 @@ export default function VenueDetailPage() {
   const [selectedTable, setSelectedTable] = useState<PublicTablePlacement | null>(null);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeImmersiveSceneIdx, setActiveImmersiveSceneIdx] = useState(0);
+  const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
+  const [roomSceneIdx, setRoomSceneIdx] = useState(0);
 
   const [selectedSlotStartAt] = useState(() =>
     new Date(Date.now() + RESERVATION_DURATION_MS).toISOString()
@@ -131,6 +481,20 @@ export default function VenueDetailPage() {
   });
   const tourScenes = tourData?.scenes ?? [];
   const tourHotspots = tourData?.hotspots ?? [];
+
+  const isHotelVenue = (venue as any)?.type === 'HOTEL';
+
+  const { data: hotelRooms = [] } = useQuery({
+    queryKey: ['public-hotel-rooms', venue?._id],
+    queryFn: () => fetchVenueRooms(venue!._id),
+    enabled: !!venue?._id && isHotelVenue,
+  });
+
+  const { data: roomTourData } = useQuery({
+    queryKey: ['public-room-scenes', selectedRoom?._id],
+    queryFn: () => fetchRoomScenes(selectedRoom!.venueId, selectedRoom!._id),
+    enabled: !!selectedRoom?._id && (selectedRoom?.hasVirtualTour ?? false),
+  });
 
   // Auto-select first scene
   const effectiveSceneId = activeSceneId ?? (scenes[0]?._id ?? null);
@@ -194,8 +558,57 @@ export default function VenueDetailPage() {
     ((venue.immersiveSourceType === 'url' && !!venue.immersiveUrl) ||
       (venue.immersiveSourceType === 'upload' && !!venue.immersiveFile));
   const hasTour360 = tourScenes.length > 0;
-  const tabsDefaultValue = hasTour360 ? 'tour360' : hasNewImmersive ? 'visite' : 'apercu';
+  const hasAnyImmersive = hasTour360 || hasNewImmersive;
+
+  // Build unified scene list: tour scenes first, then single panoramic file
+  const immersiveSceneList = tourScenes.length > 0
+    ? tourScenes.map((s) => ({ id: s._id, name: s.name, image: s.image, description: s.description }))
+    : scenes.length > 0 && scenes[0]?.image
+      ? scenes.map((s) => ({ id: s._id, name: s.name, image: s.image ?? '' }))
+      : venue.immersiveFile
+        ? [{ id: '__single__', name: venue.name ?? 'Vue 360°', image: venue.immersiveFile }]
+        : [];
+
+  const currentImmersiveScene = immersiveSceneList[activeImmersiveSceneIdx] ?? immersiveSceneList[0];
+
+  const tabsDefaultValue = hasAnyImmersive ? 'visite360' : 'apercu';
   const hasTablePlacements = allPlacements.length > 0;
+
+  const panoramaMarkers = scenePlacements
+    .filter((p) => p.positionType === 'yaw_pitch' && p.yaw != null && p.pitch != null)
+    .map((p) => ({
+      placement: {
+        _id: p._id, venueId: p.venueId, tableId: p.tableId, sceneId: p.sceneId,
+        positionType: p.positionType as 'yaw_pitch', yaw: p.yaw, pitch: p.pitch,
+        createdAt: '', updatedAt: '',
+      },
+      table: p.table ? {
+        _id: p.table._id, venueId: p.venueId, tableNumber: p.table.tableNumber,
+        name: p.table.name, capacity: p.table.capacity, locationLabel: p.table.locationLabel || '',
+        price: p.table.price, minimumSpend: p.table.minimumSpend, defaultStatus: p.table.status,
+        isVip: p.table.isVip, isActive: true,
+      } : undefined,
+    }));
+
+  const panoAvailableCount = scenePlacements.filter((p) => p.table.status === 'available').length;
+  const panoReservedCount = scenePlacements.filter((p) => p.table.status !== 'available').length;
+
+  // Navigation hotspots for the current scene, converted from xPercent/yPercent → yaw/pitch
+  const activeNavHotspots = tourHotspots.filter(
+    (h) => currentImmersiveScene && h.virtualTourId === currentImmersiveScene.id
+  );
+  const psvNavHotspots = activeNavHotspots
+    .map((h) => {
+      const target = immersiveSceneList.find((s) => s.id === h.targetId);
+      if (!target) return null;
+      return {
+        id: h._id,
+        yaw: (h.xPercent / 100 - 0.5) * 2 * Math.PI,
+        pitch: -(h.yPercent / 100 - 0.5) * Math.PI,
+        label: target.name,
+      };
+    })
+    .filter((h): h is NonNullable<typeof h> => h !== null);
   const hasReservableTables =
     hasTablePlacements ||
     ((venue.tables as Array<unknown> | undefined)?.length ?? 0) > 0;
@@ -278,14 +691,25 @@ export default function VenueDetailPage() {
         <Tabs defaultValue={tabsDefaultValue} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-            {hasTour360 && (
-              <TabsTrigger value="tour360" className="gap-1.5">
-                <span className="inline-block size-2 rounded-full bg-[#D4AF37] animate-pulse" aria-hidden="true" />
-                Visite 360°
+            {isHotelVenue && hotelRooms.length > 0 && (
+              <TabsTrigger value="chambres" className="gap-1.5">
+                <BedDouble className="size-3.5" />
+                Chambres & Suites
+                <span className="inline-flex items-center justify-center rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                  {hotelRooms.length}
+                </span>
               </TabsTrigger>
             )}
-            {hasNewImmersive && (
-              <TabsTrigger value="visite">Expérience immersive</TabsTrigger>
+            {hasAnyImmersive && (
+              <TabsTrigger value="visite360" className="gap-1.5">
+                <ScanLine className="size-3.5" />
+                Visite 360°
+                {immersiveSceneList.length > 1 && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                    {immersiveSceneList.length}
+                  </span>
+                )}
+              </TabsTrigger>
             )}
             {hasTablePlacements && (
               <TabsTrigger value="tables" className="gap-1.5">
@@ -313,40 +737,197 @@ export default function VenueDetailPage() {
             )}
           </TabsContent>
 
-          {/* ── Visite 360° interactive ── */}
-          {hasTour360 && (
-            <TabsContent value="tour360" className="mt-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="font-semibold text-white">Visite virtuelle 360°</h2>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      Naviguez entre les scènes en cliquant sur les points dorés
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-3 py-1 text-xs font-semibold text-[#D4AF37]">
-                    {tourScenes.length} scène{tourScenes.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-                <VirtualTourViewer
-                  scenes={tourScenes}
-                  hotspots={tourHotspots}
+          {/* ── Chambres & Suites (HOTEL only) ── */}
+          {isHotelVenue && (
+            <TabsContent value="chambres" className="mt-4">
+              {selectedRoom ? (
+                /* ── Room detail view ── */
+                <RoomDetailView
+                  room={selectedRoom}
+                  tourScenes={roomTourData?.scenes ?? []}
+                  tourHotspots={roomTourData?.hotspots ?? []}
+                  sceneIdx={roomSceneIdx}
+                  onSceneIdxChange={setRoomSceneIdx}
+                  onBack={() => { setSelectedRoom(null); setRoomSceneIdx(0); }}
                 />
-              </div>
+              ) : (
+                /* ── Room grid ── */
+                <div className="space-y-4">
+                  <p className="text-xs text-zinc-400">
+                    {hotelRooms.length} chambre{hotelRooms.length !== 1 ? 's' : ''} disponible{hotelRooms.length !== 1 ? 's' : ''}
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {hotelRooms.map((room) => (
+                      <RoomCard key={room._id} room={room} onClick={() => { setSelectedRoom(room); setRoomSceneIdx(0); }} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </TabsContent>
           )}
 
-          {/* ── Visite immersive ── */}
-          <TabsContent value="visite" className="mt-4">
-            <div className="space-y-4">
-              {(() => {
-                const hasNewImmersiveLocal =
-                  venue.immersiveType &&
-                  venue.immersiveType !== 'none' &&
-                  ((venue.immersiveSourceType === 'url' && venue.immersiveUrl) ||
-                    (venue.immersiveSourceType === 'upload' && venue.immersiveFile));
+          {/* ── Visite 360° (merged: tour scenes + immersive file) ── */}
+          {hasAnyImmersive && (
+            <TabsContent value="visite360" className="mt-4">
+              <div className="space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-white">Visite 360°</h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      {immersiveSceneList.length > 1
+                        ? 'Cliquez et faites glisser pour explorer · Naviguez entre les scènes'
+                        : 'Cliquez et faites glisser pour explorer à 360°'}
+                    </p>
+                  </div>
+                  {immersiveSceneList.length > 1 && (
+                    <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-amber-400/10 border border-amber-400/25 px-3 py-1 text-xs font-semibold text-amber-400">
+                      {activeImmersiveSceneIdx + 1} / {immersiveSceneList.length}
+                    </span>
+                  )}
+                </div>
 
-                const tableReservationModal = selectedTable ? (
+                {/* Matterport embed */}
+                {isMatterport && venue.immersiveUrl ? (
+                  <div className="rounded-2xl overflow-hidden border border-zinc-800/60 bg-zinc-950" style={{ paddingBottom: '56.25%', position: 'relative' }}>
+                    <iframe src={venue.immersiveUrl} title="Visite virtuelle" className="absolute inset-0 w-full h-full" allowFullScreen />
+                  </div>
+                ) : currentImmersiveScene ? (
+                  /* 360° panorama viewer with scene navigation */
+                  <div className="rounded-2xl overflow-hidden border border-zinc-800/60 bg-zinc-950 shadow-2xl">
+                    {/* Panorama */}
+                    <div className="relative w-full" style={{ paddingBottom: '50%' }}>
+                      <div className="absolute inset-0">
+                        <PanoramaEngine
+                          imageUrl={currentImmersiveScene.image}
+                          markers={panoramaMarkers}
+                          selectedMarkerId={null}
+                          mode="navigate"
+                          scenes={[]}
+                          activeSceneId={null}
+                          onSceneChange={() => {}}
+                          navHotspots={psvNavHotspots}
+                          onNavHotspotClick={(hotspotId) => {
+                            const hotspot = activeNavHotspots.find((h) => h._id === hotspotId);
+                            if (!hotspot) return;
+                            const targetIdx = immersiveSceneList.findIndex((s) => s.id === hotspot.targetId);
+                            if (targetIdx !== -1) setActiveImmersiveSceneIdx(targetIdx);
+                          }}
+                          onMarkerClick={(placementId) => {
+                            const p = scenePlacements.find((pl) => pl._id === placementId);
+                            if (p) handleImmersiveTableSelect(p);
+                          }}
+                        />
+                      </div>
+
+                      {/* Scene name badge */}
+                      <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
+                          <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
+                          {currentImmersiveScene.name}
+                        </span>
+                      </div>
+
+                      {/* Prev arrow */}
+                      {activeImmersiveSceneIdx > 0 && (
+                        <button
+                          type="button"
+                          aria-label="Scène précédente"
+                          onClick={() => setActiveImmersiveSceneIdx((i) => i - 1)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                        >
+                          <ChevronLeft className="size-5" />
+                        </button>
+                      )}
+
+                      {/* Next arrow */}
+                      {activeImmersiveSceneIdx < immersiveSceneList.length - 1 && (
+                        <button
+                          type="button"
+                          aria-label="Scène suivante"
+                          onClick={() => setActiveImmersiveSceneIdx((i) => i + 1)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                        >
+                          <ChevronRight className="size-5" />
+                        </button>
+                      )}
+
+                      {/* Table availability badges */}
+                      {panoramaMarkers.length > 0 && (
+                        <div className="absolute bottom-3 left-3 z-20 flex gap-2 pointer-events-none">
+                          {panoAvailableCount > 0 && (
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 shadow-lg">
+                              <span className="size-1.5 rounded-full bg-white/80" />
+                              {panoAvailableCount} disponible{panoAvailableCount !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                          {panoReservedCount > 0 && (
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-red-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 shadow-lg">
+                              <span className="size-1.5 rounded-full bg-white/80" />
+                              {panoReservedCount} réservée{panoReservedCount !== 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Progress bar */}
+                      {immersiveSceneList.length > 1 && (
+                        <div className="absolute bottom-0 inset-x-0 z-20 h-0.5 bg-zinc-800/60">
+                          <div
+                            className="h-full bg-amber-400 transition-all duration-300"
+                            style={{ width: `${((activeImmersiveSceneIdx + 1) / immersiveSceneList.length) * 100}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Thumbnail strip */}
+                    {immersiveSceneList.length > 1 && (
+                      <div className="bg-zinc-900/80 backdrop-blur-md border-t border-zinc-800/60">
+                        <div
+                          className="flex gap-2 p-2.5 overflow-x-auto scroll-smooth"
+                          style={{ scrollbarWidth: 'none' }}
+                          role="list"
+                          aria-label="Scènes de la visite"
+                        >
+                          {immersiveSceneList.map((scene, idx) => {
+                            const isActive = idx === activeImmersiveSceneIdx;
+                            return (
+                              <button
+                                key={scene.id}
+                                type="button"
+                                role="listitem"
+                                aria-label={`${scene.name}${isActive ? ' (actuelle)' : ''}`}
+                                aria-current={isActive ? 'true' : undefined}
+                                onClick={() => setActiveImmersiveSceneIdx(idx)}
+                                className={cn(
+                                  'relative shrink-0 h-[60px] w-[90px] rounded-lg overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
+                                  isActive
+                                    ? 'border-amber-400 shadow-[0_0_12px_rgba(212,175,55,0.45)]'
+                                    : 'border-transparent opacity-55 hover:opacity-90 hover:border-zinc-600'
+                                )}
+                              >
+                                <Image src={scene.image} alt={scene.name} fill className="object-cover" sizes="90px" />
+                                {isActive && <div className="absolute inset-0 bg-amber-400/10" />}
+                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent pt-3 pb-0.5 px-1">
+                                  <p className="text-[9px] text-white font-medium truncate text-center leading-tight">
+                                    {scene.name}
+                                  </p>
+                                </div>
+                                {isActive && (
+                                  <div className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-amber-400" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Reservation modal */}
+                {selectedTable && (
                   <StepReservationModal
                     open={!!selectedTable}
                     onOpenChange={(open) => { if (!open) setSelectedTable(null); }}
@@ -356,318 +937,10 @@ export default function VenueDetailPage() {
                     initialStartAt={selectedSlotStartAt}
                     initialEndAt={selectedSlotEndAt}
                   />
-                ) : null;
-
-                if (hasNewImmersiveLocal) {
-                  const typeLabel =
-                    venue.immersiveType === 'virtual-tour' ? 'Visite virtuelle' : 'Vue 360°';
-
-                  if (isMatterport && venue.immersiveUrl) {
-                    return (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold">{typeLabel}</h3>
-                        <MatterportClientViewer
-                          embedUrl={venue.immersiveUrl}
-                          placements={allPlacements}
-                          onTableSelect={handleImmersiveTableSelect}
-                        />
-                        {tableReservationModal}
-                      </div>
-                    );
-                  }
-
-                  if (venue.immersiveSourceType === 'upload' && venue.immersiveFile) {
-                    const isVideo = /\.(mp4|webm|ogg)$/i.test(venue.immersiveFile);
-                    if (isVideo) {
-                      return (
-                        <div className="space-y-3">
-                          <h3 className="font-semibold">{typeLabel}</h3>
-                          <div className="aspect-video w-full overflow-hidden rounded-xl border bg-muted">
-                            <video
-                              src={venue.immersiveFile}
-                              controls
-                              className="h-full w-full object-contain"
-                            />
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    const panoramaMarkers = scenePlacements
-                      .filter((p) => p.positionType === 'yaw_pitch' && p.yaw != null && p.pitch != null)
-                      .map((p) => ({
-                        placement: {
-                          _id: p._id,
-                          venueId: p.venueId,
-                          tableId: p.tableId,
-                          sceneId: p.sceneId,
-                          positionType: p.positionType as 'yaw_pitch',
-                          yaw: p.yaw,
-                          pitch: p.pitch,
-                          createdAt: '',
-                          updatedAt: '',
-                        },
-                        table: p.table
-                          ? {
-                              _id: p.table._id,
-                              venueId: p.venueId,
-                              tableNumber: p.table.tableNumber,
-                              name: p.table.name,
-                              capacity: p.table.capacity,
-                              locationLabel: p.table.locationLabel || '',
-                              price: p.table.price,
-                              minimumSpend: p.table.minimumSpend,
-                              defaultStatus: p.table.status,
-                              isVip: p.table.isVip,
-                              isActive: true,
-                            }
-                          : undefined,
-                      }));
-
-                    const panoAvailableCount = scenePlacements.filter(
-                      (p) => p.table.status === 'available'
-                    ).length;
-                    const panoReservedCount = scenePlacements.filter(
-                      (p) => p.table.status !== 'available'
-                    ).length;
-
-                    return (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold">{typeLabel}</h3>
-                        <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
-                          <PanoramaEngine
-                            imageUrl={
-                              scenes.length > 0 && effectiveSceneId
-                                ? (scenes.find((s) => s._id === effectiveSceneId)?.image ?? venue.immersiveFile)
-                                : venue.immersiveFile
-                            }
-                            markers={panoramaMarkers}
-                            selectedMarkerId={null}
-                            mode="navigate"
-                            scenes={scenes}
-                            activeSceneId={effectiveSceneId}
-                            onSceneChange={setActiveSceneId}
-                            onMarkerClick={(placementId) => {
-                              const p = scenePlacements.find((pl) => pl._id === placementId);
-                              if (p) handleImmersiveTableSelect(p);
-                            }}
-                          />
-                          {allPlacements.length > 0 && (
-                            <div className="absolute bottom-3 left-3 z-20 flex gap-2 pointer-events-none">
-                              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 shadow-lg">
-                                <span className="size-1.5 rounded-full bg-white/80" />
-                                {panoAvailableCount} disponible{panoAvailableCount !== 1 ? 's' : ''}
-                              </div>
-                              {panoReservedCount > 0 && (
-                                <div className="inline-flex items-center gap-1.5 rounded-full bg-red-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 shadow-lg">
-                                  <span className="size-1.5 rounded-full bg-white/80" />
-                                  {panoReservedCount} réservée{panoReservedCount !== 1 ? 's' : ''}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {tableReservationModal}
-                      </div>
-                    );
-                  }
-
-                  if (venue.immersiveSourceType === 'url' && venue.immersiveUrl) {
-                    const yawPitchPlacements = allPlacements.filter(
-                      (p) => p.positionType === 'yaw_pitch' && p.yaw != null && p.pitch != null
-                    );
-                    return (
-                      <div className="space-y-3">
-                        <h3 className="font-semibold">{typeLabel}</h3>
-                        <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
-                          <iframe
-                            src={venue.immersiveUrl}
-                            title={typeLabel}
-                            className="h-full w-full"
-                            allowFullScreen
-                          />
-                          {yawPitchPlacements.length > 0 && (
-                            <div className="absolute inset-0 pointer-events-none z-10">
-                              <div className="relative w-full h-full">
-                                {yawPitchPlacements.map((p) => {
-                                  const tableNum = p.table?.tableNumber ?? '?';
-                                  const xPct = 50 + ((p.yaw ?? 0) / (2 * Math.PI)) * 100;
-                                  const yPct = 50 - ((p.pitch ?? 0) / Math.PI) * 100;
-                                  const status = p.table?.status ?? 'available';
-                                  const isAvailable = status === 'available';
-                                  const isVip = p.table?.isVip;
-                                  return (
-                                    <div
-                                      key={p._id}
-                                      className="absolute flex flex-col items-center pointer-events-none"
-                                      style={{
-                                        left: `${xPct}%`,
-                                        top: `${yPct}%`,
-                                        transform: 'translateX(-50%) translateY(-100%)',
-                                      }}
-                                    >
-                                      <div
-                                        className={`text-white text-[9px] font-bold px-2 py-[2px] rounded-full shadow-lg whitespace-nowrap mb-1 select-none ${
-                                          isAvailable
-                                            ? isVip
-                                              ? 'bg-amber-500'
-                                              : 'bg-emerald-500'
-                                            : 'bg-red-500'
-                                        }`}
-                                        style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
-                                      >
-                                        {isAvailable
-                                          ? isVip
-                                            ? '★ VIP · Disponible'
-                                            : '✓ Disponible'
-                                          : '✗ Réservée'}
-                                      </div>
-                                      <div
-                                        className="w-0 h-0 mb-0.5"
-                                        style={{
-                                          borderLeft: '4px solid transparent',
-                                          borderRight: '4px solid transparent',
-                                          borderTopWidth: '5px',
-                                          borderTopStyle: 'solid',
-                                          borderTopColor: isAvailable
-                                            ? isVip
-                                              ? '#f59e0b'
-                                              : '#22c55e'
-                                            : '#ef4444',
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        disabled={!isAvailable}
-                                        className={`pointer-events-auto w-9 h-9 rounded-full border-2 border-white/80 text-white text-xs font-extrabold shadow-xl flex items-center justify-center select-none transition-transform focus:outline-none ${
-                                          isAvailable
-                                            ? isVip
-                                              ? 'bg-amber-500 hover:scale-110 hover:bg-amber-400 cursor-pointer'
-                                              : 'bg-emerald-500 hover:scale-110 hover:bg-emerald-400 cursor-pointer'
-                                            : 'bg-red-500/70 opacity-65 cursor-not-allowed'
-                                        }`}
-                                        style={{ boxShadow: '0 3px 12px rgba(0,0,0,0.5)' }}
-                                        onClick={
-                                          isAvailable
-                                            ? (e) => {
-                                                e.stopPropagation();
-                                                handleImmersiveTableSelect(p);
-                                              }
-                                            : undefined
-                                        }
-                                      >
-                                        {tableNum}
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {tableReservationModal}
-                      </div>
-                    );
-                  }
-                }
-
-                if (venue.virtualTours && venue.virtualTours.length > 0) {
-                  return (
-                    <div className="space-y-2">
-                      <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
-                        {venue.virtualTours[0].embedUrl ? (
-                          <iframe
-                            src={venue.virtualTours[0].embedUrl}
-                            title="Visite virtuelle"
-                            className="h-full w-full"
-                            allowFullScreen
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-muted-foreground">
-                            Visite virtuelle disponible
-                          </div>
-                        )}
-                        {tablePlacements.length > 0 && (
-                          <div className="absolute inset-0 pointer-events-none">
-                            <div className="relative w-full h-full">
-                              {tablePlacements.map((p) => {
-                                const table = (
-                                  venue.tables as
-                                    | { _id: string; tableNumber?: number; name?: string }[]
-                                    | undefined
-                                )?.find((t) => t._id === p.tableId);
-                                const label = table
-                                  ? String(table.tableNumber ?? table.name ?? '').slice(0, 3)
-                                  : 'T';
-                                const xPercent = 50 + ((p.yaw ?? 0) / (2 * Math.PI)) * 100;
-                                const yPercent = 50 - ((p.pitch ?? 0) / Math.PI) * 100;
-                                return (
-                                  <button
-                                    key={p._id}
-                                    type="button"
-                                    className="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-primary/80 text-primary-foreground shadow-md pointer-events-auto flex items-center justify-center text-xs font-medium hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring"
-                                    style={{ left: `${xPercent}%`, top: `${yPercent}%` }}
-                                    aria-label={label || 'Table'}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveTablePlacement(
-                                        activeTablePlacement?._id === p._id ? null : p
-                                      );
-                                    }}
-                                  >
-                                    {label || 'T'}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      {activeTablePlacement && (
-                        <div className="rounded-xl border bg-card p-4 shadow-sm">
-                          <h3 className="font-semibold">Table sélectionnée</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Sélectionnez une date et continuez votre réservation.
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                handleTablePlacementAddToCart(activeTablePlacement);
-                                setActiveTablePlacement(null);
-                              }}
-                            >
-                              Ajouter au panier
-                            </Button>
-                            <Button size="sm" variant="outline" asChild>
-                              <Link
-                                href={`/login?returnTo=${encodeURIComponent(`/lieu/${venue.slug || venue._id}`)}`}
-                              >
-                                Réserver (connexion)
-                              </Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setActiveTablePlacement(null)}
-                            >
-                              Fermer
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <p className="text-muted-foreground">
-                    Aucune expérience immersive pour ce lieu.
-                  </p>
-                );
-              })()}
-            </div>
-          </TabsContent>
+                )}
+              </div>
+            </TabsContent>
+          )}
 
           {/* ── Tables ── */}
           {hasTablePlacements && (

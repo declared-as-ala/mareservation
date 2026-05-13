@@ -17,6 +17,16 @@ export interface PanoramaScene {
   image: string;
 }
 
+export interface NavHotspot {
+  id: string;
+  /** yaw in radians (-π to π) */
+  yaw: number;
+  /** pitch in radians (-π/2 to π/2) */
+  pitch: number;
+  /** Label shown in tooltip */
+  label: string;
+}
+
 export interface PanoramaEngineProps {
   imageUrl: string;
   markers: TableMarker[];
@@ -25,6 +35,9 @@ export interface PanoramaEngineProps {
   onPositionClick?: (yaw: number, pitch: number) => void;
   onMarkerClick?: (placementId: string) => void;
   onMarkerMoved?: (placementId: string, yaw: number, pitch: number) => void;
+  /** Navigation hotspots linking to other scenes */
+  navHotspots?: NavHotspot[];
+  onNavHotspotClick?: (hotspotId: string) => void;
   /** Optional multi-scene support */
   scenes?: PanoramaScene[];
   activeSceneId?: string | null;
@@ -112,6 +125,27 @@ function buildMarkerHtml(marker: TableMarker, isSelected: boolean): string {
 </div>`;
 }
 
+function buildNavHotspotHtml(label: string): string {
+  return `<div style="position:relative;width:40px;height:40px;cursor:pointer;" title="${label.replace(/"/g, '&quot;')}">
+  <div style="
+    position:absolute;inset:-7px;border-radius:50%;
+    border:2px solid #D4AF37;opacity:0.35;
+    animation:psv-pulse 2s ease-in-out infinite;
+  "></div>
+  <div style="
+    width:40px;height:40px;border-radius:50%;
+    background:#D4AF37;
+    border:2.5px solid rgba(255,255,255,0.9);
+    box-shadow:0 3px 16px rgba(0,0,0,0.55),0 0 0 6px rgba(212,175,55,0.15);
+    display:flex;align-items:center;justify-content:center;
+  ">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </div>
+</div>`;
+}
+
 export default function PanoramaEngine({
   imageUrl,
   markers,
@@ -120,6 +154,8 @@ export default function PanoramaEngine({
   onPositionClick,
   onMarkerClick,
   onMarkerMoved,
+  navHotspots,
+  onNavHotspotClick,
   scenes,
   activeSceneId,
   onSceneChange,
@@ -129,8 +165,8 @@ export default function PanoramaEngine({
   const markersPluginRef = useRef<unknown>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const callbackRefs = useRef({ onPositionClick, onMarkerClick, onMarkerMoved });
-  callbackRefs.current = { onPositionClick, onMarkerClick, onMarkerMoved };
+  const callbackRefs = useRef({ onPositionClick, onMarkerClick, onMarkerMoved, onNavHotspotClick });
+  callbackRefs.current = { onPositionClick, onMarkerClick, onMarkerMoved, onNavHotspotClick };
   const modeRef = useRef(mode);
   modeRef.current = mode;
   const selectedRef = useRef(selectedMarkerId);
@@ -217,6 +253,7 @@ export default function PanoramaEngine({
 
     mp.clearMarkers();
 
+    // Table placement markers
     markers.forEach((m) => {
       if (m.placement.positionType !== 'yaw_pitch' || m.placement.yaw == null || m.placement.pitch == null) return;
 
@@ -237,7 +274,18 @@ export default function PanoramaEngine({
         data: { placementId: m.placement._id },
       });
     });
-  }, [loaded, markers, selectedMarkerId, mode]);
+
+    // Navigation hotspot markers (scene-to-scene)
+    navHotspots?.forEach((h) => {
+      mp.addMarker({
+        id: `__nav__${h.id}`,
+        position: { yaw: h.yaw, pitch: h.pitch },
+        html: buildNavHotspotHtml(h.label),
+        anchor: 'center center',
+        tooltip: { content: `→ ${h.label}`, position: 'top center' },
+      });
+    });
+  }, [loaded, markers, selectedMarkerId, mode, navHotspots]);
 
   // Handle marker selection via PSV markers plugin
   useEffect(() => {
@@ -247,7 +295,11 @@ export default function PanoramaEngine({
     const handler = (e: unknown) => {
       const markerId = (e as { marker?: { id?: unknown } }).marker?.id;
       if (typeof markerId === 'string') {
-        callbackRefs.current.onMarkerClick?.(markerId);
+        if (markerId.startsWith('__nav__')) {
+          callbackRefs.current.onNavHotspotClick?.(markerId.slice(7));
+        } else {
+          callbackRefs.current.onMarkerClick?.(markerId);
+        }
       }
     };
 

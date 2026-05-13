@@ -17,6 +17,7 @@ import {
   createAdminVenueScene,
   updateAdminVenueScene,
   deleteAdminVenueScene,
+  createAdminRoomScene,
   createAdminSceneHotspot,
   deleteAdminSceneHotspot,
   type AdminHotelScene,
@@ -34,6 +35,8 @@ interface PendingHotspot {
 
 interface VirtualTourBuilderProps {
   venueId: string;
+  /** When set, scenes are scoped to this room/suite instead of the venue */
+  roomId?: string;
   initialScenes: AdminHotelScene[];
   initialHotspots: AdminSceneHotspot[];
   onUpdated?: () => void;
@@ -192,10 +195,12 @@ function HotspotDot({
 
 function AddSceneModal({
   venueId,
+  roomId,
   onClose,
   onCreated,
 }: {
   venueId: string;
+  roomId?: string;
   onClose: () => void;
   onCreated: (scene: AdminHotelScene) => void;
 }) {
@@ -225,7 +230,9 @@ function AddSceneModal({
     }
     setSaving(true);
     try {
-      const scene = await createAdminVenueScene(venueId, { name: name.trim(), image: imageUrl, description });
+      const scene = roomId
+        ? await createAdminRoomScene(roomId, { name: name.trim(), image: imageUrl, description })
+        : await createAdminVenueScene(venueId, { name: name.trim(), image: imageUrl, description });
       onCreated(scene);
       toast.success('Scène créée.');
     } catch {
@@ -495,7 +502,7 @@ function AddHotspotModal({
 
 // ── Main VirtualTourBuilder component ─────────────────────────────────────────
 
-export function VirtualTourBuilder({ venueId, initialScenes, initialHotspots, onUpdated }: VirtualTourBuilderProps) {
+export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHotspots, onUpdated }: VirtualTourBuilderProps) {
   const [scenes, setScenes] = useState<AdminHotelScene[]>(initialScenes);
   const [hotspots, setHotspots] = useState<AdminSceneHotspot[]>(initialHotspots);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(initialScenes[0]?._id ?? null);
@@ -771,6 +778,7 @@ export function VirtualTourBuilder({ venueId, initialScenes, initialHotspots, on
         {showAddScene && (
           <AddSceneModal
             venueId={venueId}
+            roomId={roomId}
             onClose={() => setShowAddScene(false)}
             onCreated={(scene) => {
               setScenes((prev) => [...prev, scene]);

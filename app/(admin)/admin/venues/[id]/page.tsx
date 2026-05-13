@@ -71,6 +71,11 @@ const RoomEditorModal = dynamic(
   { ssr: false }
 );
 
+const RoomTourModal = dynamic(
+  () => import('@/components/admin/hotel/RoomTourModal').then((m) => ({ default: m.RoomTourModal })),
+  { ssr: false }
+);
+
 const TYPE_OPTIONS = Object.entries(VENUE_TYPE_LABELS).map(([value, label]) => ({ value, label }));
 
 type ImmersiveType = 'none' | 'virtual-tour' | 'view-360';
@@ -243,6 +248,7 @@ export default function AdminVenueDetailPage() {
   });
   const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null>(null);
   const [showNewRoom, setShowNewRoom] = useState(false);
+  const [tourRoom, setTourRoom] = useState<AdminHotelRoom | null>(null);
 
   const { data: owners = [] } = useQuery({
     queryKey: ['admin-owners'],
@@ -1551,15 +1557,44 @@ export default function AdminVenueDetailPage() {
 
           {/* ── TAB: Visite 360° ─────────────────────────────── */}
           <TabsContent value="tour360" className="pt-5">
-            <VirtualTourBuilder
-              venueId={id}
-              initialScenes={tourData?.scenes ?? []}
-              initialHotspots={tourData?.hotspots ?? []}
-              onUpdated={() => {
-                refetchTour();
-                queryClient.invalidateQueries({ queryKey: ['venue', id] });
-              }}
-            />
+            {isHotel ? (
+              <Card className="rounded-2xl border-border/40">
+                <CardContent className="flex flex-col items-center justify-center py-20 text-center gap-4">
+                  <div className="size-14 rounded-2xl bg-amber-400/10 flex items-center justify-center">
+                    <ScanLine className="size-7 text-amber-400" />
+                  </div>
+                  <div className="max-w-sm">
+                    <p className="font-semibold text-foreground">Expériences 360° par chambre</p>
+                    <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                      Pour les hôtels, les expériences 360° sont gérées individuellement par chambre ou suite.
+                      Ouvrez une chambre depuis l&apos;onglet <strong className="text-foreground">Chambres & Suites</strong> pour ajouter des images panoramiques ou créer une visite virtuelle.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 rounded-xl border-amber-400/30 text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/50"
+                    onClick={() => {
+                      const tab = document.querySelector('[value="rooms"]') as HTMLElement | null;
+                      tab?.click();
+                    }}
+                  >
+                    <BedDouble className="size-3.5" /> Aller aux Chambres & Suites
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <VirtualTourBuilder
+                venueId={id}
+                initialScenes={tourData?.scenes ?? []}
+                initialHotspots={tourData?.hotspots ?? []}
+                onUpdated={() => {
+                  refetchTour();
+                  queryClient.invalidateQueries({ queryKey: ['venue', id] });
+                }}
+              />
+            )}
           </TabsContent>
 
           {/* ── TAB: Chambres (HOTEL only) ───────────────────── */}
@@ -1674,6 +1709,7 @@ export default function AdminVenueDetailPage() {
                     setShowNewRoom(false);
                     toast.success('Chambre créée.');
                   }}
+                  onOpenTour={(r) => { setShowNewRoom(false); setTourRoom(r); }}
                 />
               )}
               {editingRoom && (
@@ -1687,6 +1723,14 @@ export default function AdminVenueDetailPage() {
                     setEditingRoom(null);
                     toast.success('Chambre mise à jour.');
                   }}
+                  onOpenTour={(r) => { setEditingRoom(null); setTourRoom(r); }}
+                />
+              )}
+              {tourRoom && (
+                <RoomTourModal
+                  venueId={id}
+                  room={tourRoom}
+                  onClose={() => { setTourRoom(null); refetchRooms(); }}
                 />
               )}
             </TabsContent>
