@@ -729,7 +729,7 @@ export default function VenueDetailPage() {
   const img = getVenueImage(venue);
   const allImages = getAllImages(venue);
 
-  const heroRooms = hotelRooms.filter((r) => (r.panoramicImages?.length ?? 0) > 0);
+  const heroRooms = hotelRooms; // all rooms — hero falls back to coverImage if no panoramic
   const showHotelHero = isHotelVenue && heroRooms.length > 0;
 
   const hasNewImmersive =
@@ -899,7 +899,7 @@ export default function VenueDetailPage() {
                 </span>
               </TabsTrigger>
             )}
-            {hasAnyImmersive && (
+            {!isHotelVenue && hasAnyImmersive && (
               <TabsTrigger value="visite360" className="gap-1.5">
                 <ScanLine className="size-3.5" />
                 Visite 360°
@@ -965,8 +965,8 @@ export default function VenueDetailPage() {
             </TabsContent>
           )}
 
-          {/* ── Visite 360° (merged: tour scenes + immersive file) ── */}
-          {hasAnyImmersive && (
+          {/* ── Visite 360° (non-hotel venues only) ── */}
+          {!isHotelVenue && hasAnyImmersive && (
             <TabsContent value="visite360" className="mt-4">
               <div className="space-y-3">
                 {/* Header */}
