@@ -137,3 +137,38 @@ export async function resetAdminTablePlacements(venueId: string): Promise<void> 
     `/admin/venues/${encodeURIComponent(venueId)}/table-placements`
   );
 }
+
+// ── Public 360° Virtual Tour ─────────────────────────────────────────────────
+
+export interface VirtualScene {
+  _id: string;
+  name: string;
+  description?: string;
+  image: string;
+  order: number;
+}
+
+export interface VirtualHotspot {
+  _id: string;
+  virtualTourId: string;
+  targetId: string;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+}
+
+export async function fetchVenueScenes(
+  idOrSlug: string
+): Promise<{ scenes: VirtualScene[]; hotspots: VirtualHotspot[] }> {
+  try {
+    const data = await apiGetRaw<{ scenes?: VirtualScene[]; hotspots?: VirtualHotspot[] }>(
+      `/venues/${encodeURIComponent(idOrSlug)}/scenes`
+    );
+    return {
+      scenes: (data as any)?.scenes ?? [],
+      hotspots: (data as any)?.hotspots ?? [],
+    };
+  } catch {
+    return { scenes: [], hotspots: [] };
+  }
+}

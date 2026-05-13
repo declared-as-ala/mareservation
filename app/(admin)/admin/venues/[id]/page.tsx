@@ -18,8 +18,12 @@ import {
   updateAdminTablePlacement,
   deleteAdminTablePlacement,
   fetchAdminVenueScenes,
+  fetchAdminHotelRooms,
+  createAdminHotelRoom,
+  updateAdminHotelRoom,
   type AdminTableRow,
   type AdminTablePlacement,
+  type AdminHotelRoom,
 } from '@/lib/api/admin';
 import { uploadImageFile } from '@/lib/api/client';
 import { fetchAdminVenueMenu, createMenuItem, updateMenuItem, deleteMenuItem } from '@/lib/api/menu';
@@ -41,6 +45,7 @@ import {
   ImageIcon, Info, Eye, LayoutGrid, Globe2,
   Phone, Hash, FileText, Building2, Camera,
   Sparkles, ImagePlus, UtensilsCrossed, ScanLine,
+  BedDouble, Crown, DollarSign, Bath,
 } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
@@ -57,6 +62,11 @@ const PanoramaEngine = dynamic(
 
 const VirtualTourBuilder = dynamic(
   () => import('@/components/admin/hotel/VirtualTourBuilder').then((m) => ({ default: m.VirtualTourBuilder })),
+  { ssr: false }
+);
+
+const RoomEditorModal = dynamic(
+  () => import('@/components/admin/hotel/RoomEditorModal').then((m) => ({ default: m.RoomEditorModal })),
   { ssr: false }
 );
 
@@ -217,6 +227,15 @@ export default function AdminVenueDetailPage() {
     queryFn: () => fetchAdminVenueScenes(id),
     enabled: !!id,
   });
+
+  const isHotel = form?.type === 'HOTEL' || (venue as any)?.type === 'HOTEL';
+  const { data: rooms = [], refetch: refetchRooms } = useQuery({
+    queryKey: ['admin-hotel-rooms', id],
+    queryFn: () => fetchAdminHotelRooms(id),
+    enabled: !!id && isHotel,
+  });
+  const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null>(null);
+  const [showNewRoom, setShowNewRoom] = useState(false);
 
   const { data: owners = [] } = useQuery({
     queryKey: ['admin-owners'],
@@ -612,6 +631,16 @@ export default function AdminVenueDetailPage() {
                 </span>
               )}
             </TabsTrigger>
+            {isHotel && (
+              <TabsTrigger value="rooms" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
+                <BedDouble className="size-3.5" /> Chambres
+                {rooms.length > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                    {rooms.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* ── TAB: Informations ─────────────────────────────── */}
@@ -1494,6 +1523,109 @@ export default function AdminVenueDetailPage() {
               }}
             />
           </TabsContent>
+
+          {/* ── TAB: Chambres (HOTEL only) ───────────────────── */}
+          {isHotel && (
+            <TabsContent value="rooms" className="pt-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Chambres & Suites</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">{rooms.length} chambre{rooms.length !== 1 ? 's' : ''} configurée{rooms.length !== 1 ? 's' : ''}</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="gap-1.5 rounded-xl"
+                  onClick={() => setShowNewRoom(true)}
+                >
+                  <Plus className="size-3.5" /> Nouvelle chambre
+                </Button>
+              </div>
+
+              {rooms.length === 0 ? (
+                <Card className="rounded-2xl border-border/40">
+                  <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                      <BedDouble className="size-7 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium text-foreground">Aucune chambre</p>
+                    <p className="text-xs text-muted-foreground mt-1">Ajoutez des chambres pour les rendre réservables</p>
+                    <Button size="sm" className="mt-4 gap-1.5" onClick={() => setShowNewRoom(true)}>
+                      <Plus className="size-3.5" /> Ajouter une chambre
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {rooms.map((room) => (
+                    <Card key={room._id} className="rounded-2xl border-border/40 hover:border-border/70 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          {room.coverImage ? (
+                            <div className="relative size-14 rounded-xl overflow-hidden shrink-0">
+                              <Image src={room.coverImage} alt={room.name ?? `Chambre ${room.roomNumber}`} fill className="object-cover" sizes="56px" />
+                            </div>
+                          ) : (
+                            <div className="size-14 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                              <BedDouble className="size-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <p className="font-semibold text-sm text-foreground truncate">
+                                {room.name ?? `Chambre ${room.roomNumber}`}
+                              </p>
+                              {room.isVip && <Crown className="size-3.5 text-amber-400 shrink-0" />}
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">{room.roomType}</p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><Users className="size-3" />{room.capacityAdults ?? room.capacity}</span>
+                              <span className="flex items-center gap-1 font-semibold text-amber-400"><DollarSign className="size-3" />{room.pricePerNight} TND</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-border/40">
+                          <Button size="sm" variant="outline" className="flex-1 rounded-lg text-xs" onClick={() => setEditingRoom(room)}>
+                            Modifier
+                          </Button>
+                          <Button size="sm" variant="ghost" className="rounded-lg text-xs" asChild>
+                            <Link href={`/admin/hotels/${id}`}>Détails</Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Room editor modals */}
+              {showNewRoom && (
+                <RoomEditorModal
+                  hotelId={id}
+                  room={null}
+                  onClose={() => setShowNewRoom(false)}
+                  onSave={async (payload) => {
+                    await createAdminHotelRoom(id, payload);
+                    await refetchRooms();
+                    setShowNewRoom(false);
+                    toast.success('Chambre créée.');
+                  }}
+                />
+              )}
+              {editingRoom && (
+                <RoomEditorModal
+                  hotelId={id}
+                  room={editingRoom}
+                  onClose={() => setEditingRoom(null)}
+                  onSave={async (payload) => {
+                    await updateAdminHotelRoom(editingRoom._id, payload);
+                    await refetchRooms();
+                    setEditingRoom(null);
+                    toast.success('Chambre mise à jour.');
+                  }}
+                />
+              )}
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Bottom save bar - hidden, we use the header button */}

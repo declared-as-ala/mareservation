@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useAuthStore } from '@/stores/auth';
@@ -10,7 +10,6 @@ import Image from 'next/image';
 import {
   LayoutDashboard,
   Users,
-  MapPin,
   CalendarDays,
   Settings,
   Tags,
@@ -28,6 +27,11 @@ import {
   Sparkles,
   QrCode,
   Layers,
+  UtensilsCrossed,
+  Coffee,
+  BedDouble,
+  Film,
+  PartyPopper,
 } from 'lucide-react';
 
 type NavItem = {
@@ -35,6 +39,7 @@ type NavItem = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   exact?: boolean;
+  typeQuery?: string;
 };
 
 type NavGroup = { label: string; items: NavItem[] };
@@ -47,11 +52,19 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Lieux',
+    items: [
+      { href: '/admin/venues?type=RESTAURANT', label: 'Restaurants', icon: UtensilsCrossed, typeQuery: 'RESTAURANT' },
+      { href: '/admin/venues?type=CAFE', label: 'Cafés', icon: Coffee, typeQuery: 'CAFE' },
+      { href: '/admin/venues?type=HOTEL', label: 'Hôtels', icon: BedDouble, typeQuery: 'HOTEL' },
+      { href: '/admin/venues?type=EVENT_SPACE', label: 'Événements', icon: PartyPopper, typeQuery: 'EVENT_SPACE' },
+      { href: '/admin/venues?type=CINEMA', label: 'Cinémas', icon: Film, typeQuery: 'CINEMA' },
+    ],
+  },
+  {
     label: 'Gestion',
     items: [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
-      { href: '/admin/venues', label: 'Lieux', icon: MapPin },
-      { href: '/admin/events', label: 'Événements', icon: CalendarDays },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
     ],
   },
@@ -88,6 +101,16 @@ function SidebarContent({
   onNavigate?: () => void;
 }) {
   const { user, logout } = useAuthStore();
+  const searchParams = useSearchParams();
+
+  function isItemActive(item: NavItem): boolean {
+    const basePath = item.href.split('?')[0];
+    if (item.exact) return pathname === basePath;
+    if (item.typeQuery) {
+      return pathname === basePath && searchParams.get('type') === item.typeQuery;
+    }
+    return pathname === basePath || pathname.startsWith(basePath + '/');
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -118,9 +141,7 @@ function SidebarContent({
             </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = item.exact
-                  ? pathname === item.href
-                  : pathname === item.href || pathname.startsWith(item.href + '/');
+                const isActive = isItemActive(item);
                 const Icon = item.icon;
                 return (
                   <Link
@@ -221,9 +242,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!user || user.role !== 'ADMIN') return null;
 
   const allItems = navGroups.flatMap((g) => g.items);
-  const currentItem = allItems.find((i) =>
-    i.exact ? pathname === i.href : pathname === i.href || pathname.startsWith(i.href + '/')
-  );
+  const searchParamsLayout = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search)
+    : new URLSearchParams();
+  const currentItem = allItems.find((i) => {
+    const basePath = i.href.split('?')[0];
+    if (i.exact) return pathname === basePath;
+    if (i.typeQuery) {
+      return pathname === basePath && searchParamsLayout.get('type') === i.typeQuery;
+    }
+    return pathname === basePath || pathname.startsWith(basePath + '/');
+  });
   const pageTitle = currentItem?.label ?? 'Administration';
 
   return (

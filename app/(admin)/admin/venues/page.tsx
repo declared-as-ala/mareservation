@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
@@ -73,11 +74,17 @@ function VenueImage({ coverImage, name }: { coverImage?: string; name: string })
 }
 
 export default function AdminVenuesPage() {
-  const [typeFilter, setTypeFilter] = useState('');
+  const searchParams = useSearchParams();
+  const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') ?? '');
   const [q, setQ] = useState('');
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [withoutOwner, setWithoutOwner] = useState(false);
+
+  // Sync filter when URL changes (sidebar navigation between categories)
+  useEffect(() => {
+    setTypeFilter(searchParams.get('type') ?? '');
+  }, [searchParams]);
 
   const { data: venuesData = [], isLoading } = useQuery({
     queryKey: ['admin', 'venues', typeFilter, q, ownerFilter, withoutOwner],
@@ -106,9 +113,11 @@ export default function AdminVenuesPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white">Lieux</h1>
+          <h1 className="text-2xl font-bold text-white">
+            {typeFilter ? (VENUE_TYPE_LABELS[typeFilter] ?? 'Lieux') : 'Lieux'}
+          </h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {venues.length} lieu{venues.length !== 1 ? 'x' : ''} au total
+            {venues.length} {typeFilter ? 'établissement' : 'lieu'}{venues.length !== 1 ? 's' : ''} au total
           </p>
         </div>
         <div className="flex items-center gap-2">

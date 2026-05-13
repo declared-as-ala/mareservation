@@ -10,6 +10,7 @@ import {
   fetchVenueByIdOrSlug,
   getVenueAvailabilityStreamUrl,
   fetchVenueTablePlacements,
+  fetchVenueScenes,
   type PublicTablePlacement,
 } from '@/lib/api/venues';
 import { fetchScenes } from '@/lib/api/scenes';
@@ -51,6 +52,11 @@ const MatterportClientViewer = dynamic(
 
 const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
+
+const VirtualTourViewer = dynamic(
+  () => import('@/components/immersive/VirtualTourViewer').then((m) => ({ default: m.VirtualTourViewer })),
   { ssr: false }
 );
 
@@ -118,6 +124,14 @@ export default function VenueDetailPage() {
     enabled: !!venue?._id,
   });
 
+  const { data: tourData } = useQuery({
+    queryKey: ['venue-tour', venue?._id],
+    queryFn: () => fetchVenueScenes(venue!._id),
+    enabled: !!venue?._id,
+  });
+  const tourScenes = tourData?.scenes ?? [];
+  const tourHotspots = tourData?.hotspots ?? [];
+
   // Auto-select first scene
   const effectiveSceneId = activeSceneId ?? (scenes[0]?._id ?? null);
 
@@ -179,7 +193,8 @@ export default function VenueDetailPage() {
     venue.immersiveType !== 'none' &&
     ((venue.immersiveSourceType === 'url' && !!venue.immersiveUrl) ||
       (venue.immersiveSourceType === 'upload' && !!venue.immersiveFile));
-  const tabsDefaultValue = hasNewImmersive ? 'visite' : 'apercu';
+  const hasTour360 = tourScenes.length > 0;
+  const tabsDefaultValue = hasTour360 ? 'tour360' : hasNewImmersive ? 'visite' : 'apercu';
   const hasTablePlacements = allPlacements.length > 0;
   const hasReservableTables =
     hasTablePlacements ||
@@ -263,6 +278,12 @@ export default function VenueDetailPage() {
         <Tabs defaultValue={tabsDefaultValue} className="space-y-4">
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu">Aperçu</TabsTrigger>
+            {hasTour360 && (
+              <TabsTrigger value="tour360" className="gap-1.5">
+                <span className="inline-block size-2 rounded-full bg-[#D4AF37] animate-pulse" aria-hidden="true" />
+                Visite 360°
+              </TabsTrigger>
+            )}
             {hasNewImmersive && (
               <TabsTrigger value="visite">Expérience immersive</TabsTrigger>
             )}
@@ -291,6 +312,29 @@ export default function VenueDetailPage() {
               <VenueGallery images={allImages} venueName={venue.name} />
             )}
           </TabsContent>
+
+          {/* ── Visite 360° interactive ── */}
+          {hasTour360 && (
+            <TabsContent value="tour360" className="mt-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-white">Visite virtuelle 360°</h2>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Naviguez entre les scènes en cliquant sur les points dorés
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-3 py-1 text-xs font-semibold text-[#D4AF37]">
+                    {tourScenes.length} scène{tourScenes.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <VirtualTourViewer
+                  scenes={tourScenes}
+                  hotspots={tourHotspots}
+                />
+              </div>
+            </TabsContent>
+          )}
 
           {/* ── Visite immersive ── */}
           <TabsContent value="visite" className="mt-4">
