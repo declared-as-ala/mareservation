@@ -427,12 +427,13 @@ const PanoramaEngineClient = dynamic(
 
 /* ── Hotel immersive hero ────────────────────────────────────────────── */
 function HotelImmersiveHero({
-  rooms, hotelName, hotelCity, idx, onIdxChange, onRoomClick, onBack,
+  rooms, hotelName, hotelCity, idx, currentImageUrl, onIdxChange, onRoomClick, onBack,
 }: {
   rooms: HotelRoom[];
   hotelName: string;
   hotelCity?: string;
   idx: number;
+  currentImageUrl: string;
   onIdxChange: (i: number) => void;
   onRoomClick: (room: HotelRoom) => void;
   onBack: () => void;
@@ -440,7 +441,7 @@ function HotelImmersiveHero({
   const room = rooms[idx];
   if (!room) return null;
 
-  const imageUrl = room.panoramicImages?.[0] ?? '';
+  const imageUrl = currentImageUrl;
   const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
   const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
     room.roomType?.toUpperCase() ?? ''
@@ -670,8 +671,20 @@ export default function VenueDetailPage() {
   const { data: roomTourData } = useQuery({
     queryKey: ['public-room-scenes', selectedRoom?._id],
     queryFn: () => fetchRoomScenes(selectedRoom!.venueId, selectedRoom!._id),
-    enabled: !!selectedRoom?._id && (selectedRoom?.hasVirtualTour ?? false),
+    enabled: !!selectedRoom?._id,
   });
+
+  // Hero room scenes — fetched reactively as heroRoomIdx changes
+  const heroRoomRaw = hotelRooms[heroRoomIdx] ?? null;
+  const { data: heroRoomTourData } = useQuery({
+    queryKey: ['hero-room-scenes', heroRoomRaw?._id],
+    queryFn: () => fetchRoomScenes(heroRoomRaw!.venueId, heroRoomRaw!._id),
+    enabled: !!heroRoomRaw?._id,
+  });
+  const heroRoomImageUrl =
+    heroRoomTourData?.scenes?.[0]?.image ??
+    heroRoomRaw?.panoramicImages?.[0] ??
+    '';
 
   // Auto-select first scene
   const effectiveSceneId = activeSceneId ?? (scenes[0]?._id ?? null);
@@ -833,6 +846,7 @@ export default function VenueDetailPage() {
           hotelName={venue.name}
           hotelCity={venue.city}
           idx={heroRoomIdx}
+          currentImageUrl={heroRoomImageUrl}
           onIdxChange={setHeroRoomIdx}
           onRoomClick={(room) => {
             setSelectedRoom(room);
