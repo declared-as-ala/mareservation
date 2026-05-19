@@ -21,6 +21,7 @@ import {
   fetchAdminHotelRooms,
   createAdminHotelRoom,
   updateAdminHotelRoom,
+  deleteAdminHotelRoom,
   type AdminTableRow,
   type AdminTablePlacement,
   type AdminHotelRoom,
@@ -35,6 +36,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import { DetailPageSkeleton } from '@/components/shared/skeletons';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -249,6 +260,25 @@ export default function AdminVenueDetailPage() {
   const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null>(null);
   const [showNewRoom, setShowNewRoom] = useState(false);
   const [tourRoom, setTourRoom] = useState<AdminHotelRoom | null>(null);
+  const [deletingRoom, setDeletingRoom] = useState<AdminHotelRoom | null>(null);
+  const [isDeletingRoom, setIsDeletingRoom] = useState(false);
+
+  async function handleDeleteRoom() {
+    if (!deletingRoom) return;
+    setIsDeletingRoom(true);
+    try {
+      await deleteAdminHotelRoom(deletingRoom._id);
+      await refetchRooms();
+      toast.success(`${deletingRoom.name ?? `Chambre ${deletingRoom.roomNumber}`} supprimée.`);
+      setDeletingRoom(null);
+    } catch (err) {
+      toast.error('Suppression échouée', {
+        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+      });
+    } finally {
+      setIsDeletingRoom(false);
+    }
+  }
 
   const { data: owners = [] } = useQuery({
     queryKey: ['admin-owners'],
@@ -1687,9 +1717,20 @@ export default function AdminVenueDetailPage() {
                             <Users className="size-3" />{room.capacityAdults ?? room.capacity ?? 2}
                           </div>
                         </div>
-                        <Button size="sm" variant="outline" className="w-full rounded-lg text-xs h-7 mt-1" onClick={() => setEditingRoom(room)}>
-                          Modifier
-                        </Button>
+                        <div className="flex gap-1.5 mt-1">
+                          <Button size="sm" variant="outline" className="flex-1 rounded-lg text-xs h-7" onClick={() => setEditingRoom(room)}>
+                            Modifier
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 rounded-lg border-red-500/30 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/50"
+                            onClick={() => setDeletingRoom(room)}
+                            aria-label="Supprimer la chambre"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                     );
@@ -1733,6 +1774,46 @@ export default function AdminVenueDetailPage() {
                   onClose={() => { setTourRoom(null); refetchRooms(); }}
                 />
               )}
+
+              {/* Room delete confirmation */}
+              <AlertDialog open={!!deletingRoom} onOpenChange={(open) => !open && !isDeletingRoom && setDeletingRoom(null)}>
+                <AlertDialogContent className="border-zinc-800 bg-zinc-950">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-zinc-100">
+                      Supprimer cette chambre ?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400">
+                      <span className="font-semibold text-zinc-200">
+                        {deletingRoom?.name ?? `Chambre ${deletingRoom?.roomNumber ?? ''}`}
+                      </span>{' '}
+                      sera définitivement supprimée. Cette action est{' '}
+                      <span className="text-red-400 font-semibold">irréversible</span>.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeletingRoom} className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 hover:text-zinc-100">
+                      Annuler
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={isDeletingRoom}
+                      onClick={(e) => { e.preventDefault(); handleDeleteRoom(); }}
+                      className="bg-red-500 text-white hover:bg-red-600 focus:ring-red-500/40"
+                    >
+                      {isDeletingRoom ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="size-4 animate-spin" />
+                          Suppression…
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Trash2 className="size-4" />
+                          Supprimer
+                        </span>
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
           )}
 

@@ -24,7 +24,6 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { HotelRoom, Venue } from '@/lib/api/types';
 import { ROOM_TYPE_LABELS, getRoomNights } from '@/lib/api/rooms';
-import { createReservation } from '@/lib/api/reservations';
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { Dialog } from '@/components/ui/dialog';
@@ -414,36 +413,24 @@ export function RoomBookingModal({
     }
   }
 
-  async function handleBookNow() {
+  function handleBookNow() {
     if (!checkIn || !checkOut) return;
+    const params = new URLSearchParams({
+      venueId: venue._id,
+      roomId: room._id,
+      checkIn: checkIn.toISOString(),
+      checkOut: checkOut.toISOString(),
+      adults: String(guests),
+      children: '0',
+    });
+    const checkoutUrl = `/checkout/hotel?${params.toString()}`;
     if (!user) {
-      const returnTo = `/hotel/${venue.slug ?? venue._id}`;
-      router.push(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(checkoutUrl)}`);
+      onClose();
       return;
     }
-    setLoading(true);
-    try {
-      const res = await createReservation({
-        venueId: venue._id,
-        roomId: room._id,
-        startAt: checkIn.toISOString(),
-        endAt: checkOut.toISOString(),
-        partySize: guests,
-        bookingType: 'ROOM',
-        guestFirstName: guestInfo.firstName || undefined,
-        guestLastName: guestInfo.lastName || undefined,
-        guestPhone: guestInfo.phone || undefined,
-        guestEmail: guestInfo.email || undefined,
-      });
-      toast.success('Réservation confirmée !');
-      onClose();
-      router.push(`/reservation/${res._id}/confirmation`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur lors de la réservation';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+    onClose();
+    router.push(checkoutUrl);
   }
 
   if (!open) return null;
@@ -770,7 +757,7 @@ export function RoomBookingModal({
                     ) : (
                       <CheckCircle2 className="size-4" />
                     )}
-                    {loading ? 'Traitement...' : 'Confirmer la réservation'}
+                    {loading ? 'Traitement...' : 'Continuer vers le paiement'}
                   </button>
                 </>
               )}

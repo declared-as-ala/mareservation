@@ -29,8 +29,12 @@ import {
   Layers,
   UtensilsCrossed,
   Coffee,
-  BedDouble,
-  Film,
+  Wine,
+  Utensils,
+  Music2,
+  Hotel as HotelIcon,
+  Waves,
+  Flower2,
   PartyPopper,
 } from 'lucide-react';
 
@@ -40,6 +44,7 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   exact?: boolean;
   typeQuery?: string;
+  qQuery?: string;
 };
 
 type NavGroup = { label: string; items: NavItem[] };
@@ -52,13 +57,16 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Lieux',
+    label: 'Catégories',
     items: [
-      { href: '/admin/venues?type=RESTAURANT', label: 'Restaurants', icon: UtensilsCrossed, typeQuery: 'RESTAURANT' },
-      { href: '/admin/venues?type=CAFE', label: 'Cafés', icon: Coffee, typeQuery: 'CAFE' },
-      { href: '/admin/venues?type=HOTEL', label: 'Hôtels', icon: BedDouble, typeQuery: 'HOTEL' },
-      { href: '/admin/venues?type=EVENT_SPACE', label: 'Événements', icon: PartyPopper, typeQuery: 'EVENT_SPACE' },
-      { href: '/admin/venues?type=CINEMA', label: 'Cinémas', icon: Film, typeQuery: 'CINEMA' },
+      { href: '/admin/venues?type=CAFE', label: 'Cafés & Lounges', icon: Coffee, typeQuery: 'CAFE' },
+      { href: '/admin/venues?q=Bar', label: 'Bars & Rooftops', icon: Wine, qQuery: 'Bar' },
+      { href: '/admin/venues?type=RESTAURANT', label: 'Restaurants Gastronomiques', icon: Utensils, typeQuery: 'RESTAURANT' },
+      { href: '/admin/venues?q=Club', label: 'Clubs & Resto de Nuit', icon: Music2, qQuery: 'Club' },
+      { href: '/admin/venues?type=EVENT_SPACE', label: 'Salles & Événementiel', icon: PartyPopper, typeQuery: 'EVENT_SPACE' },
+      { href: '/admin/hotels', label: 'Hôtels & Resorts', icon: HotelIcon },
+      { href: '/admin/venues?q=Beach', label: 'Beach Clubs', icon: Waves, qQuery: 'Beach' },
+      { href: '/admin/venues?q=Spa', label: 'Spas & Bien-être', icon: Flower2, qQuery: 'Spa' },
     ],
   },
   {
@@ -66,6 +74,8 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
+      { href: '/admin/hotels-approval', label: 'Approbation hôtels', icon: ShieldCheck },
+      { href: '/admin/audit-logs', label: 'Audit logs', icon: BookOpen },
     ],
   },
   {
@@ -108,6 +118,12 @@ function SidebarContent({
     if (item.exact) return pathname === basePath;
     if (item.typeQuery) {
       return pathname === basePath && searchParams.get('type') === item.typeQuery;
+    }
+    if (item.qQuery) {
+      return pathname === basePath && searchParams.get('q') === item.qQuery && !searchParams.get('type');
+    }
+    if (basePath === '/admin/venues') {
+      return pathname === basePath && !searchParams.get('type') && !searchParams.get('q');
     }
     return pathname === basePath || pathname.startsWith(basePath + '/');
   }
@@ -250,6 +266,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (i.exact) return pathname === basePath;
     if (i.typeQuery) {
       return pathname === basePath && searchParamsLayout.get('type') === i.typeQuery;
+    }
+    if (i.qQuery) {
+      return pathname === basePath && searchParamsLayout.get('q') === i.qQuery && !searchParamsLayout.get('type');
     }
     return pathname === basePath || pathname.startsWith(basePath + '/');
   });

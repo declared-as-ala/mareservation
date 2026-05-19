@@ -1,4 +1,4 @@
-import { apiGetRaw, apiPatchRaw, apiPostRaw, api } from './client';
+import { apiGetRaw, apiPatchRaw, apiPostRaw, apiDeleteRaw, api } from './client';
 
 export interface AdminStats {
   totalUsers?: number;
@@ -51,6 +51,10 @@ export async function fetchAdminVenues(params?: { page?: number; type?: string; 
   } catch {
     return [];
   }
+}
+
+export async function deleteAdminVenue(id: string) {
+  return apiDeleteRaw<{ success: boolean; deleted: Record<string, number | string> }>(`/admin/venues/${id}`);
 }
 
 export type AdminOwner = { _id: string; fullName: string; email: string; role: string };

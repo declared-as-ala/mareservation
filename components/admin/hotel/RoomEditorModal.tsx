@@ -91,11 +91,13 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
     isActive: room?.isActive !== false,
     status: room?.status ?? 'available',
     coverImage: room?.coverImage ?? '',
+    gallery: room?.gallery ?? [],
     panoramicImages: room?.panoramicImages ?? [],
   });
 
   const [panoramicUploading, setPanoramicUploading] = useState(false);
   const [show360Picker, setShow360Picker] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
 
   const [customAmenity, setCustomAmenity] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -145,6 +147,35 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
 
   function removePanoramic(url: string) {
     setForm((f) => ({ ...f, panoramicImages: (f.panoramicImages ?? []).filter((u) => u !== url) }));
+  }
+
+  async function uploadGalleryFiles(files: FileList | File[]) {
+    setGalleryUploading(true);
+    try {
+      const arr = Array.from(files);
+      const urls = await Promise.all(arr.map((f) => uploadImageFile(f)));
+      setForm((f) => ({ ...f, gallery: [...(f.gallery ?? []), ...urls] }));
+      toast.success(`${urls.length} photo${urls.length > 1 ? 's' : ''} ajoutée${urls.length > 1 ? 's' : ''}.`);
+    } catch {
+      toast.error("Erreur lors de l'upload de la galerie.");
+    } finally {
+      setGalleryUploading(false);
+    }
+  }
+
+  function removeGalleryImage(url: string) {
+    setForm((f) => ({ ...f, gallery: (f.gallery ?? []).filter((u) => u !== url) }));
+  }
+
+  function moveGalleryImage(url: string, dir: -1 | 1) {
+    setForm((f) => {
+      const list = [...(f.gallery ?? [])];
+      const i = list.indexOf(url);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= list.length) return f;
+      [list[i], list[j]] = [list[j], list[i]];
+      return { ...f, gallery: list };
+    });
   }
 
   async function handleSave() {
@@ -224,6 +255,96 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Gallery photos */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-zinc-300 text-xs font-semibold uppercase tracking-wider">
+                Galerie photo ({(form.gallery ?? []).length})
+              </Label>
+              <label className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) uploadGalleryFiles(files);
+                    e.currentTarget.value = '';
+                  }}
+                />
+                {galleryUploading ? (
+                  <><Loader2 className="size-3.5 animate-spin" /> Upload…</>
+                ) : (
+                  <><Plus className="size-3.5" /> Ajouter des photos</>
+                )}
+              </label>
+            </div>
+            {(form.gallery ?? []).length === 0 ? (
+              <label className="flex flex-col items-center justify-center gap-2 h-28 w-full rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400/40 transition-colors cursor-pointer text-zinc-500">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) uploadGalleryFiles(files);
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <ImagePlus className="size-5" />
+                <span className="text-xs">Glisser-déposer ou cliquer pour ajouter plusieurs photos</span>
+              </label>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {(form.gallery ?? []).map((url, idx) => (
+                  <div key={url} className="relative aspect-square rounded-lg overflow-hidden group border border-zinc-700">
+                    <Image src={url} alt={`Photo ${idx + 1}`} fill className="object-cover" sizes="120px" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col">
+                      <div className="flex justify-end p-1">
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(url)}
+                          className="size-6 rounded-full bg-red-500/90 hover:bg-red-500 flex items-center justify-center"
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 className="size-3 text-white" />
+                        </button>
+                      </div>
+                      <div className="mt-auto flex items-center justify-between p-1">
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryImage(url, -1)}
+                          disabled={idx === 0}
+                          className="size-6 rounded-full bg-black/70 text-white hover:bg-black disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                          aria-label="Avancer"
+                        >
+                          ‹
+                        </button>
+                        <span className="text-[10px] font-bold text-white bg-black/70 rounded px-1.5 py-0.5">
+                          {idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => moveGalleryImage(url, 1)}
+                          disabled={idx === (form.gallery ?? []).length - 1}
+                          className="size-6 rounded-full bg-black/70 text-white hover:bg-black disabled:opacity-30 flex items-center justify-center text-xs font-bold"
+                          aria-label="Reculer"
+                        >
+                          ›
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-zinc-500">
+              La première photo de la galerie apparaîtra en grand sur la page chambre côté client.
+            </p>
           </div>
 
           {/* Basic info grid */}

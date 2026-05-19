@@ -19,11 +19,10 @@ import { UserMenuDropdown } from '@/components/layout/UserMenuDropdown';
 import { CartDrawer } from '@/components/layout/CartDrawer';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 
-const categories = [
+const navigationItems = [
   { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
   { label: 'Événements', href: '/evenements', icon: CalendarDays },
 ];
-
 
 export function HomeNavbar() {
   const pathname = usePathname();
@@ -58,9 +57,9 @@ export function HomeNavbar() {
 
   const bgClass = isHome
     ? scrolled
-      ? 'bg-black/95 shadow-lg shadow-black/30'
-      : 'bg-black/75'
-    : 'bg-black/95 shadow-sm shadow-black/10';
+      ? 'bg-[#050504]/95 shadow-lg shadow-black/35'
+      : 'bg-[#050504]/82'
+    : 'bg-[#050504]/96 shadow-sm shadow-black/10';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,27 +80,31 @@ export function HomeNavbar() {
     <>
       <header
         className={cn(
-          'fixed inset-x-0 top-0 z-50 backdrop-blur-xl border-b border-white/[0.06] transition-all duration-500',
+          'fixed inset-x-0 top-0 z-50 border-b border-amber-300/[0.08] backdrop-blur-2xl transition-all duration-500',
           bgClass
         )}
       >
-        <div className="mx-auto flex h-[82px] sm:h-[92px] lg:h-[106px] max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,rgba(245,158,11,0.16),transparent_28%),linear-gradient(90deg,rgba(245,158,11,0.08),transparent_35%,rgba(255,255,255,0.03))]" aria-hidden />
+        <div className="relative mx-auto flex h-[76px] sm:h-[84px] lg:h-[88px] max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 lg:px-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0 rounded-xl bg-white/[0.06] px-2.5 py-1.5 ring-1 ring-white/[0.12]">
+          <Link
+            href="/"
+            className="group flex min-h-12 shrink-0 items-center rounded-xl px-1 py-1 outline-none transition-all duration-300 hover:scale-[1.015] focus-visible:ring-2 focus-visible:ring-amber-300/70"
+          >
             <Image
-              src="/logo.png"
+              src="/logo-transparent.png"
               alt="Ma Reservation"
               width={540}
               height={152}
-              className="h-[42px] w-auto object-contain drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)] transition-transform duration-300 hover:scale-[1.02] sm:h-[50px] lg:h-[58px]"
+              className="h-[42px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[48px] lg:h-[52px]"
               style={{ width: 'auto' }}
               priority
             />
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden xl:flex items-center gap-1 shrink-0">
-            {categories.map((link) => {
+          <nav className="hidden min-h-12 shrink-0 items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.035] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] xl:flex">
+            {navigationItems.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href || pathname.startsWith(link.href + '?');
               return (
@@ -109,13 +112,13 @@ export function HomeNavbar() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-sm lg:text-[14px] font-medium whitespace-nowrap transition-all duration-200',
+                    'flex min-h-10 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
                     isActive
-                      ? 'text-amber-300 bg-amber-400/10'
-                      : 'text-neutral-300 hover:text-white hover:bg-white/[0.06]'
+                      ? 'bg-amber-300 text-black shadow-[0_8px_22px_rgba(245,158,11,0.22)]'
+                      : 'text-neutral-300 hover:bg-white/[0.07] hover:text-white'
                   )}
                 >
-                  <Icon className="size-4 shrink-0 opacity-80" />
+                  <Icon className="size-4 shrink-0" strokeWidth={1.8} />
                   {link.label}
                 </Link>
               );
@@ -125,13 +128,13 @@ export function HomeNavbar() {
             <Link
               href="/sos-conseil"
               className={cn(
-                'flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 rounded-full text-sm lg:text-[14px] font-semibold whitespace-nowrap transition-all duration-200 border',
+                'ml-1 flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
                 pathname === '/sos-conseil'
-                  ? 'bg-amber-400 text-black border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.4)]'
-                  : 'border-amber-400/50 text-amber-300 hover:bg-amber-400/10 hover:border-amber-400 hover:text-amber-200'
+                  ? 'border-amber-300 bg-amber-300 text-black shadow-[0_0_24px_rgba(251,191,36,0.42)]'
+                  : 'border-amber-300/55 bg-amber-300/[0.06] text-amber-200 hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-300 hover:text-black hover:shadow-[0_14px_26px_rgba(245,158,11,0.22)]'
               )}
             >
-              <Sparkles className="size-3.5 lg:size-4 shrink-0" />
+              <Sparkles className="size-4 shrink-0" strokeWidth={1.9} />
               SOS Conseil
             </Link>
           </nav>
@@ -140,7 +143,7 @@ export function HomeNavbar() {
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Search bar — desktop */}
             <form onSubmit={handleSearch} className="hidden xl:block relative shrink-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-neutral-500 transition-colors" style={{ pointerEvents: 'none' }} />
+              <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-neutral-500 transition-colors" style={{ pointerEvents: 'none' }} />
               <input
                 ref={searchRef}
                 value={searchValue}
@@ -149,10 +152,10 @@ export function HomeNavbar() {
                 onBlur={() => setSearchFocused(false)}
                 placeholder="Rechercher..."
                 className={cn(
-                  'h-10 lg:h-12 w-[200px] 2xl:w-[340px] rounded-xl border bg-white/[0.04] pl-10 lg:pl-11 pr-3 lg:pr-4 text-sm text-neutral-100 placeholder:text-neutral-600 transition-all duration-300 focus:outline-none',
+                  'h-12 w-[220px] rounded-2xl border bg-white/[0.045] pl-11 pr-4 text-sm font-medium text-neutral-100 placeholder:text-neutral-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 focus:outline-none 2xl:w-[360px]',
                   searchFocused
-                    ? 'border-amber-400/50 bg-white/[0.08] shadow-[0_0_24px_rgba(251,191,36,0.15)]'
-                    : 'border-white/[0.08] hover:border-white/[0.12]'
+                    ? 'border-amber-300/55 bg-white/[0.08] shadow-[0_0_0_3px_rgba(245,158,11,0.12),0_0_26px_rgba(245,158,11,0.12)]'
+                    : 'border-white/[0.09] hover:border-white/[0.16] hover:bg-white/[0.06]'
                 )}
               />
             </form>
@@ -161,7 +164,7 @@ export function HomeNavbar() {
             <button
               type="button"
               onClick={() => setCartOpen(true)}
-              className="group relative flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-xl border border-white/[0.08] bg-white/[0.04] text-neutral-300 hover:text-amber-300 hover:border-amber-400/30 hover:bg-amber-400/5 transition-all duration-300 shrink-0"
+              className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all duration-300 hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:h-12 sm:w-12"
               aria-label="Panier"
             >
               <ShoppingBag className="size-4 sm:size-5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
@@ -179,14 +182,14 @@ export function HomeNavbar() {
             {!authLoading && !user && (
               <Link
                 href="/login"
-                className="xl:hidden shrink-0 rounded-xl border border-white/[0.14] bg-white/[0.04] px-2.5 py-2 sm:px-3 sm:py-2.5 text-[11px] sm:text-xs font-semibold text-neutral-100 hover:border-amber-400/45 hover:bg-amber-400/10 hover:text-amber-200 transition-all duration-200 whitespace-nowrap"
+                className="min-h-11 shrink-0 rounded-xl border border-white/[0.14] bg-white/[0.04] px-3 py-2 text-[11px] font-semibold text-neutral-100 outline-none transition-all duration-200 hover:border-amber-400/45 hover:bg-amber-400/10 hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:text-xs xl:hidden"
               >
                 Se connecter
               </Link>
             )}
 
             {/* Auth — desktop only (xl+) */}
-            <div className="hidden xl:flex items-center gap-2 ml-1 pl-2 border-l border-white/[0.08]">
+            <div className="ml-1 hidden min-h-12 items-center gap-2 border-l border-white/[0.09] pl-3 xl:flex">
               {authLoading ? (
                 <div className="h-10 w-[140px] rounded-xl bg-white/5" aria-hidden />
               ) : user ? (
@@ -195,13 +198,13 @@ export function HomeNavbar() {
                 <>
                   <Link
                     href="/login"
-                    className="px-3 lg:px-4 py-2 lg:py-2.5 rounded-xl text-xs lg:text-[13px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all duration-200 whitespace-nowrap"
+                    className="flex min-h-11 items-center rounded-xl border border-white/[0.09] px-4 py-2 text-[13px] font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
                   >
                     Connexion
                   </Link>
                   <Link
                     href="/register"
-                    className="group relative px-3 lg:px-5 py-2 lg:py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-black text-xs lg:text-[13px] font-semibold hover:from-amber-300 hover:via-amber-400 hover:to-amber-300 transition-all duration-300 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 whitespace-nowrap"
+                    className="group relative flex min-h-11 items-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-5 py-2 text-[13px] font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 hover:shadow-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-200"
                   >
                     S&apos;inscrire
                   </Link>
@@ -214,19 +217,19 @@ export function HomeNavbar() {
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl border border-white/[0.08] bg-white/[0.04] text-neutral-300 hover:text-white hover:bg-white/[0.08] transition-all xl:hidden shrink-0"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:hidden"
                   aria-label="Menu"
                   suppressHydrationWarning
                 >
                   <Menu className="size-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-black border-white/[0.08] p-0 flex flex-col">
+              <SheetContent side="right" className="flex w-[300px] flex-col border-white/[0.08] bg-[#050504] p-0 sm:w-[400px]">
                 <SheetHeader className="px-5 pt-5 pb-4 border-b border-white/[0.06]">
                   <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
-                  <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl bg-white/[0.04] px-2 py-1 ring-1 ring-white/[0.08]">
+                  <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
                     <Image
-                      src="/logo.png"
+                      src="/logo-transparent.png"
                       alt="Ma Reservation"
                       width={420}
                       height={120}
@@ -245,14 +248,14 @@ export function HomeNavbar() {
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         placeholder="Rechercher un lieu, restaurant..."
-                        className="w-full h-12 rounded-xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-4 text-[14px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/20 transition-all"
+                        className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-4 text-[14px] text-neutral-100 placeholder:text-neutral-600 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
                       />
                     </div>
                   </form>
 
                   {/* Nav links */}
                   <nav className="flex flex-col gap-1.5 mb-5">
-                    {categories.map((link) => {
+                    {navigationItems.map((link) => {
                       const Icon = link.icon;
                       const isActive = pathname === link.href || pathname.startsWith(link.href + '?');
                       return (
@@ -260,13 +263,13 @@ export function HomeNavbar() {
                           <Link
                             href={link.href}
                             className={cn(
-                              'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                              'flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
                               isActive
-                                ? 'text-amber-300 bg-amber-400/10'
+                                ? 'bg-amber-300 text-black'
                                 : 'text-neutral-300 hover:text-white hover:bg-white/[0.06]'
                             )}
                           >
-                            <Icon className="size-4 opacity-80" />
+                            <Icon className="size-4" />
                             {link.label}
                           </Link>
                         </SheetClose>
@@ -278,10 +281,10 @@ export function HomeNavbar() {
                       <Link
                         href="/sos-conseil"
                         className={cn(
-                          'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 border',
+                          'flex min-h-12 items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
                           pathname === '/sos-conseil'
-                            ? 'bg-amber-400 text-black border-amber-400'
-                            : 'border-amber-400/40 text-amber-300 hover:bg-amber-400/10 hover:border-amber-400'
+                            ? 'border-amber-300 bg-amber-300 text-black'
+                            : 'border-amber-400/40 bg-amber-300/[0.05] text-amber-300 hover:border-amber-400 hover:bg-amber-400/10'
                         )}
                       >
                         <Sparkles className="size-4 shrink-0" />
@@ -302,7 +305,7 @@ export function HomeNavbar() {
                       <SheetClose asChild>
                         <Link
                           href="/login"
-                          className="block text-center px-4 py-3 rounded-xl border border-white/[0.12] text-sm font-medium text-neutral-300 hover:text-white hover:border-white/[0.2] hover:bg-white/[0.05] transition-all duration-200"
+                          className="block min-h-12 rounded-xl border border-white/[0.12] px-4 py-3 text-center text-sm font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
                         >
                           Connexion
                         </Link>
@@ -310,7 +313,7 @@ export function HomeNavbar() {
                       <SheetClose asChild>
                         <Link
                           href="/register"
-                          className="block text-center px-4 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-black text-sm font-semibold hover:from-amber-300 hover:via-amber-400 hover:to-amber-300 transition-all duration-300 shadow-lg shadow-amber-500/25"
+                          className="block min-h-12 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-4 py-3 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 focus-visible:ring-2 focus-visible:ring-amber-200"
                         >
                           Créer un compte
                         </Link>
@@ -325,7 +328,7 @@ export function HomeNavbar() {
       </header>
 
       {/* Spacer for fixed header on non-home pages */}
-      {!isHome && <div className="h-[82px] sm:h-[92px] xl:h-[106px]" />}
+      {!isHome && <div className="h-[76px] sm:h-[84px] xl:h-[88px]" />}
 
     </>
   );

@@ -48,6 +48,7 @@ import {
   Bath,
   Maximize2,
   Wifi,
+  Image as ImageIcon,
   Star,
   X,
 } from 'lucide-react';
@@ -59,6 +60,7 @@ import { TablePickerSheet } from '@/components/reservation/TablePickerSheet';
 import { getReservationCTA } from '@/lib/reservation-labels';
 
 const RESERVATION_DURATION_MS = 2 * 60 * 60 * 1000;
+const HOTEL_ROOMS_PER_PAGE = 4;
 
 const MatterportClientViewer = dynamic(
   () => import('@/components/immersive/MatterportClientViewer'),
@@ -81,6 +83,10 @@ function getVenueImage(venue: { coverImage?: string; media?: { kind: string; url
   return hero?.url ?? null;
 }
 
+function isPhotoGalleryMedia(kind?: string) {
+  return !kind || kind === 'GALLERY_IMAGE';
+}
+
 function getAllImages(venue: Venue): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -89,8 +95,120 @@ function getAllImages(venue: Venue): string[] {
   };
   add(venue.coverImage);
   venue.gallery?.forEach(add);
-  venue.media?.filter((m) => m.kind !== 'HERO_IMAGE').forEach((m) => add(m.url));
+  venue.media?.filter((m) => isPhotoGalleryMedia(m.kind)).forEach((m) => add(m.url));
   return result;
+}
+
+function HotelGalleryRail({ images, venueName }: { images: string[]; venueName: string }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const safeImages = images.filter(Boolean);
+
+  if (safeImages.length === 0) return null;
+
+  const showPrevious = () => {
+    setLightboxIndex((current) => (
+      current === null ? 0 : (current - 1 + safeImages.length) % safeImages.length
+    ));
+  };
+
+  const showNext = () => {
+    setLightboxIndex((current) => (
+      current === null ? 0 : (current + 1) % safeImages.length
+    ));
+  };
+
+  return (
+    <>
+      <div className="rounded-2xl border border-white/[0.07] bg-black/25 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+            <ImageIcon className="size-3.5 text-amber-300" />
+            Galerie
+          </div>
+          <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+            {safeImages.length}
+          </span>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1 md:max-h-[430px] md:flex-col md:overflow-x-hidden md:overflow-y-auto md:pr-1">
+          {safeImages.map((image, index) => (
+            <button
+              key={`${image}-${index}`}
+              type="button"
+              onClick={() => setLightboxIndex(index)}
+              className={cn(
+                'group relative h-24 w-32 flex-none overflow-hidden rounded-xl border bg-zinc-900 transition-all duration-200 md:h-[92px] md:w-full',
+                index === 0
+                  ? 'border-amber-300/45 shadow-lg shadow-amber-300/10'
+                  : 'border-white/[0.08] hover:border-amber-300/35'
+              )}
+              aria-label={`Voir la photo ${index + 1} de ${venueName}`}
+            >
+              <Image
+                src={image}
+                alt={`${venueName} - photo ${index + 1}`}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 128px, 170px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-80" />
+              <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white/90">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+          onClick={() => setLightboxIndex(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute right-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+            aria-label="Fermer la galerie"
+          >
+            <X className="size-5" />
+          </button>
+          {safeImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); showPrevious(); }}
+                className="absolute left-4 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+                aria-label="Photo precedente"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); showNext(); }}
+                className="absolute right-4 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+                aria-label="Photo suivante"
+              >
+                <ChevronRight className="size-5" />
+              </button>
+            </>
+          )}
+          <div className="relative h-[80vh] w-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
+            <Image
+              src={safeImages[lightboxIndex]}
+              alt={`${venueName} - photo ${lightboxIndex + 1}`}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 /* ── Room card (grid item) ───────────────────────────────────────────── */
@@ -105,17 +223,17 @@ function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="group text-left rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden transition-all duration-200 hover:border-amber-400/30 hover:bg-white/[0.06] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-400/5"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.035] text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-white/[0.06] hover:shadow-xl hover:shadow-amber-400/5"
     >
       {/* Image */}
-      <div className="relative h-44 bg-zinc-900 overflow-hidden">
+      <div className="relative h-52 overflow-hidden bg-zinc-900 sm:h-56">
         {room.coverImage ? (
           <Image
             src={room.coverImage}
             alt={room.name ?? `Chambre ${room.roomNumber}`}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, 33vw"
+            sizes="(max-width: 768px) 100vw, 33vw"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -150,14 +268,15 @@ function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
       </div>
 
       {/* Info */}
-      <div className="p-4 space-y-2">
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 p-4">
+        <div className="space-y-2">
         <div>
-          <p className="font-semibold text-sm text-white truncate">
+          <p className="text-base font-bold leading-snug text-white">
             {room.name ?? `Chambre ${room.roomNumber}`}
           </p>
           {room.roomNumber && <p className="text-[10px] text-zinc-500 mt-0.5">N° {room.roomNumber}</p>}
         </div>
-        <div className="flex items-center gap-3 text-xs text-zinc-400">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-zinc-400">
           <span className="flex items-center gap-1"><Users className="size-3" /> {room.capacityAdults ?? room.capacity ?? 2} pers.</span>
           {room.surface && <span className="flex items-center gap-1"><Maximize2 className="size-3" /> {room.surface} m²</span>}
           {room.bedType && <span className="flex items-center gap-1"><BedDouble className="size-3" /> {room.bedType}</span>}
@@ -176,7 +295,8 @@ function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
             )}
           </div>
         )}
-        <p className="text-xs text-amber-400/70 font-medium group-hover:text-amber-400 transition-colors">
+        </div>
+        <p className="inline-flex min-h-9 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10 px-3 text-xs font-bold text-amber-200 transition-colors group-hover:border-amber-300/35 group-hover:bg-amber-300/15">
           Voir la chambre →
         </p>
       </div>
@@ -195,6 +315,8 @@ function RoomDetailView({
   onSceneIdxChange: (i: number) => void;
   onBack: () => void;
 }) {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const onGalleryOpen = (i: number) => setLightbox(i);
   const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
   const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
     room.roomType?.toUpperCase() ?? ''
@@ -324,17 +446,41 @@ function RoomDetailView({
                 )}
               </div>
             </>
-          ) : (
-            /* No 360° — show gallery if available */
-            room.gallery?.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {room.gallery.slice(0, 4).map((url, i) => (
-                  <div key={i} className={cn('relative rounded-xl overflow-hidden bg-zinc-900', i === 0 && room.gallery.length > 1 ? 'col-span-2 h-56' : 'h-32')}>
-                    <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
-                  </div>
+          ) : null}
+
+          {/* Gallery (always shown when available, alongside 360°) */}
+          {room.gallery?.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <ImageIcon className="size-4 text-amber-400" /> Galerie photo
+                </h3>
+                <span className="text-xs text-zinc-400">{room.gallery.length} photo{room.gallery.length > 1 ? 's' : ''}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {room.gallery.map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => onGalleryOpen(i)}
+                    className={cn(
+                      'relative rounded-xl overflow-hidden bg-zinc-900 group',
+                      i === 0 && room.gallery.length > 1 ? 'col-span-2 sm:col-span-3 h-56' : 'h-28',
+                    )}
+                  >
+                    <Image src={url} alt={`Photo ${i + 1}`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 33vw" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                  </button>
                 ))}
               </div>
-            )
+            </div>
+          )}
+
+          {immersiveScenes.length === 0 && !(room.gallery?.length > 0) && (
+            <div className="flex flex-col items-center justify-center gap-2 h-48 rounded-xl bg-zinc-900/60 border border-zinc-800 text-zinc-500">
+              <ImageIcon className="size-7 opacity-50" />
+              <p className="text-xs">Aucune photo ou vue 360° pour cette chambre.</p>
+            </div>
           )}
         </div>
 
@@ -415,6 +561,58 @@ function RoomDetailView({
           </button>
         </div>
       </div>
+
+      {/* Gallery lightbox */}
+      {lightbox !== null && room.gallery?.[lightbox] && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 size-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            aria-label="Fermer"
+          >
+            <X className="size-5" />
+          </button>
+          {lightbox > 0 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightbox(lightbox - 1); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 size-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              aria-label="Précédent"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+          )}
+          {lightbox < room.gallery.length - 1 && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setLightbox(lightbox + 1); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 size-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+              aria-label="Suivant"
+            >
+              <ChevronRight className="size-5" />
+            </button>
+          )}
+          <div className="relative max-h-[88vh] max-w-5xl w-full aspect-[16/10]" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={room.gallery[lightbox]}
+              alt={`Photo ${lightbox + 1}`}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </div>
+          <div className="absolute bottom-4 inset-x-0 flex justify-center">
+            <span className="rounded-full bg-black/60 border border-white/10 px-3 py-1 text-xs text-white">
+              {lightbox + 1} / {room.gallery.length}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -426,6 +624,111 @@ const PanoramaEngineClient = dynamic(
 );
 
 /* ── Hotel immersive hero ────────────────────────────────────────────── */
+function HotelPhotoHero({
+  hotelName,
+  hotelCity,
+  hotelAddress,
+  imageUrl,
+  isPrestige,
+  roomCount,
+  has360,
+  onBack,
+}: {
+  hotelName: string;
+  hotelCity?: string;
+  hotelAddress?: string;
+  imageUrl: string | null;
+  isPrestige?: boolean;
+  roomCount: number;
+  has360: boolean;
+  onBack: () => void;
+}) {
+  return (
+    <section className="relative min-h-[190px] overflow-hidden bg-zinc-950 sm:min-h-[220px] md:min-h-[250px]">
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt={hotelName}
+          fill
+          className="object-cover"
+          sizes="100vw"
+          priority
+          quality={95}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+          <BedDouble className="size-16 text-zinc-700" />
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/15 to-black/88" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/35" />
+
+      <div className="relative z-10 flex min-h-[190px] flex-col justify-between px-4 pb-4 pt-3 sm:min-h-[220px] md:min-h-[250px] md:px-8">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur-md outline-none transition-all duration-200 hover:border-amber-300/45 hover:bg-amber-300/10 hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70"
+          >
+            <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+            Retour
+          </button>
+
+          <div className="hidden items-center gap-2 sm:flex">
+            {isPrestige && (
+              <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-200 backdrop-blur-md">
+                <Crown className="size-3.5" />
+                Prestige
+              </span>
+            )}
+            {has360 && (
+              <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-xs font-semibold text-white/80 backdrop-blur-md">
+                <ScanLine className="size-3.5 text-amber-300" />
+                360° disponible
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="max-w-3xl">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:hidden">
+              {isPrestige && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-200 backdrop-blur-md">
+                  <Crown className="size-3" />
+                  Prestige
+                </span>
+              )}
+              {has360 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[11px] font-semibold text-white/80 backdrop-blur-md">
+                  <ScanLine className="size-3 text-amber-300" />
+                  360° disponible
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl font-black leading-tight tracking-tight text-white drop-shadow-lg sm:text-3xl lg:text-4xl">
+              {hotelName}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-white/75 sm:text-sm">
+              {hotelCity && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="size-4 text-amber-300" />
+                  {[hotelCity, hotelAddress].filter(Boolean).join(' · ')}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/30 px-3 py-1 backdrop-blur-md">
+                <BedDouble className="size-4 text-amber-300" />
+                {roomCount} chambre{roomCount !== 1 ? 's' : ''} & suites
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HotelImmersiveHero({
   rooms, hotelName, hotelCity, idx, currentImageUrl, onIdxChange, onRoomClick, onBack,
 }: {
@@ -614,8 +917,8 @@ export default function VenueDetailPage() {
   const [activeImmersiveSceneIdx, setActiveImmersiveSceneIdx] = useState(0);
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
   const [roomSceneIdx, setRoomSceneIdx] = useState(0);
-  const [heroRoomIdx, setHeroRoomIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [roomsPage, setRoomsPage] = useState(1);
 
   const [selectedSlotStartAt] = useState(() =>
     new Date(Date.now() + RESERVATION_DURATION_MS).toISOString()
@@ -674,18 +977,6 @@ export default function VenueDetailPage() {
     enabled: !!selectedRoom?._id,
   });
 
-  // Hero room scenes — fetched reactively as heroRoomIdx changes
-  const heroRoomRaw = hotelRooms[heroRoomIdx] ?? null;
-  const { data: heroRoomTourData } = useQuery({
-    queryKey: ['hero-room-scenes', heroRoomRaw?._id],
-    queryFn: () => fetchRoomScenes(heroRoomRaw!.venueId, heroRoomRaw!._id),
-    enabled: !!heroRoomRaw?._id,
-  });
-  const heroRoomImageUrl =
-    heroRoomTourData?.scenes?.[0]?.image ??
-    heroRoomRaw?.panoramicImages?.[0] ??
-    '';
-
   // Auto-select first scene
   const effectiveSceneId = activeSceneId ?? (scenes[0]?._id ?? null);
 
@@ -704,6 +995,10 @@ export default function VenueDetailPage() {
     source.onerror = () => source.close();
     return () => source.close();
   }, [venue?._id, queryClient]);
+
+  useEffect(() => {
+    setRoomsPage(1);
+  }, [venue?._id, hotelRooms.length]);
 
   if (!slug) {
     return (
@@ -741,9 +1036,14 @@ export default function VenueDetailPage() {
 
   const img = getVenueImage(venue);
   const allImages = getAllImages(venue);
+  const roomPageCount = Math.max(1, Math.ceil(hotelRooms.length / HOTEL_ROOMS_PER_PAGE));
+  const safeRoomsPage = Math.min(roomsPage, roomPageCount);
+  const visibleHotelRooms = hotelRooms.slice(
+    (safeRoomsPage - 1) * HOTEL_ROOMS_PER_PAGE,
+    safeRoomsPage * HOTEL_ROOMS_PER_PAGE
+  );
 
-  const heroRooms = hotelRooms; // all rooms — hero falls back to coverImage if no panoramic
-  const showHotelHero = isHotelVenue && heroRooms.length > 0;
+  const showHotelHero = isHotelVenue && hotelRooms.length > 0;
 
   const hasNewImmersive =
     !!venue.immersiveType &&
@@ -765,7 +1065,7 @@ export default function VenueDetailPage() {
   const currentImmersiveScene = immersiveSceneList[activeImmersiveSceneIdx] ?? immersiveSceneList[0];
 
   const tabsDefaultValue =
-    isHotelVenue && hotelRooms.length > 0 ? 'chambres' : hasAnyImmersive ? 'visite360' : 'apercu';
+    isHotelVenue ? 'apercu' : hasAnyImmersive ? 'visite360' : 'apercu';
   const hasTablePlacements = allPlacements.length > 0;
 
   const panoramaMarkers = scenePlacements
@@ -841,18 +1141,14 @@ export default function VenueDetailPage() {
   return (
     <div className="min-h-screen">
       {showHotelHero ? (
-        <HotelImmersiveHero
-          rooms={heroRooms}
+        <HotelPhotoHero
           hotelName={venue.name}
           hotelCity={venue.city}
-          idx={heroRoomIdx}
-          currentImageUrl={heroRoomImageUrl}
-          onIdxChange={setHeroRoomIdx}
-          onRoomClick={(room) => {
-            setSelectedRoom(room);
-            setRoomSceneIdx(0);
-            setActiveTab('chambres');
-          }}
+          hotelAddress={venue.address}
+          imageUrl={img}
+          isPrestige={venue.isVedette}
+          roomCount={hotelRooms.length}
+          has360={hasAnyImmersive || hotelRooms.some((room) => room.hasVirtualTour || (room.panoramicImages?.length ?? 0) > 0)}
           onBack={() => router.back()}
         />
       ) : (
@@ -900,47 +1196,278 @@ export default function VenueDetailPage() {
         </>
       )}
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <Tabs value={activeTab ?? tabsDefaultValue} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="apercu">Aperçu</TabsTrigger>
+      <div className="mx-auto max-w-7xl px-4 py-4">
+        {isHotelVenue ? (
+          <section className="overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#0B0B0B] shadow-2xl shadow-black/35">
+            <div className="border-b border-white/[0.07] bg-white/[0.025] p-5 sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300/80">Détails de l'hôtel</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    Chambres & Suites
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-xs font-semibold text-zinc-300">
+                    <BedDouble className="size-3.5 text-amber-300" />
+                    {hotelRooms.length} chambre{hotelRooms.length !== 1 ? 's' : ''}
+                  </span>
+                  {venue.phone && (
+                    <a
+                      href={`tel:${venue.phone}`}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-bold text-amber-200 transition-colors hover:bg-amber-300/15"
+                    >
+                      <Phone className="size-3.5" />
+                      Appeler
+                    </a>
+                  )}
+                </div>
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    <BedDouble className="size-3.5 text-amber-300" />
+                    Hébergement
+                  </div>
+                  <p className="mt-2 text-xl font-black text-white">{hotelRooms.length}</p>
+                  <p className="text-xs text-zinc-500">chambre{hotelRooms.length !== 1 ? 's' : ''} et suites</p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    <Star className="size-3.5 text-amber-300" />
+                    À partir de
+                  </div>
+                  <p className="mt-2 text-xl font-black text-white">
+                    {venue.startingPrice ?? venue.priceRangeMin ?? '-'} <span className="text-sm text-zinc-500">DT</span>
+                  </p>
+                  <p className="text-xs text-zinc-500">par nuit selon disponibilité</p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.07] bg-black/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    <ScanLine className="size-3.5 text-amber-300" />
+                    Expérience
+                  </div>
+                  <p className="mt-2 text-xl font-black text-white">
+                    {hasAnyImmersive || hotelRooms.some((room) => room.hasVirtualTour || (room.panoramicImages?.length ?? 0) > 0) ? '360°' : 'Photo'}
+                  </p>
+                  <p className="text-xs text-zinc-500">aperçus visuels disponibles</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="space-y-8 p-5 sm:p-6">
+                <section className="space-y-5">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
+                        <BedDouble className="size-4 text-amber-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">Chambres & Suites</h3>
+                        <p className="text-sm text-zinc-500">Galerie, détails et expériences 360° par chambre.</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex min-h-9 items-center rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-bold text-amber-200">
+                      {hotelRooms.length} disponible{hotelRooms.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  <div
+                    className={cn(
+                      'grid gap-5',
+                      !selectedRoom && allImages.length > 1 && 'xl:grid-cols-[210px_minmax(0,1fr)]'
+                    )}
+                  >
+                    {!selectedRoom && allImages.length > 1 && (
+                      <div className="xl:sticky xl:top-24 xl:self-start">
+                        <HotelGalleryRail images={allImages} venueName={venue.name} />
+                      </div>
+                    )}
+
+                    {selectedRoom ? (
+                      <RoomDetailView
+                        room={selectedRoom}
+                        tourScenes={roomTourData?.scenes ?? []}
+                        tourHotspots={roomTourData?.hotspots ?? []}
+                        sceneIdx={roomSceneIdx}
+                        onSceneIdxChange={setRoomSceneIdx}
+                        onBack={() => { setSelectedRoom(null); setRoomSceneIdx(0); }}
+                      />
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {visibleHotelRooms.map((room) => (
+                            <RoomCard
+                              key={room._id}
+                              room={room}
+                              onClick={() => router.push(`/lieu/${venue.slug ?? slug}/chambre/${room._id}`)}
+                            />
+                          ))}
+                        </div>
+
+                        {roomPageCount > 1 && (
+                          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-black/25 px-3 py-2">
+                            <p className="text-xs font-medium text-zinc-500">
+                              Page {safeRoomsPage} / {roomPageCount}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setRoomsPage((page) => Math.max(1, page - 1))}
+                                disabled={safeRoomsPage === 1}
+                                className="inline-flex size-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white transition hover:border-amber-300/30 hover:text-amber-200 disabled:pointer-events-none disabled:opacity-40"
+                                aria-label="Chambres precedentes"
+                              >
+                                <ChevronLeft className="size-4" />
+                              </button>
+                              {Array.from({ length: roomPageCount }, (_, index) => index + 1).map((page) => (
+                                <button
+                                  key={page}
+                                  type="button"
+                                  onClick={() => setRoomsPage(page)}
+                                  className={cn(
+                                    'inline-flex size-10 items-center justify-center rounded-full border text-xs font-bold transition',
+                                    page === safeRoomsPage
+                                      ? 'border-amber-300/40 bg-amber-300 text-black'
+                                      : 'border-white/[0.08] bg-white/[0.04] text-zinc-300 hover:border-amber-300/30 hover:text-amber-200'
+                                  )}
+                                  aria-label={`Page ${page} des chambres`}
+                                >
+                                  {page}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => setRoomsPage((page) => Math.min(roomPageCount, page + 1))}
+                                disabled={safeRoomsPage === roomPageCount}
+                                className="inline-flex size-10 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white transition hover:border-amber-300/30 hover:text-amber-200 disabled:pointer-events-none disabled:opacity-40"
+                                aria-label="Chambres suivantes"
+                              >
+                                <ChevronRight className="size-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+              </div>
+
+              <aside className="border-t border-white/[0.07] bg-white/[0.025] p-5 sm:p-6 lg:border-l lg:border-t-0">
+                <div className="sticky top-24 space-y-5">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
+                        <MapPin className="size-4 text-amber-300" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">Infos pratiques</h3>
+                        <p className="text-sm text-zinc-500">Contact et localisation.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {venue.description && (
+                    <div className="rounded-2xl border border-white/[0.07] bg-black/25 p-4">
+                      <h4 className="mb-2 flex items-center gap-1.5 font-semibold text-zinc-200">
+                        <Eye className="size-3.5 text-amber-300" />
+                        Aperçu
+                      </h4>
+                      <p className="text-sm leading-6 text-zinc-500">
+                        {venue.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <dl className="space-y-3 text-sm">
+                    {venue.address && (
+                      <div className="rounded-2xl border border-white/[0.07] bg-black/25 p-4">
+                        <dt className="mb-1.5 flex items-center gap-1.5 font-semibold text-zinc-200">
+                          <MapPin className="size-3.5 text-amber-300" />
+                          Adresse
+                        </dt>
+                        <dd className="pl-5 leading-6 text-zinc-500">
+                          {venue.address}, {venue.city}
+                        </dd>
+                      </div>
+                    )}
+                    {venue.phone && (
+                      <div className="rounded-2xl border border-white/[0.07] bg-black/25 p-4">
+                        <dt className="mb-1.5 flex items-center gap-1.5 font-semibold text-zinc-200">
+                          <Phone className="size-3.5 text-amber-300" />
+                          Téléphone
+                        </dt>
+                        <dd className="pl-5">
+                          <a href={`tel:${venue.phone}`} className="font-semibold text-amber-300 hover:underline">
+                            {venue.phone}
+                          </a>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  {venue.address && venue.city && (
+                    <div className="overflow-hidden rounded-2xl border border-white/[0.07]">
+                      <VenueMap address={venue.address} city={venue.city} />
+                    </div>
+                  )}
+                </div>
+              </aside>
+            </div>
+          </section>
+        ) : (
+        <Tabs value={activeTab ?? tabsDefaultValue} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl border border-white/[0.08] bg-white/[0.035] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <TabsTrigger value="apercu" className="min-h-11 flex-none rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
+              <Eye className="size-3.5" />
+              Aperçu
+            </TabsTrigger>
             {isHotelVenue && hotelRooms.length > 0 && (
-              <TabsTrigger value="chambres" className="gap-1.5">
+              <TabsTrigger value="chambres" className="min-h-11 flex-none gap-2 rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
                 <BedDouble className="size-3.5" />
                 Chambres & Suites
-                <span className="inline-flex items-center justify-center rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black/15 px-1.5 text-[10px] font-bold text-current">
                   {hotelRooms.length}
                 </span>
               </TabsTrigger>
             )}
             {!isHotelVenue && hasAnyImmersive && (
-              <TabsTrigger value="visite360" className="gap-1.5">
+              <TabsTrigger value="visite360" className="min-h-11 flex-none gap-2 rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
                 <ScanLine className="size-3.5" />
                 Visite 360°
                 {immersiveSceneList.length > 1 && (
-                  <span className="inline-flex items-center justify-center rounded-full bg-amber-400/20 text-amber-400 text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black/15 px-1.5 text-[10px] font-bold text-current">
                     {immersiveSceneList.length}
                   </span>
                 )}
               </TabsTrigger>
             )}
             {hasTablePlacements && (
-              <TabsTrigger value="tables" className="gap-1.5">
+              <TabsTrigger value="tables" className="min-h-11 flex-none gap-2 rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
                 Tables
-                <span className="inline-flex items-center justify-center rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]">
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black/15 px-1.5 text-[10px] font-bold text-current">
                   {allPlacements.length}
                 </span>
               </TabsTrigger>
             )}
-            <TabsTrigger value="infos">Infos pratiques</TabsTrigger>
+            <TabsTrigger value="infos" className="min-h-11 flex-none rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
+              <MapPin className="size-3.5" />
+              Infos pratiques
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Aperçu ── */}
-          <TabsContent value="apercu" className="space-y-8 mt-4">
+          <TabsContent value="apercu" className="mt-2 space-y-8 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-6">
             {venue.description && (
               <div>
-                <h2 className="font-semibold mb-2">Description</h2>
-                <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-white">
+                  <Eye className="size-4 text-amber-300" />
+                  Aperçu de l'établissement
+                </h2>
+                <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-400 sm:text-base">
                   {venue.description}
                 </p>
               </div>
@@ -952,7 +1479,7 @@ export default function VenueDetailPage() {
 
           {/* ── Chambres & Suites (HOTEL only) ── */}
           {isHotelVenue && (
-            <TabsContent value="chambres" className="mt-4">
+            <TabsContent value="chambres" className="mt-2">
               {selectedRoom ? (
                 /* ── Room detail view ── */
                 <RoomDetailView
@@ -965,10 +1492,21 @@ export default function VenueDetailPage() {
                 />
               ) : (
                 /* ── Room grid ── */
-                <div className="space-y-4">
-                  <p className="text-xs text-zinc-400">
-                    {hotelRooms.length} chambre{hotelRooms.length !== 1 ? 's' : ''} disponible{hotelRooms.length !== 1 ? 's' : ''}
-                  </p>
+                <div className="space-y-5 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-6">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+                        <BedDouble className="size-4 text-amber-300" />
+                        Chambres & Suites
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Choisissez une chambre puis ouvrez sa galerie ou son expérience 360°.
+                      </p>
+                    </div>
+                    <span className="inline-flex min-h-9 items-center rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-bold text-amber-200">
+                      {hotelRooms.length} disponible{hotelRooms.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {hotelRooms.map((room) => (
                       <RoomCard key={room._id} room={room} onClick={() => { setSelectedRoom(room); setRoomSceneIdx(0); }} />
@@ -1278,25 +1816,32 @@ export default function VenueDetailPage() {
           )}
 
           {/* ── Infos pratiques ── */}
-          <TabsContent value="infos" className="mt-4 space-y-6">
-            <dl className="space-y-3 text-sm">
+          <TabsContent value="infos" className="mt-2 space-y-6 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-6">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+                <MapPin className="size-4 text-amber-300" />
+                Infos pratiques
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">Adresse, contact et localisation de l'établissement.</p>
+            </div>
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
               {venue.address && (
-                <div>
-                  <dt className="font-medium flex items-center gap-1.5 mb-0.5">
-                    <MapPin className="size-3.5" /> Adresse
+                <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                  <dt className="mb-1.5 flex items-center gap-1.5 font-semibold text-zinc-200">
+                    <MapPin className="size-3.5 text-amber-300" /> Adresse
                   </dt>
-                  <dd className="text-muted-foreground pl-5">
+                  <dd className="pl-5 text-zinc-500">
                     {venue.address}, {venue.city}
                   </dd>
                 </div>
               )}
               {venue.phone && (
-                <div>
-                  <dt className="font-medium flex items-center gap-1.5 mb-0.5">
-                    <Phone className="size-3.5" /> Téléphone
+                <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+                  <dt className="mb-1.5 flex items-center gap-1.5 font-semibold text-zinc-200">
+                    <Phone className="size-3.5 text-amber-300" /> Téléphone
                   </dt>
                   <dd className="pl-5">
-                    <a href={`tel:${venue.phone}`} className="text-primary hover:underline">
+                    <a href={`tel:${venue.phone}`} className="font-semibold text-amber-300 hover:underline">
                       {venue.phone}
                     </a>
                   </dd>
@@ -1309,6 +1854,7 @@ export default function VenueDetailPage() {
             )}
           </TabsContent>
         </Tabs>
+        )}
 
         {/* Similar venues at bottom */}
         <div className="mt-8">

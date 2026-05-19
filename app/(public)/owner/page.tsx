@@ -51,7 +51,10 @@ export default function OwnerPage() {
 
         <section className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-6">
           <div className="mb-5 flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="border-amber-500/40 bg-amber-400/15 text-amber-200 hover:bg-amber-400/20 font-semibold"><Link href="/owner/hotel-dashboard">Tableau de bord hôtel</Link></Button>
             <Button asChild variant="outline" className="border-zinc-700 bg-zinc-950/60"><Link href="/owner/reservations">Reservations</Link></Button>
+            <Button asChild variant="outline" className="border-amber-500/40 bg-amber-400/10 text-amber-300 hover:bg-amber-400/15"><Link href="/owner/pending">Demandes en attente</Link></Button>
+            <Button asChild variant="outline" className="border-zinc-700 bg-zinc-950/60"><Link href="/owner/availability">Disponibilites & blocages</Link></Button>
             <Button asChild variant="outline" className="border-zinc-700 bg-zinc-950/60"><Link href="/owner/scanner">QR Scanner</Link></Button>
             <Button asChild variant="outline" className="border-zinc-700 bg-zinc-950/60"><Link href="/owner/my-establishment">Mon etablissement</Link></Button>
             <Button asChild variant="outline" className="border-zinc-700 bg-zinc-950/60"><Link href="/owner/resources">Ressources</Link></Button>

@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { 
-  User, 
-  LayoutDashboard, 
-  LogOut, 
-  Settings, 
-  Shield, 
+import {
+  CalendarClock,
   ChevronRight,
   Crown,
-  CalendarClock
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  User,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +19,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -35,23 +35,112 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/auth';
+import { cn } from '@/lib/utils';
+
+type MenuLinkProps = {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  tone?: 'gold' | 'blue' | 'purple';
+};
+
+const toneStyles = {
+  gold: {
+    icon: 'group-hover:text-amber-300',
+    iconBg: 'group-hover:bg-amber-300/10',
+    arrow: 'group-hover:text-amber-300',
+  },
+  blue: {
+    icon: 'group-hover:text-sky-300',
+    iconBg: 'group-hover:bg-sky-300/10',
+    arrow: 'group-hover:text-sky-300',
+  },
+  purple: {
+    icon: 'group-hover:text-violet-300',
+    iconBg: 'group-hover:bg-violet-300/10',
+    arrow: 'group-hover:text-violet-300',
+  },
+} satisfies Record<string, Record<string, string>>;
+
+function MenuLink({ href, icon: Icon, title, description, tone = 'gold' }: MenuLinkProps) {
+  const styles = toneStyles[tone];
+
+  return (
+    <DropdownMenuItem asChild className="p-0">
+      <Link
+        href={href}
+        className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 outline-none transition-all duration-200 hover:bg-white/[0.055] focus-visible:bg-white/[0.055] focus-visible:ring-2 focus-visible:ring-amber-300/60"
+      >
+        <span
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.04] transition-colors duration-200',
+            styles.iconBg
+          )}
+        >
+          <Icon className={cn('size-4 text-zinc-400 transition-colors duration-200', styles.icon)} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-zinc-100 transition-colors duration-200 group-hover:text-white">
+            {title}
+          </span>
+          <span className="mt-0.5 block truncate text-xs text-zinc-500 transition-colors duration-200 group-hover:text-zinc-400">
+            {description}
+          </span>
+        </span>
+        <ChevronRight
+          className={cn(
+            'size-4 shrink-0 text-zinc-600 transition-all duration-200 group-hover:translate-x-0.5',
+            styles.arrow
+          )}
+        />
+      </Link>
+    </DropdownMenuItem>
+  );
+}
 
 export function UserMenuDropdown() {
   const { user, logout } = useAuthStore();
   const [showConfirm, setShowConfirm] = useState(false);
+
   if (!user) return null;
+
   const isAdmin = user.role === 'ADMIN';
   const isOwner = user.role === 'VENUE_OWNER' || user.role === 'ORGANIZER' || user.role === 'ESTABLISHMENT_OWNER';
 
   const initials = user.fullName
     .split(/\s+/)
-    .map((n) => n[0])
+    .filter(Boolean)
+    .map((name) => name[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
 
-  const handleLogoutClick = () => {
-    setShowConfirm(true);
+  const roleBadge = () => {
+    if (isAdmin) {
+      return (
+        <Badge className="border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200 hover:bg-amber-300/15">
+          <Shield className="mr-1 size-3" />
+          Admin
+        </Badge>
+      );
+    }
+
+    if (isOwner) {
+      return (
+        <Badge className="border-sky-300/25 bg-sky-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-sky-200 hover:bg-sky-300/15">
+          <Crown className="mr-1 size-3" />
+          Propriétaire
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge className="border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-300 hover:bg-white/[0.08]">
+        <User className="mr-1 size-3" />
+        Utilisateur
+      </Badge>
+    );
   };
 
   const handleLogoutConfirm = () => {
@@ -59,230 +148,141 @@ export function UserMenuDropdown() {
     logout();
   };
 
-  const roleBadge = () => {
-    if (isAdmin) {
-      return (
-        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 text-[10px] px-1.5 py-0 font-medium">
-          <Shield className="size-2.5 mr-1" />
-          Admin
-        </Badge>
-      );
-    }
-    if (isOwner) {
-      return (
-        <Badge className="bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20 text-[10px] px-1.5 py-0 font-medium">
-          <Crown className="size-2.5 mr-1" />
-          Proprietaire
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 text-[10px] px-1.5 py-0 font-medium">
-        <User className="size-2.5 mr-1" />
-        Utilisateur
-      </Badge>
-    );
-  };
-
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            className="relative flex items-center gap-2 h-9 px-2 rounded-full hover:bg-zinc-800/50 transition-all duration-200"
+          <Button
+            variant="ghost"
+            className="group relative flex h-12 max-w-[220px] items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.035] px-2.5 pr-3 text-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-200 hover:border-amber-300/35 hover:bg-amber-300/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
+            aria-label="Ouvrir le menu du profil"
           >
-            <Avatar className="size-8 ring-2 ring-zinc-700 ring-offset-2 ring-offset-zinc-950 transition-all duration-200 hover:ring-amber-500/50">
-              <AvatarFallback className="bg-gradient-to-br from-amber-400 to-amber-600 text-xs font-bold text-black">
-                {initials}
+            <Avatar className="size-9 ring-2 ring-amber-300/25 ring-offset-2 ring-offset-[#050504] transition-all duration-200 group-hover:ring-amber-300/55">
+              <AvatarFallback className="bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 text-xs font-black text-black">
+                {initials || 'U'}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden lg:block text-sm font-medium text-zinc-200 max-w-[120px] truncate">
-              {user.fullName}
+            <span className="hidden min-w-0 lg:block">
+              <span className="block max-w-[130px] truncate text-left text-sm font-semibold leading-4 text-zinc-100">
+                {user.fullName}
+              </span>
+              <span className="mt-0.5 block text-left text-[10px] font-medium uppercase tracking-wide text-amber-200/70">
+                Mon espace
+              </span>
             </span>
           </Button>
         </DropdownMenuTrigger>
-        
-        <DropdownMenuContent 
-          align="end" 
-          className="w-72 p-0 border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/40"
+
+        <DropdownMenuContent
+          align="end"
+          sideOffset={12}
+          className="w-[320px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070706]/96 p-0 text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur-xl"
         >
-          {/* User Profile Header */}
-          <div className="relative p-4 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 border-b border-zinc-800">
-            <div className="flex items-start gap-3">
-              <Avatar className="size-12 ring-2 ring-amber-500/30 ring-offset-2 ring-offset-zinc-900">
-                <AvatarFallback className="bg-gradient-to-br from-amber-400 to-amber-600 text-base font-bold text-black">
-                  {initials}
+          <div className="relative border-b border-white/[0.07] p-4">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(245,158,11,0.20),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_45%)]" aria-hidden />
+            <div className="relative flex items-start gap-3">
+              <Avatar className="size-12 ring-2 ring-amber-300/35 ring-offset-2 ring-offset-[#070706]">
+                <AvatarFallback className="bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 text-base font-black text-black">
+                  {initials || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white truncate">{user.fullName}</p>
-                <p className="text-xs text-zinc-400 truncate mt-0.5">{user.email}</p>
-                <div className="mt-1.5">
-                  {roleBadge()}
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-white">{user.fullName}</p>
+                <p className="mt-0.5 truncate text-xs text-zinc-400">{user.email}</p>
+                <div className="mt-2">{roleBadge()}</div>
               </div>
             </div>
           </div>
 
-          {/* Navigation Links */}
           <DropdownMenuGroup className="p-2">
-            {isAdmin && (
-              <DropdownMenuItem asChild className="p-0">
-                <Link
-                  href="/admin/dashboard"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-center size-9 rounded-lg bg-zinc-800/80 group-hover:bg-amber-500/10 transition-colors duration-200">
-                    <LayoutDashboard className="size-4 text-zinc-400 group-hover:text-amber-400 transition-colors duration-200" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
-                      Tableau de bord
-                    </p>
-                    <p className="text-[10px] text-zinc-500">Administration</p>
-                  </div>
-                  <ChevronRight className="size-4 text-zinc-600 group-hover:text-amber-400 transition-all duration-200 group-hover:translate-x-0.5" />
-                </Link>
-              </DropdownMenuItem>
-            )}
-            {!isAdmin && (
-              <DropdownMenuItem asChild className="p-0">
-                <Link
-                  href="/mes-reservations"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-center size-9 rounded-lg bg-zinc-800/80 group-hover:bg-amber-500/10 transition-colors duration-200">
-                    <CalendarClock className="size-4 text-zinc-400 group-hover:text-amber-400 transition-colors duration-200" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
-                      Mes réservations
-                    </p>
-                    <p className="text-[10px] text-zinc-500">
-                      Historique et prochaines réservations
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-zinc-600 group-hover:text-amber-400 transition-all duration-200 group-hover:translate-x-0.5" />
-                </Link>
-              </DropdownMenuItem>
+            {isAdmin ? (
+              <MenuLink
+                href="/admin/dashboard"
+                icon={LayoutDashboard}
+                title="Tableau de bord"
+                description="Vue d'ensemble de la plateforme"
+              />
+            ) : (
+              <MenuLink
+                href="/mes-reservations"
+                icon={CalendarClock}
+                title="Mes réservations"
+                description="Historique et prochaines réservations"
+              />
             )}
 
             {isOwner && (
-              <DropdownMenuItem asChild className="p-0">
-                <Link
-                  href="/owner"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-center size-9 rounded-lg bg-zinc-800/80 group-hover:bg-blue-500/10 transition-colors duration-200">
-                    <LayoutDashboard className="size-4 text-zinc-400 group-hover:text-blue-300 transition-colors duration-200" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
-                      Espace proprietaire
-                    </p>
-                    <p className="text-[10px] text-zinc-500">
-                      Mes lieux et reservations
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-zinc-600 group-hover:text-blue-300 transition-all duration-200 group-hover:translate-x-0.5" />
-                </Link>
-              </DropdownMenuItem>
+              <MenuLink
+                href="/owner"
+                icon={LayoutDashboard}
+                title="Espace propriétaire"
+                description="Mes lieux et réservations"
+                tone="blue"
+              />
             )}
 
-            <DropdownMenuItem asChild className="p-0">
-              <Link
-                href={isAdmin ? '/admin/settings' : '/profile'}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group"
-              >
-                <div className="flex items-center justify-center size-9 rounded-lg bg-zinc-800/80 group-hover:bg-amber-500/10 transition-colors duration-200">
-                  <Settings className="size-4 text-zinc-400 group-hover:text-amber-400 transition-colors duration-200" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
-                    Paramètres
-                  </p>
-                  <p className="text-[10px] text-zinc-500">
-                    Gérer mon profil
-                  </p>
-                </div>
-                <ChevronRight className="size-4 text-zinc-600 group-hover:text-amber-400 transition-all duration-200 group-hover:translate-x-0.5" />
-              </Link>
-            </DropdownMenuItem>
+            <MenuLink
+              href={isAdmin ? '/admin/settings' : '/profile'}
+              icon={Settings}
+              title="Paramètres"
+              description="Gérer mon profil"
+            />
 
             {isAdmin && (
-              <DropdownMenuItem asChild className="p-0">
-                <Link
-                  href="/admin/users"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-center size-9 rounded-lg bg-zinc-800/80 group-hover:bg-purple-500/10 transition-colors duration-200">
-                    <Crown className="size-4 text-zinc-400 group-hover:text-purple-400 transition-colors duration-200" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-zinc-200 group-hover:text-white transition-colors duration-200">
-                      Utilisateurs
-                    </p>
-                    <p className="text-[10px] text-zinc-500">
-                      Gestion des comptes
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-zinc-600 group-hover:text-purple-400 transition-all duration-200 group-hover:translate-x-0.5" />
-                </Link>
-              </DropdownMenuItem>
+              <MenuLink
+                href="/admin/users"
+                icon={Crown}
+                title="Utilisateurs"
+                description="Gestion des comptes"
+                tone="purple"
+              />
             )}
           </DropdownMenuGroup>
 
-          <DropdownMenuSeparator className="bg-zinc-800" />
+          <DropdownMenuSeparator className="bg-white/[0.07]" />
 
-          {/* Logout Button */}
           <div className="p-2">
             <DropdownMenuItem
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 group text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              onClick={handleLogoutClick}
+              className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-red-300 outline-none transition-all duration-200 hover:bg-red-500/10 hover:text-red-200 focus:bg-red-500/10 focus:text-red-200"
+              onClick={() => setShowConfirm(true)}
             >
-              <div className="flex items-center justify-center size-9 rounded-lg bg-red-500/10 group-hover:bg-red-500/20 transition-colors duration-200">
-                <LogOut className="size-4 text-red-400 group-hover:text-red-300 transition-colors duration-200" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">
-                  Déconnexion
-                </p>
-                <p className="text-[10px] text-zinc-500">
-                  Fermer la session
-                </p>
-              </div>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-red-300/10 bg-red-500/10 transition-colors duration-200 group-hover:bg-red-500/15">
+                <LogOut className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">Déconnexion</span>
+                <span className="mt-0.5 block text-xs text-red-200/45">Fermer la session</span>
+              </span>
             </DropdownMenuItem>
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Logout Confirmation Dialog */}
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent className="border-zinc-800 bg-zinc-900 max-w-md">
+        <AlertDialogContent className="max-w-md border-white/[0.08] bg-[#070706] text-zinc-100 shadow-2xl shadow-black/50">
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="size-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                <LogOut className="size-5 text-red-400" />
+            <div className="mb-2 flex items-center gap-3">
+              <div className="flex size-11 items-center justify-center rounded-full border border-red-300/15 bg-red-500/10">
+                <LogOut className="size-5 text-red-300" />
               </div>
-              <AlertDialogTitle className="text-white text-lg">
+              <AlertDialogTitle className="text-lg text-white">
                 Confirmer la déconnexion
               </AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-zinc-400 pt-2">
+            <AlertDialogDescription className="pt-1 text-zinc-400">
               Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => setShowConfirm(false)}
-              className="border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white"
+              className="border-white/[0.10] bg-white/[0.04] text-zinc-200 hover:bg-white/[0.08] hover:text-white"
             >
               Annuler
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleLogoutConfirm}
-              className="bg-red-500 hover:bg-red-400 text-white"
+              className="bg-red-500 text-white hover:bg-red-400"
             >
               Se déconnecter
             </AlertDialogAction>

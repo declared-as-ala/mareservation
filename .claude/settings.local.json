@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/Ala/.claude/skills/ui-ux-pro-max/**)"
+      "Read(//c/Users/Ala/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(npx tsc *)"
     ]
   }
 }

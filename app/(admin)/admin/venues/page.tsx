@@ -4,14 +4,25 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
-import { fetchAdminVenues, fetchAdminOwners } from '@/lib/api/admin';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue } from '@/lib/api/admin';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List, Trash2, Loader2 } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
   Select,
@@ -76,14 +87,34 @@ function VenueImage({ coverImage, name }: { coverImage?: string; name: string })
 export default function AdminVenuesPage() {
   const searchParams = useSearchParams();
   const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') ?? '');
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => searchParams.get('q') ?? '');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [withoutOwner, setWithoutOwner] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<VenueRowWithOwner | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteAdminVenue(id),
+    onSuccess: (data) => {
+      const name = (data?.deleted?.venue as string) ?? 'Lieu';
+      toast.success(`${name} supprimé`, {
+        description: `Tables: ${data?.deleted?.tables ?? 0} · Chambres: ${data?.deleted?.rooms ?? 0} · Réservations: ${data?.deleted?.reservations ?? 0}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+      setPendingDelete(null);
+    },
+    onError: (err) => {
+      toast.error('Suppression échouée', {
+        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+      });
+    },
+  });
 
   // Sync filter when URL changes (sidebar navigation between categories)
   useEffect(() => {
     setTypeFilter(searchParams.get('type') ?? '');
+    setQ(searchParams.get('q') ?? '');
   }, [searchParams]);
 
   const { data: venuesData = [], isLoading } = useQuery({
@@ -321,7 +352,7 @@ export default function AdminVenuesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44 border-zinc-800 bg-zinc-900">
                             <DropdownMenuItem asChild>
-                              <Link href={`/admin/venues/${v._id}`} className="flex items-center gap-2">
+                              <Link href={v.type === 'HOTEL' ? `/admin/hotels/${v._id}` : `/admin/venues/${v._id}`} className="flex items-center gap-2">
                                 <ExternalLink className="size-4" />
                                 Modifier
                               </Link>
@@ -331,6 +362,13 @@ export default function AdminVenuesPage() {
                                 <Eye className="size-4" />
                                 Voir sur le site
                               </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={(e) => { e.preventDefault(); setPendingDelete(v); }}
+                              className="flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                            >
+                              <Trash2 className="size-4" />
+                              Supprimer
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -378,7 +416,7 @@ export default function AdminVenuesPage() {
                     asChild
                     className="flex-1 border-zinc-700 bg-zinc-800/50 text-zinc-200 hover:bg-zinc-800 hover:text-zinc-100 hover:border-zinc-600 transition-all duration-200"
                   >
-                    <Link href={`/admin/venues/${v._id}`} className="flex items-center gap-1.5 justify-center">
+                    <Link href={v.type === 'HOTEL' ? `/admin/hotels/${v._id}` : `/admin/venues/${v._id}`} className="flex items-center gap-1.5 justify-center">
                       <ExternalLink className="size-3.5" />
                       Modifier
                     </Link>
@@ -393,12 +431,63 @@ export default function AdminVenuesPage() {
                       <Eye className="size-4" />
                     </Link>
                   </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPendingDelete(v)}
+                    className="text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                    aria-label="Supprimer"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent className="border-zinc-800 bg-zinc-950">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-zinc-100">
+              Supprimer définitivement ce lieu ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              <span className="font-semibold text-zinc-200">{pendingDelete?.name}</span> sera supprimé
+              avec toutes ses tables, chambres, sièges, scènes 360°, hotspots, événements et
+              réservations associées. Cette action est <span className="text-red-400 font-semibold">irréversible</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 hover:text-zinc-100">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (pendingDelete) deleteMutation.mutate(pendingDelete._id);
+              }}
+              className="bg-red-500 text-white hover:bg-red-600 focus:ring-red-500/40"
+            >
+              {deleteMutation.isPending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Suppression…
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Trash2 className="size-4" />
+                  Supprimer
+                </span>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

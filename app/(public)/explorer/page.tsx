@@ -12,10 +12,13 @@ import {
   MapPin,
   Search,
   Coffee,
-  UtensilsCrossed,
+  Wine,
+  Utensils,
+  Music2,
   Hotel,
-  Film,
-  CalendarDays,
+  Waves,
+  Flower2,
+  PartyPopper,
   LayoutGrid,
   SlidersHorizontal,
   X,
@@ -33,13 +36,18 @@ function isValidVenueItem(value: unknown): value is {
   return !!value && typeof value === 'object' && typeof (value as { _id?: unknown })._id === 'string';
 }
 
-const VENUE_TYPES = [
-  { value: '', label: 'Tous les lieux', icon: LayoutGrid },
-  { value: 'CAFE', label: 'Cafés', icon: Coffee },
-  { value: 'RESTAURANT', label: 'Restaurants', icon: UtensilsCrossed },
-  { value: 'HOTEL', label: 'Hôtels', icon: Hotel },
-  { value: 'CINEMA', label: 'Cinéma', icon: Film },
-  { value: 'EVENT_SPACE', label: 'Événements', icon: CalendarDays },
+type CategoryPill = { key: string; label: string; icon: typeof LayoutGrid; type?: string; q?: string };
+
+const CATEGORIES: CategoryPill[] = [
+  { key: 'all', label: 'Tous les lieux', icon: LayoutGrid },
+  { key: 'cafes', label: 'Cafés & Lounges', icon: Coffee, type: 'CAFE' },
+  { key: 'bars', label: 'Bars & Rooftops', icon: Wine, q: 'Bar' },
+  { key: 'restaurants', label: 'Restaurants Gastronomiques', icon: Utensils, type: 'RESTAURANT' },
+  { key: 'clubs', label: 'Clubs & Resto de Nuit', icon: Music2, q: 'Club' },
+  { key: 'salles', label: 'Salles & Événementiel', icon: PartyPopper, type: 'EVENT_SPACE' },
+  { key: 'hotels', label: 'Hôtels & Resorts', icon: Hotel, type: 'HOTEL' },
+  { key: 'beach', label: 'Beach Clubs', icon: Waves, q: 'Beach' },
+  { key: 'spas', label: 'Spas & Bien-être', icon: Flower2, q: 'Spa' },
 ];
 
 const CITIES = ['Tunis', 'Sfax', 'Sousse', 'Bizerte', 'Nabeul', 'Monastir'];
@@ -104,7 +112,9 @@ function ExplorerContent() {
   };
 
   const activeFiltersCount = [type, city, q, categoryId].filter(Boolean).length;
-  const activeType = VENUE_TYPES.find((t) => t.value === type);
+  const activeCategory =
+    CATEGORIES.find((c) => (c.type && c.type === type) || (c.q && c.q === q && !type)) ??
+    (type || q ? undefined : CATEGORIES[0]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -156,16 +166,19 @@ function ExplorerContent() {
       {/* ── Filter bar ── */}
       <div className="sticky top-[64px] z-30 border-b border-zinc-800/60 bg-zinc-950/95 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4">
-          {/* Type pills */}
+          {/* Category pills (mirrors home page categories) */}
           <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
-            {VENUE_TYPES.map((t) => {
-              const Icon = t.icon;
-              const isActive = type === t.value;
+            {CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = activeCategory?.key === cat.key;
               return (
                 <button
-                  key={t.value}
+                  key={cat.key}
                   type="button"
-                  onClick={() => updateParams({ type: t.value })}
+                  onClick={() => {
+                    setLocalSearch(cat.q ?? '');
+                    updateParams({ type: cat.type ?? '', q: cat.q ?? '' });
+                  }}
                   className={cn(
                     'inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold border whitespace-nowrap transition-all duration-150',
                     isActive
@@ -174,7 +187,7 @@ function ExplorerContent() {
                   )}
                 >
                   <Icon className="size-3.5" />
-                  {t.label}
+                  {cat.label}
                 </button>
               );
             })}
@@ -293,7 +306,7 @@ function ExplorerContent() {
                   <>
                     <span className="text-amber-400">{venues.length}</span>{' '}
                     lieu{venues.length !== 1 ? 'x' : ''} trouvé{venues.length !== 1 ? 's' : ''}
-                    {activeType && activeType.value ? ` · ${activeType.label}` : ''}
+                    {activeCategory && activeCategory.key !== 'all' ? ` · ${activeCategory.label}` : ''}
                     {city ? ` à ${city}` : ''}
                   </>
                 ) : (
