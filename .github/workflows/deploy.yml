@@ -77,6 +77,31 @@ jobs:
           echo "⏳ Waiting for services to be healthy..."
           sleep 10
 
+          echo "🌱 Running database seeds conditionally (only if database is empty)..."
+          docker compose exec -T mareservation-backend node -e "
+            import('mongoose').then(async (m) => {
+              const uri = process.env.MONGO_URI || 'mongodb://admin:changeme@mongodb:27017/mareservation?authSource=admin';
+              await m.connect(uri);
+              const count = await m.connection.db.collection('categories').countDocuments();
+              if (count === 0) {
+                console.log('📂 Database categories collection is empty. Seeding database...');
+                const { execSync } = await import('child_process');
+                execSync('npm run seed', { stdio: 'inherit' });
+                execSync('npm run seed:dining', { stdio: 'inherit' });
+                execSync('npm run seed:coworking', { stdio: 'inherit' });
+                execSync('npx tsx src/scripts/seed-user.ts', { stdio: 'inherit' });
+                execSync('npx tsx src/scripts/seed-event-media.ts', { stdio: 'inherit' });
+                console.log('✅ Seeding complete!');
+              } else {
+                console.log('📂 Database already populated. Skipping seeding.');
+              }
+              process.exit(0);
+            }).catch(err => {
+              console.error('❌ Seeding check failed:', err);
+              process.exit(0); // Exit gracefully so deployment doesn't fail
+            });
+          "
+
           echo "📊 Docker services status:"
           docker compose ps
 
