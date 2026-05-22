@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:7.0-alpine
+    image: mongo:7.0
     container_name: mareservation-db
     restart: always
     ports:
