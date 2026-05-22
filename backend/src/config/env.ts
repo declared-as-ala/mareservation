@@ -12,7 +12,7 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().optional().or(z.literal('')),
   // Email (for verification + password reset)
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().email().optional(),
+  EMAIL_FROM: z.string().email().optional().or(z.literal('')),
   EMAIL_HOST: z.string().optional(),
   EMAIL_PORT: z.string().optional().transform((v) => (v ? Number(v) : undefined)),
   EMAIL_USER: z.string().optional(),
@@ -47,18 +47,24 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 export function getEnv(): Env {
+  // Trim any trailing carriage returns, newlines, or whitespace from environment variables
+  const cleanEnv: Record<string, string | undefined> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    cleanEnv[key] = typeof value === 'string' ? value.trim() : value;
+  }
+
   const raw = {
-    ...process.env,
-    MONGODB_URI: process.env.MONGODB_URI || process.env.MONGO_URI || (process.env.NODE_ENV === 'production' ? undefined : 'mongodb://localhost:27017/mareservation'),
+    ...cleanEnv,
+    MONGODB_URI: cleanEnv.MONGODB_URI || cleanEnv.MONGO_URI || (cleanEnv.NODE_ENV === 'production' ? undefined : 'mongodb://localhost:27017/mareservation'),
     // In development, provide safe defaults so the app still starts
-    JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'dev-jwt-secret-must-be-at-least-32-chars-long-for-validation'),
-    REFRESH_SECRET: process.env.REFRESH_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'dev-refresh-secret-must-be-at-least-32-chars-long-for-validation'),
+    JWT_SECRET: cleanEnv.JWT_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-jwt-secret-must-be-at-least-32-chars-long-for-validation'),
+    REFRESH_SECRET: cleanEnv.REFRESH_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-refresh-secret-must-be-at-least-32-chars-long-for-validation'),
   };
   const result = envSchema.safeParse(raw);
   if (!result.success) {
     const msg = result.error.flatten().fieldErrors;
     console.error('❌ Invalid environment variables:', msg);
-    if (process.env.NODE_ENV === 'production') {
+    if (cleanEnv.NODE_ENV === 'production') {
       throw new Error(`Invalid environment variables: ${JSON.stringify(msg)}`);
     }
   }
