@@ -36,6 +36,15 @@ jobs:
             echo "⚠️ Created .env from template - PLEASE UPDATE WITH YOUR SECRETS!"
           fi
 
+          echo "🌐 Ensuring NEXT_PUBLIC_API_URL points to the public VPS IP..."
+          VPS_IP=$(curl -s https://api.ipify.org || hostname -I | awk '{print $1}')
+          if grep -q "^NEXT_PUBLIC_API_URL=" .env; then
+            echo "   NEXT_PUBLIC_API_URL already set, keeping existing value."
+          else
+            echo "NEXT_PUBLIC_API_URL=http://${VPS_IP}:5001" >> .env
+            echo "   Injected: NEXT_PUBLIC_API_URL=http://${VPS_IP}:5001"
+          fi
+
           echo "🏗️ Building Docker images..."
           docker compose build
 
