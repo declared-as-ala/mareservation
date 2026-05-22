@@ -37,16 +37,16 @@ jobs:
           fi
 
           echo "🏗️ Building Docker images..."
-          docker-compose build
+          docker compose build
 
           echo "🚀 Starting services..."
-          docker-compose up -d
+          docker compose up -d
 
           echo "⏳ Waiting for services to be healthy..."
           sleep 10
 
           echo "📊 Docker services status:"
-          docker-compose ps
+          docker compose ps
 
           echo "✅ Deployment complete!"
           EOF
