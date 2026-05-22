@@ -59,18 +59,18 @@ export default function ReservationConfirmationPage() {
   const params = useParams();
   const id = params.id as string;
 
-  // Try hotel ticket endpoint first (returns enriched populated data); fall back to generic.
-  const { data: hotelTicket } = useQuery({
-    queryKey: ['hotel-ticket', id],
-    queryFn: () => fetchHotelTicket(id),
-    enabled: !!id,
-    retry: 1,
-  });
-
   const { data: reservation, isLoading, error, refetch } = useQuery({
     queryKey: ['reservation', id],
     queryFn: () => fetchReservationById(id),
-    enabled: !!id && !hotelTicket,
+    enabled: !!id,
+  });
+
+  const isRoomReservation = reservation?.bookingType === 'ROOM';
+  const { data: hotelTicket } = useQuery({
+    queryKey: ['hotel-ticket', id],
+    queryFn: () => fetchHotelTicket(id),
+    enabled: !!id && isRoomReservation,
+    retry: 1,
   });
 
   const data = hotelTicket ?? reservation;

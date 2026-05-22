@@ -2,17 +2,13 @@
  * Central API client with cookie-based auth.
  *
  * The backend uses httpOnly cookies for both access and refresh tokens.
- * This client relies on `credentials: 'include'` so the browser automatically
- * sends those cookies.  No manual Authorization header is needed.
- *
- * When a 401 is received the client attempts a single silent refresh via
- * `/auth/refresh` (which rotates the httpOnly refresh cookie and issues a
- * new httpOnly access cookie).  If that also fails the auth store is cleared
- * and the user is redirected to `/login`.
+ * This client sends those cookies with `credentials: 'include'` and performs
+ * one shared silent refresh when protected requests receive a 401.
  */
 
 import { useAuthStore } from '@/stores/auth';
 import { isProtectedPath } from '@/lib/auth/redirect';
+import { refreshAuthSession } from './auth-session';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
 
@@ -24,19 +20,45 @@ export type ApiResponse<T = unknown> = {
   errors?: unknown;
 };
 
-/** Extended options that allow any body value — apiFetchInternal stringifies objects. */
 type ApiOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
-/** Core fetch with automatic single-retry on 401 via /auth/refresh. */
+function clearAuthAndRedirectToLogin() {
+  const store = useAuthStore.getState();
+  store.clearAll();
+
+  if (typeof window !== 'undefined') {
+    const currentPath = window.location.pathname || '/';
+    if (isProtectedPath(currentPath)) {
+      window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
+    }
+  }
+}
+
+function getErrorMessage(json: Record<string, unknown>, status: number): string {
+  return ((json.message ?? json.error) || `HTTP ${status}`) as string;
+}
+
+async function parseJson(res: Response): Promise<Record<string, unknown>> {
+  return (await res.json().catch(() => ({}))) as Record<string, unknown>;
+}
+
+function isAuthBootstrapPath(path: string): boolean {
+  return path === '/auth/refresh' || path === '/auth/login' || path === '/auth/register';
+}
+
 async function apiFetchInternal<T = unknown>(
   path: string,
   options: ApiOptions = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE}/api/v1${path}`;
 
-  // Stringify body if it's a plain object/array (not FormData, Blob, string, etc.)
   let body: BodyInit | null | undefined = options.body as BodyInit | null | undefined;
-  if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData) && !(options.body instanceof Blob)) {
+  if (
+    options.body &&
+    typeof options.body === 'object' &&
+    !(options.body instanceof FormData) &&
+    !(options.body instanceof Blob)
+  ) {
     body = JSON.stringify(options.body);
   }
 
@@ -52,62 +74,39 @@ async function apiFetchInternal<T = unknown>(
 
   const res = await fetch(url, baseOpts);
 
-  // ── 401 → silent refresh + single retry ──────────────────────
-  if (res.status === 401 && path !== '/auth/refresh' && path !== '/auth/login' && path !== '/auth/register') {
-    const refreshRes = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-    });
+  if (res.status === 401 && !isAuthBootstrapPath(path)) {
+    const refreshed = await refreshAuthSession(API_BASE);
 
-    if (refreshRes.ok) {
-      // httpOnly cookies have been rotated — retry the original request.
+    if (refreshed) {
       const retryRes = await fetch(url, {
         ...baseOpts,
-        // Mark as retried so we don't loop forever.
         headers: { ...baseOpts.headers, 'X-Retry': '1' } as Record<string, string>,
       });
 
       if (retryRes.ok) {
-        const json = await retryRes.json().catch(() => ({})) as Record<string, unknown>;
-        return json as ApiResponse<T>;
+        return (await parseJson(retryRes)) as ApiResponse<T>;
       }
 
-      // Still 401 after refresh — session is truly invalid.
-      const store = useAuthStore.getState();
-      store.clearAll();
-      if (typeof window !== 'undefined') {
-        const currentPath = window.location.pathname || '/';
-        if (isProtectedPath(currentPath)) {
-          window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
-        }
+      const retryJson = await parseJson(retryRes);
+      if (retryRes.status === 401) {
+        clearAuthAndRedirectToLogin();
+        throw new Error('Session expiree. Veuillez vous reconnecter.');
       }
-      throw new Error('Session expirée. Veuillez vous reconnecter.');
+      throw new Error(getErrorMessage(retryJson, retryRes.status));
     }
 
-    // Refresh also failed — clear auth and redirect.
-    const store = useAuthStore.getState();
-    store.clearAll();
-    if (typeof window !== 'undefined') {
-      const currentPath = window.location.pathname || '/';
-      if (isProtectedPath(currentPath)) {
-        window.location.href = `/login?returnTo=${encodeURIComponent(currentPath)}`;
-      }
-    }
-    throw new Error('Session expirée. Veuillez vous reconnecter.');
+    clearAuthAndRedirectToLogin();
+    throw new Error('Session expiree. Veuillez vous reconnecter.');
   }
-  // ─────────────────────────────────────────────────────────────
 
-  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const json = await parseJson(res);
 
   if (!res.ok) {
-    throw new Error(((json.message ?? json.error) || `HTTP ${res.status}`) as string);
+    throw new Error(getErrorMessage(json, res.status));
   }
 
   return json as ApiResponse<T>;
 }
-
-/* ── Public API ─────────────────────────────────────────────── */
 
 export async function apiFetch<T = unknown>(
   path: string,
@@ -136,7 +135,6 @@ export async function apiDeleteRaw<T = unknown>(path: string): Promise<T> {
   return res as unknown as T;
 }
 
-/** Upload a single image file; returns the public URL. */
 export async function uploadImageFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -147,11 +145,10 @@ export async function uploadImageFile(file: File): Promise<string> {
   });
   const json = (await res.json().catch(() => ({}))) as { data?: { url?: string }; message?: string };
   if (!res.ok) throw new Error(json.message || 'Upload failed.');
-  if (!json.data?.url) throw new Error('Réponse upload invalide.');
+  if (!json.data?.url) throw new Error('Reponse upload invalide.');
   return json.data.url;
 }
 
-/** Convenience object mirroring the old API shape. */
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) => apiFetch<T>(path, { method: 'POST', body }),

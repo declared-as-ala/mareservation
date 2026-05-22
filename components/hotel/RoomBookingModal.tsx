@@ -353,7 +353,7 @@ export function RoomBookingModal({
   initialCheckOut,
 }: RoomBookingModalProps) {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, hasHydrated, isResolving } = useAuthStore();
   const { addItem, openDrawer } = useCartStore();
 
   const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn ?? null);
@@ -424,6 +424,10 @@ export function RoomBookingModal({
       children: '0',
     });
     const checkoutUrl = `/checkout/hotel?${params.toString()}`;
+    if (!hasHydrated || isResolving) {
+      toast.message('Verification de votre session en cours.');
+      return;
+    }
     if (!user) {
       router.push(`/login?returnTo=${encodeURIComponent(checkoutUrl)}`);
       onClose();

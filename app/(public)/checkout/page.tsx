@@ -118,7 +118,7 @@ function SuccessScreen({ ids }: { ids: string[] }) {
 /* ------------------------------------------------------------------ */
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, hasHydrated, isResolving } = useAuthStore();
   const items = useCartStore((s) => s.items);
   const totalAmount = useCartStore((s) => s.totalAmount());
   const clearCart = useCartStore((s) => s.clearCart);
@@ -134,10 +134,10 @@ export default function CheckoutPage() {
 
   // Auth guard
   useEffect(() => {
-    if (user === null) {
+    if (hasHydrated && !isResolving && user === null) {
       router.push('/login?returnTo=/checkout');
     }
-  }, [user, router]);
+  }, [hasHydrated, isResolving, user, router]);
 
   // Empty cart guard
   useEffect(() => {

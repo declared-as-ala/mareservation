@@ -234,7 +234,7 @@ const inputCls =
 export default function HotelCheckoutClient() {
   const router = useRouter();
   const sp = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, hasHydrated, isResolving } = useAuthStore();
 
   const venueParam = sp.get('venueId') ?? '';
   const roomId = sp.get('roomId') ?? '';
@@ -426,6 +426,10 @@ export default function HotelCheckoutClient() {
         return;
       }
       // Need auth before holding
+      if (!hasHydrated || isResolving) {
+        toast.message('Verification de votre session en cours.');
+        return;
+      }
       if (!user) {
         const ret = `/checkout/hotel?${sp.toString()}`;
         router.push(`/login?returnTo=${encodeURIComponent(ret)}`);

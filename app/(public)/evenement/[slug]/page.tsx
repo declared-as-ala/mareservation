@@ -76,7 +76,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const router = useRouter();
-  const { isAuthenticated, hasHydrated } = useAuthStore();
+  const { isAuthenticated, hasHydrated, isResolving } = useAuthStore();
 
   const [ticketTypeId, setTicketTypeId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -153,7 +153,11 @@ export default function EventDetailPage() {
   const soldOut = !selectedTicket || ticketRemaining(selectedTicket) <= 0;
 
   const handleReserve = async () => {
-    if (hasHydrated && !isAuthenticated) {
+    if (!hasHydrated || isResolving) {
+      toast.message('Verification de votre session en cours.');
+      return;
+    }
+    if (!isAuthenticated) {
       toast.message('Connectez-vous pour finaliser votre billet.');
       router.push(`/login?returnTo=${encodeURIComponent(`/evenement/${slug}`)}`);
       return;

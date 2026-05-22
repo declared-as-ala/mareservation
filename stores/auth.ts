@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { refreshAuthSession } from '@/lib/api/auth-session';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
 
@@ -162,13 +163,10 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Session is invalid — try a silent refresh once.
           try {
-            const refreshRes = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-              method: 'POST',
-              credentials: 'include',
-            });
+            const refreshed = await refreshAuthSession(API_BASE);
 
-            if (!refreshRes.ok) {
-              throw new Error(`Refresh failed: ${refreshRes.status}`);
+            if (!refreshed) {
+              throw new Error('Refresh failed');
             }
 
             // Refresh succeeded — httpOnly cookies have been updated.
