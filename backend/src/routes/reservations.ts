@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { Reservation } from '../models/Reservation';
@@ -178,25 +178,38 @@ router.get('/availability/table/:tableId', async (req, res) => {
         .lean(),
     ]);
 
+    // Helper: return null if the value cannot produce a valid Date
+    const safeIso = (v: unknown): string | null => {
+      if (!v) return null;
+      const d = new Date(v as string | number | Date);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+
     const reservedRanges = [
-      ...reservations.map((r) => ({
-        startAt: new Date(r.startAt).toISOString(),
-        endAt: new Date(r.endAt).toISOString(),
-        source: 'reservation',
-        status: r.status,
-      })),
-      ...holds.map((h) => ({
-        startAt: new Date(h.startsAt).toISOString(),
-        endAt: new Date(h.endsAt).toISOString(),
-        source: 'hold',
-        status: 'HELD',
-      })),
-      ...blocks.map((b) => ({
-        startAt: new Date((b as any).startsAt).toISOString(),
-        endAt: new Date((b as any).endsAt).toISOString(),
-        source: 'block',
-        status: 'BLOCKED',
-      })),
+      ...reservations
+        .filter((r) => safeIso(r.startAt) && safeIso(r.endAt))
+        .map((r) => ({
+          startAt: safeIso(r.startAt)!,
+          endAt: safeIso(r.endAt)!,
+          source: 'reservation',
+          status: r.status,
+        })),
+      ...holds
+        .filter((h) => safeIso(h.startsAt) && safeIso(h.endsAt))
+        .map((h) => ({
+          startAt: safeIso(h.startsAt)!,
+          endAt: safeIso(h.endsAt)!,
+          source: 'hold',
+          status: 'HELD',
+        })),
+      ...blocks
+        .filter((b) => safeIso((b as any).startsAt) && safeIso((b as any).endsAt))
+        .map((b) => ({
+          startAt: safeIso((b as any).startsAt)!,
+          endAt: safeIso((b as any).endsAt)!,
+          source: 'block',
+          status: 'BLOCKED',
+        })),
     ];
 
     const slotMinutes = Number((policy as any)?.slotMinutes || 30);
