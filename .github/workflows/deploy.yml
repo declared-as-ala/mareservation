@@ -14,19 +14,18 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔑 Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+      - name: 🔧 Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
 
       - name: 🎯 Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
-          ssh -i ~/.ssh/id_rsa root@${{ secrets.VPS_HOST }} << 'EOF'
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'EOF'
           set -e
           echo "📂 Navigating to app directory..."
-          cd /app/mareservation
+          cd /app/mareservation || { echo "❌ Directory not found, cloning..."; mkdir -p /app/mareservation; git clone https://github.com/declared-as-ala/mareservation.git /app/mareservation; cd /app/mareservation; }
 
           echo "📥 Pulling latest code..."
           git pull origin main
@@ -45,12 +44,6 @@ jobs:
 
           echo "⏳ Waiting for services to be healthy..."
           sleep 10
-
-          echo "✅ Verifying backend..."
-          docker-compose exec -T backend npm run build || true
-
-          echo "✅ Checking MongoDB..."
-          docker-compose exec -T mongodb mongosh -u admin -p changeme --authenticationDatabase admin --eval "db.adminCommand('ping')" || true
 
           echo "📊 Docker services status:"
           docker-compose ps

@@ -12,49 +12,7 @@ Complete guide to setup automatic deployment from GitHub to your VPS.
 
 ---
 
-## Step 1: Generate SSH Key (if you don't have one)
-
-Run this on your local machine:
-
-```bash
-# Generate SSH key (no passphrase for GitHub Actions)
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/vps_deploy -N ""
-
-# Copy the public key content
-cat ~/.ssh/vps_deploy.pub
-
-# Copy the private key content (keep secret!)
-cat ~/.ssh/vps_deploy
-```
-
----
-
-## Step 2: Add SSH Key to VPS
-
-SSH into your VPS and add the public key:
-
-```bash
-# SSH into VPS
-ssh root@145.223.118.9
-
-# Create .ssh directory if needed
-mkdir -p ~/.ssh
-
-# Add the public key
-echo "YOUR_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
-
-# Set proper permissions
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/authorized_keys
-
-# Verify (you should be able to SSH without password now)
-exit
-ssh -i ~/.ssh/vps_deploy root@145.223.118.9
-```
-
----
-
-## Step 3: Setup GitHub Repository Secrets
+## Step 1: Setup GitHub Repository Secrets
 
 Go to GitHub repository → Settings → Secrets and variables → Actions
 
@@ -65,29 +23,15 @@ Go to GitHub repository → Settings → Secrets and variables → Actions
 145.223.118.9
 ```
 
-### 2. `VPS_SSH_KEY`
-Paste the **private key** (from `cat ~/.ssh/vps_deploy`):
+### 2. `VPS_PASSWORD`
+Paste your VPS root password:
 ```
------BEGIN RSA PRIVATE KEY-----
-[your entire private key content]
------END RSA PRIVATE KEY-----
+14#mFVoY3b7K9IAP3bV
 ```
-
-### Optional: Add other secrets for .env
-
-If you want GitHub Actions to auto-create .env with secrets:
-
-- `VPS_JWT_SECRET` — Generated secret
-- `VPS_REFRESH_SECRET` — Generated secret
-- `VPS_RESEND_API_KEY` — Your Resend API key
-- `VPS_KONNECT_API_KEY` — Your Konnect API key
-- `VPS_KONNECT_SECRET_KEY` — Your Konnect secret
-- `VPS_FRONTEND_URL` — Your domain
-- `VPS_NEXT_PUBLIC_API_URL` — Your API domain
 
 ---
 
-## Step 4: Setup VPS (One-Time)
+## Step 2: Setup VPS (One-Time)
 
 Run the setup script on your VPS:
 
@@ -119,7 +63,7 @@ nano .env  # Add your secrets
 
 ---
 
-## Step 5: Verify Setup
+## Step 3: Verify Setup
 
 Test the GitHub Actions workflow:
 
@@ -228,11 +172,8 @@ curl http://localhost:5000/api/v1/health  # Test API
 ### SSH Connection Failed
 
 ```bash
-# Check SSH key is in VPS
-ssh -i ~/.ssh/vps_deploy root@145.223.118.9
-
-# If fails, verify key was added:
-cat ~/.ssh/authorized_keys
+# Check VPS_PASSWORD secret is correct in GitHub
+# Settings → Secrets and variables → Actions → VPS_PASSWORD
 ```
 
 ### Docker Build Fails
