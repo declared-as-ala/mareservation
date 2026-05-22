@@ -12,13 +12,15 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'media.istockphoto.com' },
-      { protocol: 'https', hostname: '**' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: 'photo-sphere-viewer-data.netlify.app' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'http', hostname: '127.0.0.1' },
     ],
     qualities: [60, 75, 85],
-    // In offline/local environments, avoid optimizer fetch timeouts for remote images.
-    unoptimized: isDev,
+    // Disable server-side image optimization on VPS to save CPU/RAM and prevent fetch timeouts.
+    unoptimized: true,
   },
   turbopack: {
     resolveAlias: {
