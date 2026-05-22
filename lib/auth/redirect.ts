@@ -24,6 +24,7 @@ const PUBLIC_PATH_PREFIXES = [
   '/restaurants',
   '/hotels',
   '/cinema',
+  '/evenement',
   '/evenements',
   '/sos-conseil',
 ];

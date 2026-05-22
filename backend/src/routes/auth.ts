@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, type CookieOptions, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -30,31 +30,40 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-  const accessMaxAge = 15 * 60 * 1000; // 15 min
-  const refreshMaxAge = REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-  const isProd = process.env.NODE_ENV === 'production';
-  const sameSitePolicy: 'lax' | 'none' = isProd ? 'none' : 'lax';
-
-  res.cookie(ACCESS_COOKIE_NAME, accessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: sameSitePolicy,
-    maxAge: accessMaxAge,
-    path: '/',
-  });
-  res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: sameSitePolicy,
-    maxAge: refreshMaxAge,
-    path: '/',
-  });
+function isHttpsRequest(req: Request): boolean {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const proto = Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto;
+  return req.secure || String(proto ?? '').split(',')[0].trim() === 'https';
 }
 
-function clearAuthCookies(res: Response) {
-  res.clearCookie(ACCESS_COOKIE_NAME, { path: '/' });
-  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/' });
+function shouldUseSecureCookies(req: Request): boolean {
+  const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || '';
+  return isHttpsRequest(req) || frontendUrl.startsWith('https://');
+}
+
+function authCookieOptions(req: Request, maxAge?: number): CookieOptions {
+  const secure = shouldUseSecureCookies(req);
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: secure ? 'none' : 'lax',
+    ...(maxAge != null ? { maxAge } : {}),
+    path: '/',
+  };
+}
+
+function setAuthCookies(req: Request, res: Response, accessToken: string, refreshToken: string) {
+  const accessMaxAge = 15 * 60 * 1000; // 15 min
+  const refreshMaxAge = REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+
+  res.cookie(ACCESS_COOKIE_NAME, accessToken, authCookieOptions(req, accessMaxAge));
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, authCookieOptions(req, refreshMaxAge));
+}
+
+function clearAuthCookies(req: Request, res: Response) {
+  const options = authCookieOptions(req);
+  res.clearCookie(ACCESS_COOKIE_NAME, options);
+  res.clearCookie(REFRESH_COOKIE_NAME, options);
 }
 
 // POST /api/auth/register and POST /api/auth/signup (body.name accepted as fullName)
@@ -144,7 +153,7 @@ router.post(['/register', '/signup'], async (req, res) => {
       expiresAt: new Date(Date.now() + REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
     });
     await refreshTokenDoc.save();
-    setAuthCookies(res, accessToken, refreshTokenValue);
+    setAuthCookies(req, res, accessToken, refreshTokenValue);
 
     // Log audit
     await logAudit(req, {
@@ -222,7 +231,7 @@ router.post('/login', async (req, res) => {
       token: refreshTokenValue,
       expiresAt: new Date(Date.now() + REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
     });
-    setAuthCookies(res, accessToken, refreshTokenValue);
+    setAuthCookies(req, res, accessToken, refreshTokenValue);
 
     // Log successful login
     await LoginAttempt.create({
@@ -268,14 +277,14 @@ router.post('/refresh', async (req, res) => {
     const stored = await RefreshToken.findOne({ token });
     if (!stored || stored.expiresAt < new Date()) {
       if (stored) await RefreshToken.deleteOne({ _id: stored._id });
-      clearAuthCookies(res);
+      clearAuthCookies(req, res);
       return res.status(401).json({ error: 'Session expirée. Veuillez vous reconnecter.' });
     }
 
     const user = await User.findById((stored as any).userId);
     if (!user) {
       await RefreshToken.deleteOne({ _id: stored._id });
-      clearAuthCookies(res);
+      clearAuthCookies(req, res);
       return res.status(401).json({ error: 'Utilisateur introuvable.' });
     }
 
@@ -292,7 +301,7 @@ router.post('/refresh', async (req, res) => {
       env.JWT_SECRET,
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
-    setAuthCookies(res, accessToken, newRefresh);
+    setAuthCookies(req, res, accessToken, newRefresh);
 
     res.json({
       user: {
@@ -395,7 +404,7 @@ router.post('/logout', authenticate, async (req: AuthRequest, res) => {
     if (token) {
       await RefreshToken.deleteOne({ token });
     }
-    clearAuthCookies(res);
+    clearAuthCookies(req, res);
 
     await logAudit(req, {
       action: 'LOGOUT',
@@ -404,7 +413,7 @@ router.post('/logout', authenticate, async (req: AuthRequest, res) => {
 
     res.json({ message: 'Déconnexion réussie.' });
   } catch (error) {
-    clearAuthCookies(res);
+    clearAuthCookies(req, res);
     res.json({ message: 'Déconnexion réussie.' });
   }
 });
