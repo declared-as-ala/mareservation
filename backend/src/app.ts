@@ -53,7 +53,12 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean);
 const VERCEL_PREVIEW_ORIGIN_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
+  })
+);
 app.use(cors({
   origin: (origin, cb) => {
     const isAllowed = Boolean(
