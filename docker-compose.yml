@@ -34,19 +34,23 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 5000
       MONGO_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/mareservation?authSource=admin
+      MONGO_USER: ${MONGO_USER:-admin}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-changeme}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      REFRESH_SECRET: ${REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
+      ACCESS_TOKEN_EXPIRY: ${ACCESS_TOKEN_EXPIRY:-15m}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       KONNECT_API_URL: ${KONNECT_API_URL:-https://api.konnect.tn}
       KONNECT_API_KEY: ${KONNECT_API_KEY:-}
+      KONNECT_SECRET_KEY: ${KONNECT_SECRET_KEY:-}
+      KONNECT_ENTITY_ID: ${KONNECT_ENTITY_ID:-}
+      UPLOAD_MAX_FILE_SIZE_MB: ${UPLOAD_MAX_FILE_SIZE_MB:-50}
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - mareservation-network
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
 
   frontend:
     build:
@@ -64,10 +68,6 @@ services:
       - backend
     networks:
       - mareservation-network
-    volumes:
-      - ./:/app
-      - /app/.next
-      - /app/node_modules
 
 volumes:
   mongodb_data:
