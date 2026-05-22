@@ -78,7 +78,7 @@ jobs:
           sleep 10
 
           echo "🌱 Running database seeds conditionally (only if database is empty)..."
-          docker compose exec -T mareservation-backend node -e "
+          docker compose exec -T backend node -e "
             import('mongoose').then(async (m) => {
               const uri = process.env.MONGO_URI || 'mongodb://admin:changeme@mongodb:27017/mareservation?authSource=admin';
               await m.connect(uri);
@@ -89,6 +89,7 @@ jobs:
                 execSync('npm run seed', { stdio: 'inherit' });
                 execSync('npm run seed:dining', { stdio: 'inherit' });
                 execSync('npm run seed:coworking', { stdio: 'inherit' });
+                execSync('npm run seed:menu', { stdio: 'inherit' });
                 execSync('npx tsx src/scripts/seed-user.ts', { stdio: 'inherit' });
                 execSync('npx tsx src/scripts/seed-event-media.ts', { stdio: 'inherit' });
                 console.log('✅ Seeding complete!');
