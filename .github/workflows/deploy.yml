@@ -39,6 +39,9 @@ jobs:
           echo "🏗️ Building Docker images..."
           docker compose build
 
+          echo "🔍 Checking what is listening on port 5000..."
+          netstat -tulpn | grep 5000 || ss -tulpn | grep 5000 || lsof -i :5000 || true
+
           echo "🧹 Cleaning up conflicting containers..."
           CONTAINERS=$(docker ps -a -q --filter name=mareservation)
           if [ -n "$CONTAINERS" ]; then
