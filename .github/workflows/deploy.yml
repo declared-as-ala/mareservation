@@ -39,6 +39,13 @@ jobs:
           echo "🏗️ Building Docker images..."
           docker compose build
 
+          echo "🧹 Cleaning up conflicting containers..."
+          CONTAINERS=$(docker ps -a -q --filter name=mareservation)
+          if [ -n "$CONTAINERS" ]; then
+            echo "Removing existing/conflicting containers..."
+            docker rm -f $CONTAINERS
+          fi
+
           echo "🚀 Starting services..."
           docker compose up -d
 
