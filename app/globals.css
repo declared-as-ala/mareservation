@@ -261,3 +261,103 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease both;
 }
+
+/* Spinner used by <SplineScene> Suspense fallback */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 3px solid rgba(212, 175, 55, 0.14);
+  border-top-color: #d4af37;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Aceternity spotlight reveal — required so <Spotlight> fades in (it ships opacity-0) */
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+.animate-spotlight {
+  animation: spotlight 2s ease 0.75s 1 forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spotlight {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+@layer components {
+  .ops-scope {
+    @apply min-h-screen bg-zinc-950 px-4 py-8 text-zinc-100;
+  }
+
+  .ops-page {
+    @apply mx-auto max-w-7xl space-y-6;
+  }
+
+  .ops-band {
+    @apply rounded-2xl border border-zinc-800/90 bg-zinc-900/75 p-5;
+  }
+
+  .ops-card {
+    @apply rounded-2xl border border-zinc-800/80 bg-zinc-900/65 p-4;
+  }
+
+  .ops-title {
+    @apply text-2xl font-black tracking-tight text-zinc-100;
+  }
+
+  .ops-section-title {
+    @apply text-base font-bold text-zinc-100;
+  }
+
+  .ops-subtitle {
+    @apply text-sm text-zinc-500;
+  }
+
+  .ops-kpi {
+    @apply rounded-xl border border-zinc-800 bg-zinc-950/70 p-3;
+  }
+
+  .ops-kpi-label {
+    @apply text-[11px] font-semibold uppercase tracking-wide text-zinc-500;
+  }
+
+  .ops-kpi-value {
+    @apply text-xl font-black text-zinc-100;
+  }
+
+  .ops-kpi-hint {
+    @apply mt-1 text-xs text-zinc-500;
+  }
+
+  .ops-field {
+    @apply space-y-1.5;
+  }
+
+  .ops-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-zinc-400;
+  }
+
+  .ops-helper {
+    @apply text-xs text-zinc-500;
+  }
+
+  .ops-input {
+    @apply min-h-11 w-full rounded-xl border border-zinc-700 bg-zinc-950/90 px-3 py-2 text-sm text-zinc-100 outline-none transition focus-visible:border-amber-400/70 focus-visible:ring-2 focus-visible:ring-amber-400/20 disabled:opacity-50;
+  }
+}

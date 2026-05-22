@@ -35,15 +35,29 @@ export async function fetchAdminReservations(params?: { status?: string; page?: 
   }
 }
 
-export async function fetchAdminVenues(params?: { page?: number; type?: string; city?: string; q?: string; ownerId?: string; withoutOwner?: boolean }) {
+export async function forceCancelAdminReservation(id: string, reason: string) {
+  return apiPatchRaw<{ success: boolean; message: string; data: unknown }>(`/admin/reservations/${id}/force-cancel`, { reason });
+}
+
+export async function markAdminReservationRefunded(id: string, reason: string) {
+  return apiPatchRaw<{ success: boolean; message: string; data: unknown }>(`/admin/reservations/${id}/mark-refunded`, { reason });
+}
+
+export async function addAdminReservationNote(id: string, note: string) {
+  return apiPostRaw<{ success: boolean; message: string; data: unknown }>(`/admin/reservations/${id}/note`, { note });
+}
+
+export async function fetchAdminVenues(params?: { page?: number; limit?: number; type?: string; city?: string; q?: string; ownerId?: string; withoutOwner?: boolean; archived?: 'only' | '1' }) {
   try {
     const sp = new URLSearchParams();
     if (params?.page) sp.set('page', String(params.page));
+    if (params?.limit) sp.set('limit', String(params.limit));
     if (params?.type) sp.set('type', params.type);
     if (params?.city) sp.set('city', params.city);
     if (params?.q) sp.set('q', params.q);
     if (params?.ownerId) sp.set('ownerId', params.ownerId);
     if (params?.withoutOwner) sp.set('withoutOwner', '1');
+    if (params?.archived) sp.set('archived', params.archived);
     const qs = sp.toString();
     const res = await apiGetRaw<{ venues?: unknown[] }>(`/admin/venues${qs ? `?${qs}` : ''}`);
     const list = (res as { venues?: unknown[] })?.venues;
@@ -53,8 +67,29 @@ export async function fetchAdminVenues(params?: { page?: number; type?: string; 
   }
 }
 
+export async function fetchAdminVenuesTotalByType(type: string): Promise<number> {
+  try {
+    const sp = new URLSearchParams();
+    sp.set('type', type);
+    sp.set('page', '1');
+    sp.set('limit', '1');
+    const res = await apiGetRaw<{ total?: number }>(`/admin/venues?${sp.toString()}`);
+    return Number((res as { total?: number })?.total ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
 export async function deleteAdminVenue(id: string) {
   return apiDeleteRaw<{ success: boolean; deleted: Record<string, number | string> }>(`/admin/venues/${id}`);
+}
+
+export async function archiveAdminVenue(id: string, reason?: string) {
+  return apiPostRaw<{ success: boolean }>(`/admin/venues/${id}/archive`, { reason });
+}
+
+export async function restoreAdminVenue(id: string) {
+  return apiPostRaw<{ success: boolean }>(`/admin/venues/${id}/restore`, {});
 }
 
 export type AdminOwner = { _id: string; fullName: string; email: string; role: string };
@@ -126,6 +161,37 @@ export async function fetchAdminEvents() {
   }
 }
 
+export async function fetchAdminEventModeration(params?: { status?: string; q?: string }) {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set('approvalStatus', params.status);
+  if (params?.q) sp.set('q', params.q);
+  const qs = sp.toString();
+  const data = await apiGetRaw<unknown[]>(`/admin/events${qs ? `?${qs}` : ''}`);
+  return Array.isArray(data) ? data : [];
+}
+
+export async function approveAdminEvent(id: string) {
+  return apiPatchRaw(`/admin/events/${id}/approve`, {});
+}
+
+export async function rejectAdminEvent(id: string, reason: string) {
+  return apiPatchRaw(`/admin/events/${id}/reject`, { reason });
+}
+
+export async function requestAdminEventChanges(id: string, note: string) {
+  return apiPatchRaw(`/admin/events/${id}/request-changes`, { note });
+}
+
+export async function inviteAdminOwner(payload: {
+  fullName: string;
+  email: string;
+  phone?: string;
+  role?: 'ESTABLISHMENT_OWNER' | 'ORGANIZER';
+  serviceDomains?: string[];
+}) {
+  return apiPostRaw('/admin/owners/invite', payload);
+}
+
 export type AdminEventPayload = {
   venueId?: string;
   title?: string;
@@ -160,7 +226,8 @@ export async function fetchAdminVirtualTours(venueId: string) {
 export type AdminTablePlacement = {
   _id: string;
   venueId: string;
-  tableId: string;
+  tableId?: string;
+  reservableUnitId?: string;
   virtualTourId?: string;
   sceneId: string;
   positionType: 'yaw_pitch' | 'matterport_anchor';
@@ -197,7 +264,8 @@ export async function fetchAdminTablePlacements(
 
 export async function createAdminTablePlacement(payload: {
   venueId: string;
-  tableId: string;
+  tableId?: string;
+  reservableUnitId?: string;
   virtualTourId?: string;
   sceneId: string;
   positionType?: 'yaw_pitch' | 'matterport_anchor';
@@ -217,6 +285,7 @@ export async function updateAdminTablePlacement(
     yaw: number;
     pitch: number;
     tableId: string;
+    reservableUnitId: string;
     positionType: 'yaw_pitch' | 'matterport_anchor';
     anchorPosition: { x: number; y: number; z: number };
     stemVector: { x: number; y: number; z: number };
@@ -283,6 +352,17 @@ export async function updateAdminTable(id: string, payload: Partial<{ tableNumbe
 
 export async function deleteAdminTable(id: string) {
   await api.delete(`/admin/tables/${id}`);
+}
+
+export async function fetchAdminReservableUnits(venueId: string): Promise<import('./owner-coworking').CoworkingUnit[]> {
+  try {
+    const res = await apiGetRaw<{ success?: boolean; data?: import('./owner-coworking').CoworkingUnit[] }>(
+      `/admin/reservable-units?venueId=${encodeURIComponent(venueId)}`
+    );
+    return (res as { data?: import('./owner-coworking').CoworkingUnit[] })?.data ?? [];
+  } catch {
+    return [];
+  }
 }
 
 export interface AdminBannerSlide {
@@ -631,6 +711,8 @@ export async function createAdminSceneHotspot(payload: {
   xPercent: number;
   yPercent: number;
   targetSceneId: string;
+  yaw?: number;
+  pitch?: number;
 }): Promise<AdminSceneHotspot> {
   const res = await apiPostRaw<{ success?: boolean; data?: AdminSceneHotspot }>('/admin/scene-hotspots', payload);
   return (res as any)?.data ?? res;

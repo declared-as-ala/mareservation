@@ -2,60 +2,86 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAdminStats } from '@/lib/api/admin';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { fetchAdminStats, fetchAdminVenuesTotalByType } from '@/lib/api/admin';
 import {
-  Users,
-  MapPin,
-  Calendar,
-  FileText,
-  TrendingUp,
-  ArrowRight,
   ArrowUpRight,
+  BriefcaseBusiness,
+  CalendarDays,
+  CircleDollarSign,
+  Clock3,
+  FileText,
+  Hotel,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  Users,
 } from 'lucide-react';
 import { DashboardCharts } from './DashboardCharts';
 
-interface StatCardProps {
+type StatTileProps = {
   title: string;
   value: number;
-  icon: React.ComponentType<{ className?: string }>;
+  subtitle: string;
   href: string;
-  description: string;
-  accent: string;
-}
+  icon: React.ComponentType<{ className?: string }>;
+  tone: 'amber' | 'emerald' | 'blue' | 'violet';
+};
 
-function StatCard({ title, value, icon: Icon, href, description, accent }: StatCardProps) {
+const toneStyles: Record<StatTileProps['tone'], string> = {
+  amber: 'border-amber-400/30 bg-amber-400/10 text-amber-200',
+  emerald: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200',
+  blue: 'border-blue-400/30 bg-blue-400/10 text-blue-200',
+  violet: 'border-violet-400/30 bg-violet-400/10 text-violet-200',
+};
+
+function StatTile({ title, value, subtitle, href, icon: Icon, tone }: StatTileProps) {
   return (
-    <Link href={href} className="block group">
-      <div className="relative rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 shadow-sm">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`flex items-center justify-center size-9 rounded-lg ${accent}`}>
+    <Link href={href} className="group block">
+      <article className="rounded-2xl border border-zinc-800 bg-zinc-900/65 p-4 transition-all hover:border-zinc-700 hover:bg-zinc-900">
+        <div className="mb-3 flex items-start justify-between">
+          <div className={`flex size-10 items-center justify-center rounded-xl border ${toneStyles[tone]}`}>
             <Icon className="size-4" />
           </div>
-          <ArrowUpRight className="size-4 text-zinc-700 group-hover:text-zinc-400 transition-colors duration-200" />
+          <ArrowUpRight className="size-4 text-zinc-600 transition-colors group-hover:text-zinc-300" />
         </div>
-        <p className="text-2xl font-semibold text-zinc-100 tracking-tight tabular-nums">
+        <p className="text-3xl font-black leading-none tracking-tight text-zinc-100 tabular-nums">
           {value.toLocaleString('fr-FR')}
         </p>
-        <p className="mt-1 text-sm font-medium text-zinc-400">{title}</p>
-        <p className="mt-0.5 text-xs text-zinc-500">{description}</p>
-      </div>
+        <p className="mt-2 text-sm font-semibold text-zinc-300">{title}</p>
+        <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>
+      </article>
     </Link>
   );
 }
 
-function StatCardSkeleton() {
+function StatSkeleton() {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-4">
-      <div className="flex items-start justify-between">
-        <div className="size-9 rounded-lg bg-white/[0.05] animate-pulse" />
-      </div>
-      <div>
-        <div className="h-7 w-16 rounded bg-white/[0.05] animate-pulse" />
-        <div className="mt-2 h-3.5 w-24 rounded bg-white/[0.04] animate-pulse" />
-      </div>
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/65 p-4">
+      <div className="mb-3 size-10 rounded-xl bg-zinc-800 animate-pulse" />
+      <div className="h-8 w-20 rounded bg-zinc-800 animate-pulse" />
+      <div className="mt-3 h-4 w-28 rounded bg-zinc-800 animate-pulse" />
+      <div className="mt-1 h-3 w-32 rounded bg-zinc-800 animate-pulse" />
     </div>
+  );
+}
+
+function ActionCard({
+  title,
+  description,
+  href,
+}: {
+  title: string;
+  description: string;
+  href: string;
+}) {
+  return (
+    <Link href={href} className="group block rounded-xl border border-zinc-800 bg-zinc-900/55 p-3 transition-all hover:border-zinc-700 hover:bg-zinc-900">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-zinc-200">{title}</p>
+        <ArrowUpRight className="size-3.5 text-zinc-600 transition-colors group-hover:text-amber-300" />
+      </div>
+      <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">{description}</p>
+    </Link>
   );
 }
 
@@ -64,120 +90,142 @@ export default function AdminDashboardPage() {
     queryKey: ['admin', 'stats'],
     queryFn: fetchAdminStats,
   });
+  const { data: coworkingTotal = 0, isLoading: isCoworkingLoading } = useQuery({
+    queryKey: ['admin', 'venues-total', 'COWORKING'],
+    queryFn: () => fetchAdminVenuesTotalByType('COWORKING'),
+  });
+
+  const totalUsers = stats?.totalUsers ?? 0;
+  const totalVenues = stats?.totalVenues ?? 0;
+  const totalReservations = stats?.totalReservations ?? 0;
+  const totalEvents = stats?.totalEvents ?? 0;
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Tableau de bord</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Vue d&apos;ensemble de la plateforme Ma Reservation
-        </p>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-zinc-100">Tableau de bord</h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              Pilotage global de la plateforme: opérations, modération et croissance.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">
+            <Sparkles className="size-3.5" />
+            Centre de commande admin
+          </div>
+        </div>
+      </section>
 
-      {/* Stats Grid */}
-      {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <StatCardSkeleton key={i} />)}
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Utilisateurs"
-            value={stats?.totalUsers ?? 0}
-            icon={Users}
-            href="/admin/users"
-            description="Comptes enregistrés"
-            accent="bg-amber-500/15 border border-amber-500/20"
-          />
-          <StatCard
-            title="Lieux"
-            value={stats?.totalVenues ?? 0}
-            icon={MapPin}
-            href="/admin/venues"
-            description="Établissements actifs"
-            accent="bg-emerald-500/15 border border-emerald-500/20"
-          />
-          <StatCard
-            title="Réservations"
-            value={stats?.totalReservations ?? 0}
-            icon={Calendar}
-            href="/admin/reservations"
-            description="Total traité"
-            accent="bg-blue-500/15 border border-blue-500/20"
-          />
-          <StatCard
-            title="Événements"
-            value={stats?.totalEvents ?? 0}
-            icon={FileText}
-            href="/admin/events"
-            description="Planifiés ou en cours"
-            accent="bg-purple-500/15 border border-purple-500/20"
-          />
-        </div>
-      )}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {isLoading || isCoworkingLoading ? (
+          <>
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+            <StatSkeleton />
+          </>
+        ) : (
+          <>
+            <StatTile
+              title="Utilisateurs"
+              value={totalUsers}
+              subtitle="Comptes enregistrés"
+              href="/admin/users"
+              icon={Users}
+              tone="amber"
+            />
+            <StatTile
+              title="Lieux"
+              value={totalVenues}
+              subtitle="Établissements suivis"
+              href="/admin/venues"
+              icon={MapPin}
+              tone="emerald"
+            />
+            <StatTile
+              title="Réservations"
+              value={totalReservations}
+              subtitle="Toutes catégories"
+              href="/admin/reservations"
+              icon={CalendarDays}
+              tone="blue"
+            />
+            <StatTile
+              title="Événements"
+              value={totalEvents}
+              subtitle="Programmation active"
+              href="/admin/events"
+              icon={FileText}
+              tone="violet"
+            />
+            <StatTile
+              title="Coworking"
+              value={coworkingTotal}
+              subtitle="Espaces coworking"
+              href="/admin/venues?type=COWORKING"
+              icon={BriefcaseBusiness}
+              tone="emerald"
+            />
+          </>
+        )}
+      </section>
 
-      {/* Quick Actions */}
-      <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="size-4 text-amber-400" />
-          <h2 className="text-sm font-semibold text-white/80">Actions rapides</h2>
+      <section className="grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-400">Analyses</h2>
+            <span className="text-xs text-zinc-500">30 derniers jours</span>
+          </div>
+          <DashboardCharts />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            asChild
-            size="sm"
-            className="bg-amber-500 text-black font-medium hover:bg-amber-400 transition-all duration-200 shadow-lg shadow-amber-500/20"
-          >
-            <Link href="/admin/venues" className="flex items-center gap-1.5">
-              <MapPin className="size-3.5" />
-              Gérer les lieux
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.14] transition-all duration-200"
-          >
-            <Link href="/admin/reservations" className="flex items-center gap-1.5">
-              <Calendar className="size-3.5" />
-              Réservations
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.14] transition-all duration-200"
-          >
-            <Link href="/admin/users" className="flex items-center gap-1.5">
-              <Users className="size-3.5" />
-              Utilisateurs
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.14] transition-all duration-200"
-          >
-            <Link href="/admin/events" className="flex items-center gap-1.5">
-              <FileText className="size-3.5" />
-              Événements
-            </Link>
-          </Button>
-        </div>
-      </div>
 
-      {/* Charts Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-white/80">Analyses & statistiques</h2>
-          <span className="text-xs text-white/25">30 derniers jours</span>
+        <div className="space-y-4">
+          <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-400">Actions prioritaires</h2>
+            <div className="grid gap-2">
+              <ActionCard
+                title="Modération centrale"
+                description="Traiter les avis signalés et contrôler la qualité du contenu public."
+                href="/admin/moderation"
+              />
+              <ActionCard
+                title="Approbation hôtels"
+                description="Valider les nouveaux hôtels, documents et conformité des annonces."
+                href="/admin/hotels-approval"
+              />
+              <ActionCard
+                title="Propriétaires & domaines"
+                description="Inviter un owner, affecter ses catégories et gérer ses accès."
+                href="/admin/owners"
+              />
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-zinc-400">Raccourcis opérationnels</h2>
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/admin/payouts" className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 text-xs font-semibold text-zinc-300 hover:border-zinc-700">
+                <div className="mb-1 flex items-center gap-1.5"><CircleDollarSign className="size-3.5 text-amber-300" /> Virements</div>
+                <p className="text-[11px] font-normal text-zinc-500">Paiements et validation</p>
+              </Link>
+              <Link href="/admin/support" className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 text-xs font-semibold text-zinc-300 hover:border-zinc-700">
+                <div className="mb-1 flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-amber-300" /> Support</div>
+                <p className="text-[11px] font-normal text-zinc-500">Tickets et suivi client</p>
+              </Link>
+              <Link href="/admin/hotels" className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 text-xs font-semibold text-zinc-300 hover:border-zinc-700">
+                <div className="mb-1 flex items-center gap-1.5"><Hotel className="size-3.5 text-amber-300" /> Hôtels</div>
+                <p className="text-[11px] font-normal text-zinc-500">Inventaire et pages</p>
+              </Link>
+              <Link href="/admin/audit-logs" className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 text-xs font-semibold text-zinc-300 hover:border-zinc-700">
+                <div className="mb-1 flex items-center gap-1.5"><Clock3 className="size-3.5 text-amber-300" /> Audit Logs</div>
+                <p className="text-[11px] font-normal text-zinc-500">Traçabilité des actions</p>
+              </Link>
+            </div>
+          </article>
         </div>
-        <DashboardCharts />
-      </div>
+      </section>
     </div>
   );
 }

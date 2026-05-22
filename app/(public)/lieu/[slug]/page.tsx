@@ -12,12 +12,17 @@ import {
   fetchVenueByIdOrSlug,
   getVenueAvailabilityStreamUrl,
   fetchVenueTablePlacements,
+  fetchVenueReservableUnits,
+  fetchVenueCoworkingAddons,
   fetchVenueScenes,
   type PublicTablePlacement,
+  type PublicReservableUnit,
+  type PublicCoworkingAddon,
   type VirtualScene,
   type VirtualHotspot,
 } from '@/lib/api/venues';
 import { fetchScenes } from '@/lib/api/scenes';
+import { fetchVenueMenu } from '@/lib/api/menu';
 import { fetchVenueRooms, fetchRoomScenes, ROOM_TYPE_LABELS } from '@/lib/api/rooms';
 import type { HotelRoom } from '@/lib/api/types';
 import { DetailPageSkeleton } from '@/components/shared/skeletons';
@@ -51,6 +56,9 @@ import {
   Image as ImageIcon,
   Star,
   X,
+  BriefcaseBusiness,
+  UtensilsCrossed,
+  CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TablePlacement } from '@/lib/api/types';
@@ -212,12 +220,33 @@ function HotelGalleryRail({ images, venueName }: { images: string[]; venueName: 
 }
 
 /* ── Room card (grid item) ───────────────────────────────────────────── */
-function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
+function RoomCard({
+  room,
+  onClick,
+  availableSameType,
+  totalSameType,
+}: {
+  room: HotelRoom;
+  onClick: () => void;
+  availableSameType?: number;
+  totalSameType?: number;
+}) {
   const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase() ?? ''] ?? room.roomType ?? 'Chambre';
   const isSuite = ['SUITE', 'JUNIOR_SUITE', 'PRESIDENTIAL_SUITE', 'VILLA', 'PENTHOUSE'].includes(
     room.roomType?.toUpperCase() ?? ''
   );
   const has360 = (room.panoramicImages?.length ?? 0) > 0 || room.hasVirtualTour;
+
+  // Low-stock warning: this room is available AND fewer than 3 of the same type are left.
+  const isThisAvailable = room.status === 'available' || !room.status;
+  const showLowStock =
+    isThisAvailable &&
+    typeof availableSameType === 'number' &&
+    typeof totalSameType === 'number' &&
+    totalSameType > availableSameType &&
+    availableSameType > 0 &&
+    availableSameType <= 2;
+  const isFullyBooked = typeof availableSameType === 'number' && availableSameType === 0;
 
   return (
     <button
@@ -265,6 +294,23 @@ function RoomCard({ room, onClick }: { room: HotelRoom; onClick: () => void }) {
             <span className="text-white/40 ml-1 font-normal">/nuit</span>
           </span>
         </div>
+        {/* Low-stock banner */}
+        {showLowStock && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/85 border border-red-300/40 backdrop-blur-sm px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+              <span className="size-1.5 rounded-full bg-white animate-pulse" />
+              Plus que {availableSameType}
+              {availableSameType === 1 ? ' chambre' : ' chambres'} de ce type
+            </span>
+          </div>
+        )}
+        {isFullyBooked && (
+          <div className="absolute bottom-2.5 left-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-900/90 border border-zinc-700 backdrop-blur-sm px-2 py-1 text-[10px] font-bold text-zinc-300">
+              Complet sur ces dates
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Info */}
@@ -919,6 +965,12 @@ export default function VenueDetailPage() {
   const [roomSceneIdx, setRoomSceneIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [roomsPage, setRoomsPage] = useState(1);
+  const [coworkingDate, setCoworkingDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [coworkingTime, setCoworkingTime] = useState('09:00');
+  const [coworkingDurationType, setCoworkingDurationType] = useState<'hourly' | 'half_day' | 'full_day'>('hourly');
+  const [coworkingHours, setCoworkingHours] = useState(2);
+  const [coworkingPartySize, setCoworkingPartySize] = useState(1);
+  const [coworkingAddonQty, setCoworkingAddonQty] = useState<Record<string, number>>({});
 
   const [selectedSlotStartAt] = useState(() =>
     new Date(Date.now() + RESERVATION_DURATION_MS).toISOString()
@@ -964,6 +1016,8 @@ export default function VenueDetailPage() {
   const tourHotspots = tourData?.hotspots ?? [];
 
   const isHotelVenue = (venue as any)?.type === 'HOTEL';
+  const isCoworkingVenue = (venue as any)?.type === 'COWORKING';
+  const isTableVenue = ['RESTAURANT', 'CAFE', 'CAFE_LOUNGE'].includes(String((venue as any)?.type || ''));
 
   const { data: hotelRooms = [] } = useQuery({
     queryKey: ['public-hotel-rooms', venue?._id],
@@ -975,6 +1029,24 @@ export default function VenueDetailPage() {
     queryKey: ['public-room-scenes', selectedRoom?._id],
     queryFn: () => fetchRoomScenes(selectedRoom!.venueId, selectedRoom!._id),
     enabled: !!selectedRoom?._id,
+  });
+
+  const { data: coworkingUnits = [] } = useQuery({
+    queryKey: ['venue-coworking-units', venue?._id],
+    queryFn: () => fetchVenueReservableUnits(venue!._id),
+    enabled: !!venue?._id && isCoworkingVenue,
+  });
+
+  const { data: coworkingAddons = [] } = useQuery({
+    queryKey: ['venue-coworking-addons', venue?._id],
+    queryFn: () => fetchVenueCoworkingAddons(venue!._id),
+    enabled: !!venue?._id && isCoworkingVenue,
+  });
+
+  const { data: venueMenuItems = [] } = useQuery({
+    queryKey: ['venue-menu-public', venue?._id],
+    queryFn: () => fetchVenueMenu(venue!._id),
+    enabled: !!venue?._id && isTableVenue,
   });
 
   // Auto-select first scene
@@ -999,6 +1071,23 @@ export default function VenueDetailPage() {
   useEffect(() => {
     setRoomsPage(1);
   }, [venue?._id, hotelRooms.length]);
+
+  // Coworking date/time derivations — hooks must run unconditionally,
+  // before any early return below (Rules of Hooks).
+  const coworkingStartAt = useMemo(
+    () => new Date(`${coworkingDate}T${coworkingTime}:00`).toISOString(),
+    [coworkingDate, coworkingTime]
+  );
+  const coworkingEffectiveHours =
+    coworkingDurationType === 'half_day'
+      ? 4
+      : coworkingDurationType === 'full_day'
+        ? 8
+        : Math.max(1, coworkingHours);
+  const coworkingEndAt = useMemo(
+    () => new Date(new Date(coworkingStartAt).getTime() + coworkingEffectiveHours * 60 * 60 * 1000).toISOString(),
+    [coworkingStartAt, coworkingEffectiveHours]
+  );
 
   if (!slug) {
     return (
@@ -1043,6 +1132,18 @@ export default function VenueDetailPage() {
     safeRoomsPage * HOTEL_ROOMS_PER_PAGE
   );
 
+  // Per-room-type availability counts (used by RoomCard for "Only N left" warning)
+  const roomTypeAvailability = hotelRooms.reduce<Record<string, { available: number; total: number }>>(
+    (acc, r) => {
+      const key = (r.roomType ?? 'OTHER').toUpperCase();
+      if (!acc[key]) acc[key] = { available: 0, total: 0 };
+      acc[key].total += 1;
+      if (r.status === 'available' || !r.status) acc[key].available += 1;
+      return acc;
+    },
+    {},
+  );
+
   const showHotelHero = isHotelVenue && hotelRooms.length > 0;
 
   const hasNewImmersive =
@@ -1064,9 +1165,24 @@ export default function VenueDetailPage() {
 
   const currentImmersiveScene = immersiveSceneList[activeImmersiveSceneIdx] ?? immersiveSceneList[0];
 
+  const coworkingAddonsSelected = coworkingAddons
+    .filter((a) => (coworkingAddonQty[a.key] ?? 0) > 0)
+    .map((a) => ({
+      key: a.key,
+      name: a.name,
+      quantity: coworkingAddonQty[a.key],
+      unitPrice: a.unitPrice,
+    }));
+  const coworkingAddonsTotal = coworkingAddonsSelected.reduce((sum, a) => sum + a.quantity * a.unitPrice, 0);
+
   const tabsDefaultValue =
-    isHotelVenue ? 'apercu' : hasAnyImmersive ? 'visite360' : 'apercu';
+    isHotelVenue ? 'apercu' : isCoworkingVenue ? 'coworking' : hasAnyImmersive ? 'visite360' : 'apercu';
   const hasTablePlacements = allPlacements.length > 0;
+  const tableGalleryImages = allImages.slice(0, 8);
+  const menuPreviewItems = venueMenuItems
+    .filter((item) => item.isAvailable)
+    .sort((a, b) => Number(b.isPopular) - Number(a.isPopular))
+    .slice(0, 6);
 
   const panoramaMarkers = scenePlacements
     .filter((p) => p.positionType === 'yaw_pitch' && p.yaw != null && p.pitch != null)
@@ -1130,6 +1246,31 @@ export default function VenueDetailPage() {
 
   const handleImmersiveTableSelect = (placement: PublicTablePlacement) => {
     setSelectedTable(placement);
+  };
+
+  const handleCoworkingAddToCart = (unit: PublicReservableUnit) => {
+    const base = Number((unit as any).basePrice || 0);
+    const total = base * coworkingEffectiveHours + coworkingAddonsTotal;
+    addItem({
+      id: `venue-${venue._id}-coworking-${unit._id}-${Date.now()}`,
+      type: 'venue_coworking',
+      title: venue.name,
+      imageUrl: img ?? undefined,
+      unitLabel: unit.label,
+      unitType: venue.type,
+      dateTime: coworkingStartAt,
+      endAt: coworkingEndAt,
+      price: total,
+      quantity: coworkingPartySize,
+      venueId: venue._id,
+      reservableUnitId: unit._id,
+      slug: venue.slug,
+      coworkingDurationType,
+      coworkingHours: coworkingEffectiveHours,
+      coworkingAddons: coworkingAddonsSelected,
+      coworkingAddonsTotal,
+    });
+    toast.success(`${unit.label} ajouté au panier`);
   };
 
 
@@ -1297,13 +1438,19 @@ export default function VenueDetailPage() {
                     ) : (
                       <div className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-2">
-                          {visibleHotelRooms.map((room) => (
-                            <RoomCard
-                              key={room._id}
-                              room={room}
-                              onClick={() => router.push(`/lieu/${venue.slug ?? slug}/chambre/${room._id}`)}
-                            />
-                          ))}
+                          {visibleHotelRooms.map((room) => {
+                            const typeKey = (room.roomType ?? 'OTHER').toUpperCase();
+                            const stats = roomTypeAvailability[typeKey];
+                            return (
+                              <RoomCard
+                                key={room._id}
+                                room={room}
+                                availableSameType={stats?.available}
+                                totalSameType={stats?.total}
+                                onClick={() => router.push(`/lieu/${venue.slug ?? slug}/chambre/${room._id}`)}
+                              />
+                            );
+                          })}
                         </div>
 
                         {roomPageCount > 1 && (
@@ -1453,6 +1600,15 @@ export default function VenueDetailPage() {
                 </span>
               </TabsTrigger>
             )}
+            {isCoworkingVenue && (
+              <TabsTrigger value="coworking" className="min-h-11 flex-none gap-2 rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
+                <BriefcaseBusiness className="size-3.5" />
+                Coworking
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black/15 px-1.5 text-[10px] font-bold text-current">
+                  {coworkingUnits.filter((u) => u.isReservable && u.status === 'active' && u.unitType.startsWith('coworking_')).length}
+                </span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="infos" className="min-h-11 flex-none rounded-xl px-4 text-sm font-semibold data-[state=active]:border-amber-300/30 data-[state=active]:bg-amber-300 data-[state=active]:text-black">
               <MapPin className="size-3.5" />
               Infos pratiques
@@ -1508,9 +1664,19 @@ export default function VenueDetailPage() {
                     </span>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {hotelRooms.map((room) => (
-                      <RoomCard key={room._id} room={room} onClick={() => { setSelectedRoom(room); setRoomSceneIdx(0); }} />
-                    ))}
+                    {hotelRooms.map((room) => {
+                      const typeKey = (room.roomType ?? 'OTHER').toUpperCase();
+                      const stats = roomTypeAvailability[typeKey];
+                      return (
+                        <RoomCard
+                          key={room._id}
+                          room={room}
+                          availableSameType={stats?.available}
+                          totalSameType={stats?.total}
+                          onClick={() => { setSelectedRoom(room); setRoomSceneIdx(0); }}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1719,6 +1885,58 @@ export default function VenueDetailPage() {
                 );
               })()}
 
+              <div className="mb-5 grid gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+                <div className="space-y-4">
+                  {tableGalleryImages.length > 1 && (
+                    <HotelGalleryRail images={tableGalleryImages} venueName={venue.name} />
+                  )}
+                  {menuPreviewItems.length > 0 && (
+                    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-zinc-400">
+                          <UtensilsCrossed className="size-3.5 text-amber-300" />
+                          Menu conseille
+                        </p>
+                        <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+                          Precommande
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {menuPreviewItems.slice(0, 4).map((item) => (
+                          <div key={item._id} className="rounded-xl border border-white/[0.06] bg-black/20 px-2.5 py-2">
+                            <p className="line-clamp-1 text-xs font-semibold text-zinc-100">{item.name}</p>
+                            <p className="mt-0.5 text-[11px] text-zinc-500">{item.price.toFixed(2)} TND</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Reservation de table</h3>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Selectionnez votre table puis finalisez avec ou sans precommande menu.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(true)}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-300/15"
+                    >
+                      <CalendarClock className="size-3.5" />
+                      Ouvrir le planificateur
+                    </button>
+                  </div>
+                  {menuPreviewItems.length > 0 && (
+                    <p className="mt-3 text-xs text-zinc-400">
+                      Le menu est disponible dans le parcours de reservation (option "Avec menu").
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {allPlacements.map((placement) => {
                   const { table } = placement;
@@ -1812,6 +2030,61 @@ export default function VenueDetailPage() {
                   initialEndAt={selectedSlotEndAt}
                 />
               )}
+            </TabsContent>
+          )}
+
+          {isCoworkingVenue && (
+            <TabsContent value="coworking" className="mt-2 space-y-6 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-6">
+              <div className="grid gap-3 md:grid-cols-5">
+                <input type="date" min={new Date().toISOString().slice(0, 10)} value={coworkingDate} onChange={(e) => setCoworkingDate(e.target.value)} className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm md:col-span-1" />
+                <input type="time" value={coworkingTime} onChange={(e) => setCoworkingTime(e.target.value)} className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm md:col-span-1" />
+                <select value={coworkingDurationType} onChange={(e) => setCoworkingDurationType(e.target.value as 'hourly' | 'half_day' | 'full_day')} className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm md:col-span-1">
+                  <option value="hourly">Hourly</option>
+                  <option value="half_day">Half-day</option>
+                  <option value="full_day">Full-day</option>
+                </select>
+                <input type="number" min={1} max={12} value={coworkingHours} onChange={(e) => setCoworkingHours(Number(e.target.value || 1))} className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm md:col-span-1" disabled={coworkingDurationType !== 'hourly'} />
+                <input type="number" min={1} max={20} value={coworkingPartySize} onChange={(e) => setCoworkingPartySize(Number(e.target.value || 1))} className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm md:col-span-1" />
+              </div>
+
+              {coworkingAddons.length > 0 && (
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+                  <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Add-ons</p>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {coworkingAddons.map((addon) => {
+                      const qty = coworkingAddonQty[addon.key] ?? 0;
+                      return (
+                        <div key={addon._id} className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2 text-sm">
+                          <div className="font-medium text-zinc-200">{addon.name}</div>
+                          <div className="text-xs text-zinc-500">{addon.unitPrice} TND</div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <button type="button" className="rounded border border-zinc-700 px-2 py-0.5 text-xs" onClick={() => setCoworkingAddonQty((p) => ({ ...p, [addon.key]: Math.max(0, (p[addon.key] ?? 0) - 1) }))}>-</button>
+                            <span className="text-xs">{qty}</span>
+                            <button type="button" className="rounded border border-zinc-700 px-2 py-0.5 text-xs" onClick={() => setCoworkingAddonQty((p) => ({ ...p, [addon.key]: Math.min(addon.maxQty ?? 99, (p[addon.key] ?? 0) + 1) }))}>+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {coworkingUnits
+                  .filter((u) => u.unitType.startsWith('coworking_') && u.isReservable && u.status === 'active')
+                  .map((unit) => (
+                    <div key={unit._id} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+                      <p className="text-sm font-bold text-white">{unit.label}</p>
+                      <p className="mt-1 text-xs text-zinc-500">{unit.unitType.replace('coworking_', '').replace('_', ' ')}</p>
+                      <p className="mt-2 text-xs text-zinc-400">Capacité max: {unit.capacityMax ?? 1}</p>
+                      <p className="mt-1 text-xs text-zinc-400">Base: {unit.basePrice} TND / h</p>
+                      <p className="mt-2 text-sm font-semibold text-amber-300">Total: {unit.basePrice * coworkingEffectiveHours + coworkingAddonsTotal} TND</p>
+                      <button type="button" onClick={() => handleCoworkingAddToCart(unit)} className="mt-3 w-full rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-400/15">
+                        Ajouter au panier
+                      </button>
+                    </div>
+                  ))}
+              </div>
             </TabsContent>
           )}
 

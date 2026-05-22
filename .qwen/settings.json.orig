@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Read(C:\\Users/**)"
+      "Read(C:\\Users/**)",
+      "Read(C:\\Ala\\Desktop\\MUsers\\Ala\\Desktop\\MaTable\\components\\home/**)",
+      "Read(C:\\Users\\Ala\\Desktop<CardDescription className=\"text-center text-sm text-gray-600 leading-relaxed\">\n              Accédez à votre espace personnel Ma Reservation\n            </CardDescription>\n          </CardHeader>\n\n          <form onSubmit={handleSubmit}>\n            <CardContent className=\"space-y-5 px-8\">\n              {error && (\n                <div className=\"rounded-lg border border-red-500/20 bg-red-50 px-4 py-3 text-sm text-red-600 text-center\" role=\"alert\">\n                  {error}\n                </div>\n              )}\n\n              {/* Email Field */**)",
+      "Read(C:\\<button\n                    type=\"button\"\n                    onClick={() => setShowPassword((p) => !p)}\n                    className=\"absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center size-8 roundedUsers\\Ala\\Desktop\\MaTable\\components\\detail-lg text-neutral-500 hover:text-neutral-3/**)",
+      "Read(C:\\Users\\Ala\\Desktop/**)",
+      "Read(C:\\/**)"
     ]
-  }
+  },
+  "$version": 3
 }

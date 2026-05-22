@@ -8,6 +8,12 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHome = pathname === '/';
 
+  // The owner dashboard provides its own shell (sidebar + topbar) via
+  // app/(public)/owner/layout.tsx — render it without the public navbar/footer.
+  if (pathname.startsWith('/owner')) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <HomeNavbar />

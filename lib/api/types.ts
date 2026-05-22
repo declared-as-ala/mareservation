@@ -1,6 +1,6 @@
 // Shared types aligned with backend models (ids as strings for JSON)
 
-export type VenueType = 'CAFE' | 'RESTAURANT' | 'HOTEL' | 'CINEMA' | 'EVENT_SPACE';
+export type VenueType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'COWORKING' | 'CINEMA' | 'EVENT_SPACE';
 
 export interface VenueMediaItem {
   _id: string;
@@ -34,7 +34,8 @@ export interface Vector3 {
 export interface TablePlacement {
   _id: string;
   venueId: string;
-  tableId: string;
+  tableId?: string;
+  reservableUnitId?: string;
   virtualTourId?: string;
   sceneId: string;
   positionType: PositionType;
@@ -59,6 +60,7 @@ export interface Venue {
   coordinates?: { lat?: number; lng?: number };
   coverImage?: string;
   gallery?: string[];
+  amenities?: string[];
   startingPrice?: number;
   priceRangeMin?: number;
   priceRangeMax?: number;
@@ -75,6 +77,10 @@ export interface Venue {
   immersiveUrl?: string | null;
   immersiveFile?: string | null;
   immersiveMeta?: Record<string, unknown> | null;
+  stars?: number;
+  cancellationPolicy?: string;
+  checkInPolicy?: string;
+  checkOutPolicy?: string;
   availableTables?: number;
   hasEvent?: boolean;
   media?: VenueMediaItem[];
@@ -94,8 +100,26 @@ export interface Event {
   slug?: string;
   startAt: string;
   endAt?: string;
+  endsAt?: string;
   description: string;
   imageUrl?: string;
+  coverImage?: string;
+  galleryUrls?: string[];
+  approvalStatus?: 'draft' | 'pending_review' | 'changes_requested' | 'approved' | 'rejected' | 'cancelled';
+  reservationMode?: 'ticket' | 'seat_zone' | 'seat' | 'table';
+  ageRestriction?: string;
+  termsFr?: string;
+  ticketTypes?: Array<{
+    _id?: string;
+    name: string;
+    price: number;
+    capacity: number;
+    sold?: number;
+    salesStartAt?: string;
+    salesEndAt?: string;
+    maxPerOrder?: number;
+    isActive?: boolean;
+  }>;
   isVedette?: boolean;
 }
 
@@ -107,7 +131,7 @@ export interface EventSession {
 }
 
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'EXPIRED';
-export type BookingType = 'TABLE' | 'ROOM' | 'SEAT';
+export type BookingType = 'TABLE' | 'ROOM' | 'SEAT' | 'COWORKING';
 
 export interface Reservation {
   _id: string;
@@ -116,6 +140,7 @@ export interface Reservation {
   tableId?: unknown;
   roomId?: unknown;
   seatId?: unknown;
+  eventId?: string | { _id: string; title?: string; startAt?: string };
   reservableUnitId?: string;
   bookingType: BookingType;
   startAt: string;
@@ -124,12 +149,42 @@ export interface Reservation {
   confirmationCode?: string;
   reservationCode?: string;
   totalPrice?: number;
+  amountPaid?: number;
+  remainingAmount?: number;
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  notes?: string;
   partySize?: number;
   paymentStatus?: string;
+  paymentMethod?: string;
+  priceBreakdown?: {
+    subtotal?: number;
+    serviceFee?: number;
+    taxes?: number;
+    discount?: number;
+    total?: number;
+    currency?: string;
+  };
   qrCodeData?: string;
   qrCodeImageUrl?: string;
   checkInStatus?: 'not_checked_in' | 'checked_in';
   checkedInAt?: string;
+  orderType?: 'table_only' | 'with_menu';
+  menuItems?: Array<{
+    menuItemId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  menuTotal?: number;
+  menuPrepStatus?: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+  menuPrepUpdatedAt?: string;
+  coworkingDurationType?: 'hourly' | 'half_day' | 'full_day';
+  coworkingHours?: number;
+  coworkingAddons?: Array<{ key: string; name: string; quantity: number; unitPrice: number }>;
+  coworkingAddonsTotal?: number;
 }
 
 // ── Hotel-specific types ─────────────────────────────────────────────────────
@@ -264,6 +319,10 @@ export interface MenuItem {
   image?: string;
   isAvailable: boolean;
   isPopular: boolean;
+  trackStock?: boolean;
+  stockQty?: number;
+  availableFrom?: string;
+  availableTo?: string;
   allergens?: string[];
 }
 

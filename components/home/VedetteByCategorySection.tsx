@@ -6,10 +6,12 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchVenues } from '@/lib/api/venues';
 import { Star, ArrowRight, MapPin, Video } from 'lucide-react';
 import { TypeBadge } from '@/components/shared/TypeBadge';
+import { getVenueHref } from '@/lib/venueHref';
 
 const CATEGORIES = [
   { type: 'CAFE', label: 'Cafés', href: '/explorer?type=CAFE' },
   { type: 'RESTAURANT', label: 'Restaurants', href: '/explorer?type=RESTAURANT' },
+  { type: 'COWORKING', label: 'Coworking', href: '/explorer?type=COWORKING' },
   { type: 'HOTEL', label: 'Hôtels', href: '/explorer?type=HOTEL' },
   { type: 'CINEMA', label: 'Cinéma', href: '/explorer?type=CINEMA' },
   { type: 'EVENT_SPACE', label: 'Salles & Événementiel', href: '/explorer?type=EVENT_SPACE' },
@@ -28,7 +30,7 @@ function VenueSlide({ venue }: {
     media?: { kind: string; url: string }[];
   }
 }) {
-  const href = `/lieu/${venue.slug || venue._id}`;
+  const href = getVenueHref(venue);
   const img = venue.coverImage ?? venue.media?.find((m) => m.kind === 'HERO_IMAGE')?.url ?? null;
 
   return (

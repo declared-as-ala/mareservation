@@ -39,7 +39,11 @@ export function isAdminRole(role: AuthRole): boolean {
 
 export function isOwnerRole(role: AuthRole): boolean {
   const normalized = String(role ?? '').toUpperCase();
-  return normalized === 'VENUE_OWNER' || normalized === 'ORGANIZER' || normalized === 'ESTABLISHMENT_OWNER';
+  return (
+    normalized === 'ORGANIZER' ||
+    normalized === 'OWNER' ||
+    normalized.endsWith('_OWNER')
+  );
 }
 
 export function getDefaultRedirectForRole(role: AuthRole): string {

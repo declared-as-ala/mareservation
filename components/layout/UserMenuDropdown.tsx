@@ -36,6 +36,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/lib/utils';
+import { isOwnerRole } from '@/lib/auth/redirect';
 
 type MenuLinkProps = {
   href: string;
@@ -106,7 +107,7 @@ export function UserMenuDropdown() {
   if (!user) return null;
 
   const isAdmin = user.role === 'ADMIN';
-  const isOwner = user.role === 'VENUE_OWNER' || user.role === 'ORGANIZER' || user.role === 'ESTABLISHMENT_OWNER';
+  const isOwner = isOwnerRole(user.role);
 
   const initials = user.fullName
     .split(/\s+/)

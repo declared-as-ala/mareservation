@@ -14,6 +14,7 @@ import { CartDrawer } from './CartDrawer';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { isOwnerRole } from '@/lib/auth/redirect';
 
 const categories = [
   { name: 'Explorer les lieux', href: '/explorer' },
@@ -24,7 +25,7 @@ const categories = [
 export function Navbar() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const isOwner = user?.role === 'VENUE_OWNER' || user?.role === 'ORGANIZER' || user?.role === 'ESTABLISHMENT_OWNER';
+  const isOwner = isOwnerRole(user?.role);
   const totalQuantity = useCartStore((s) => s.totalQuantity());
   const pathname = usePathname();
   const cartOpen = useCartStore((s) => s.drawerOpen);

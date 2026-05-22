@@ -23,6 +23,7 @@ import {
   SlidersHorizontal,
   X,
   Compass,
+  BriefcaseBusiness,
 } from 'lucide-react';
 
 function isValidVenueItem(value: unknown): value is {
@@ -43,6 +44,7 @@ const CATEGORIES: CategoryPill[] = [
   { key: 'cafes', label: 'Cafés & Lounges', icon: Coffee, type: 'CAFE' },
   { key: 'bars', label: 'Bars & Rooftops', icon: Wine, q: 'Bar' },
   { key: 'restaurants', label: 'Restaurants Gastronomiques', icon: Utensils, type: 'RESTAURANT' },
+  { key: 'coworking', label: 'Coworking Spaces', icon: BriefcaseBusiness, type: 'COWORKING' },
   { key: 'clubs', label: 'Clubs & Resto de Nuit', icon: Music2, q: 'Club' },
   { key: 'salles', label: 'Salles & Événementiel', icon: PartyPopper, type: 'EVENT_SPACE' },
   { key: 'hotels', label: 'Hôtels & Resorts', icon: Hotel, type: 'HOTEL' },
@@ -63,6 +65,7 @@ function ExplorerContent() {
   const city = searchParams.get('city') ?? '';
   const q = searchParams.get('q') ?? '';
   const categoryId = searchParams.get('categoryId') ?? '';
+  const sort = searchParams.get('sort') ?? 'featured';
   const isFeaturedFilter = searchParams.get('isFeatured') === 'true';
   const isVedetteFilter = searchParams.get('isVedette') === 'true';
 
@@ -99,6 +102,8 @@ function ExplorerContent() {
 
   const safeVenues = Array.isArray(rawVenues) ? rawVenues.filter(isValidVenueItem) : [];
   const venues = [...safeVenues].sort((a, b) => {
+    if (sort === 'name_asc') return String(a.name ?? '').localeCompare(String(b.name ?? ''));
+    if (sort === 'name_desc') return String(b.name ?? '').localeCompare(String(a.name ?? ''));
     if (a.isVedette && !b.isVedette) return -1;
     if (!a.isVedette && b.isVedette) return 1;
     if (a.isFeatured && !b.isFeatured) return -1;
@@ -111,7 +116,7 @@ function ExplorerContent() {
     updateParams({ q: localSearch.trim() });
   };
 
-  const activeFiltersCount = [type, city, q, categoryId].filter(Boolean).length;
+  const activeFiltersCount = [type, city, q, categoryId, isFeaturedFilter ? '1' : '', isVedetteFilter ? '1' : '', sort !== 'featured' ? sort : ''].filter(Boolean).length;
   const activeCategory =
     CATEGORIES.find((c) => (c.type && c.type === type) || (c.q && c.q === q && !type)) ??
     (type || q ? undefined : CATEGORIES[0]);
@@ -290,6 +295,45 @@ function ExplorerContent() {
                   </div>
                 </div>
               )}
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Tri</span>
+                  <select
+                    value={sort}
+                    onChange={(e) => updateParams({ sort: e.target.value })}
+                    className="min-h-10 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
+                  >
+                    <option value="featured">Vedette & mis en avant</option>
+                    <option value="name_asc">Nom A-Z</option>
+                    <option value="name_desc">Nom Z-A</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => updateParams({ isFeatured: isFeaturedFilter ? '' : 'true' })}
+                  className={cn(
+                    'min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition',
+                    isFeaturedFilter
+                      ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                  )}
+                >
+                  Lieux mis en avant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateParams({ isVedette: isVedetteFilter ? '' : 'true' })}
+                  className={cn(
+                    'min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition',
+                    isVedetteFilter
+                      ? 'border-amber-400/40 bg-amber-400/10 text-amber-300'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                  )}
+                >
+                  Lieux vedette
+                </button>
+              </div>
             </div>
           )}
         </div>

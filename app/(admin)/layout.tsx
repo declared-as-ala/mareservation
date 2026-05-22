@@ -31,11 +31,16 @@ import {
   Coffee,
   Wine,
   Utensils,
+  BriefcaseBusiness,
   Music2,
   Hotel as HotelIcon,
   Waves,
   Flower2,
   PartyPopper,
+  CircleDollarSign,
+  HeadphonesIcon,
+  UserCheck,
+  ShieldAlert,
 } from 'lucide-react';
 
 type NavItem = {
@@ -65,6 +70,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/venues?q=Club', label: 'Clubs & Resto de Nuit', icon: Music2, qQuery: 'Club' },
       { href: '/admin/venues?type=EVENT_SPACE', label: 'Salles & Événementiel', icon: PartyPopper, typeQuery: 'EVENT_SPACE' },
       { href: '/admin/hotels', label: 'Hôtels & Resorts', icon: HotelIcon },
+      { href: '/admin/venues?type=COWORKING', label: 'Coworking Spaces', icon: BriefcaseBusiness, typeQuery: 'COWORKING' },
       { href: '/admin/venues?q=Beach', label: 'Beach Clubs', icon: Waves, qQuery: 'Beach' },
       { href: '/admin/venues?q=Spa', label: 'Spas & Bien-être', icon: Flower2, qQuery: 'Spa' },
     ],
@@ -75,6 +81,10 @@ const navGroups: NavGroup[] = [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
       { href: '/admin/hotels-approval', label: 'Approbation hôtels', icon: ShieldCheck },
+      { href: '/admin/owners', label: 'Propriétaires', icon: UserCheck },
+      { href: '/admin/moderation', label: 'Modération', icon: ShieldAlert },
+      { href: '/admin/payouts', label: 'Virements', icon: CircleDollarSign },
+      { href: '/admin/support', label: 'Support client', icon: HeadphonesIcon },
       { href: '/admin/audit-logs', label: 'Audit logs', icon: BookOpen },
     ],
   },
@@ -131,7 +141,7 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-zinc-800/60">
+      <div className="flex items-center gap-3 border-b border-zinc-800/70 bg-zinc-950 px-4 py-4">
         <div className="flex-1 min-w-0">
           <Image
             src="/logo.png"
@@ -152,10 +162,10 @@ function SidebarContent({
       <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5">
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">
               {group.label}
             </p>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {group.items.map((item) => {
                 const isActive = isItemActive(item);
                 const Icon = item.icon;
@@ -165,19 +175,19 @@ function SidebarContent({
                     href={item.href}
                     onClick={onNavigate}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 group',
+                      'group flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-150',
                       isActive
-                        ? 'bg-amber-400/10 text-amber-400'
-                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                        ? 'border border-amber-400/30 bg-amber-400/10 text-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.12)]'
+                        : 'border border-transparent text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-100'
                     )}
                   >
                     <Icon className={cn(
                       'size-4 shrink-0 transition-colors duration-150',
-                      isActive ? 'text-amber-400' : 'text-zinc-500 group-hover:text-zinc-300'
+                      isActive ? 'text-amber-300' : 'text-zinc-500 group-hover:text-zinc-300'
                     )} />
                     <span className="truncate">{item.label}</span>
                     {isActive && (
-                      <div className="ml-auto w-1 h-3.5 rounded-full bg-[#D4AF37]" />
+                      <div className="ml-auto h-2 w-2 rounded-full bg-amber-300" />
                     )}
                   </Link>
                 );
@@ -188,7 +198,7 @@ function SidebarContent({
       </nav>
 
       {/* Bottom user panel */}
-      <div className="border-t border-zinc-800 p-3 space-y-1">
+      <div className="space-y-1 border-t border-zinc-800/70 bg-zinc-950 p-3">
         <Link
           href="/"
           target="_blank"
@@ -277,7 +287,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen overflow-hidden bg-zinc-950">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[220px] shrink-0 flex-col bg-zinc-950 border-r border-zinc-800">
+      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 lg:flex">
         <SidebarContent pathname={pathname} />
       </aside>
 
@@ -297,7 +307,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content area */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Top bar */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-6 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-950/90 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -311,7 +321,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <nav className="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
               <span className="text-zinc-500 hidden sm:inline text-xs font-medium tracking-wide">Admin</span>
               <ChevronRight className="size-3.5 text-zinc-700 hidden sm:inline" />
-              <span className="font-semibold text-zinc-100 text-sm">{pageTitle}</span>
+              <span className="text-sm font-semibold text-zinc-100">{pageTitle}</span>
             </nav>
           </div>
 

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchVenues } from '@/lib/api/venues';
 import { MapPin } from 'lucide-react';
+import { getVenueHref } from '@/lib/venueHref';
 
 function normalize(value: number, min: number, max: number) {
   if (min === max) return 50;
@@ -45,7 +46,7 @@ export default function MapPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            {['', 'CAFE', 'RESTAURANT', 'HOTEL', 'CINEMA', 'EVENT_SPACE'].map((value) => (
+            {['', 'CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'COWORKING', 'CINEMA', 'EVENT_SPACE'].map((value) => (
               <button
                 key={value || 'all'}
                 type="button"
@@ -68,7 +69,7 @@ export default function MapPage() {
             {positioned.map((venue) => (
               <Link
                 key={venue._id}
-                href={`/lieu/${venue.slug || venue._id}`}
+                href={getVenueHref(venue)}
                 className="absolute -translate-x-1/2 -translate-y-1/2"
                 style={{ top: `${venue.top}%`, left: `${venue.left}%` }}
               >
@@ -88,7 +89,7 @@ export default function MapPage() {
               {venues.map((venue) => (
                 <Link
                   key={venue._id}
-                  href={`/lieu/${venue.slug || venue._id}`}
+                  href={getVenueHref(venue)}
                   className="block rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 transition-colors hover:border-amber-400/30"
                 >
                   <p className="font-medium text-zinc-100">{venue.name}</p>

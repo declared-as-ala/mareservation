@@ -9,7 +9,7 @@ export type TableAvailabilityTimeline = {
   reservedRanges: Array<{
     startAt: string;
     endAt: string;
-    source: 'reservation' | 'hold';
+    source: 'reservation' | 'hold' | 'block';
     status: string;
   }>;
   slots: Array<{
@@ -58,6 +58,11 @@ export async function createReservation(body: {
   guestLastName?: string;
   guestPhone?: string;
   guestEmail?: string;
+  orderType?: 'table_only' | 'with_menu';
+  menuItems?: Array<{ itemId: string; quantity: number }>;
+  coworkingDurationType?: 'hourly' | 'half_day' | 'full_day';
+  coworkingHours?: number;
+  coworkingAddons?: Array<{ key: string; name: string; quantity: number; unitPrice: number }>;
 }): Promise<{ _id: string; confirmationCode?: string }> {
   const res = await api.post<{ data?: { _id: string; confirmationCode?: string }; _id?: string; confirmationCode?: string }>(
     '/reservations',

@@ -349,7 +349,11 @@ function HotelDetailPanel({ hotelId, onMutated }: { hotelId: string; onMutated: 
       </div>
 
       {/* Action buttons */}
-      <ActionsRow venue={venue} onDone={onMutated} />
+      <ActionsRow
+        venue={venue}
+        onDone={onMutated}
+        canApprove={completion.passed === completion.total}
+      />
 
       {/* Checklist */}
       <ChecklistPanel checklist={checklist} completion={completion} />
@@ -404,7 +408,7 @@ function HotelDetailPanel({ hotelId, onMutated }: { hotelId: string; onMutated: 
 
 /* ─── actions ────────────────────────────────────────────────────── */
 
-function ActionsRow({ venue, onDone }: { venue: AdminHotel; onDone: () => void }) {
+function ActionsRow({ venue, onDone, canApprove }: { venue: AdminHotel; onDone: () => void; canApprove: boolean }) {
   const status = venue.approvalStatus ?? 'approved';
 
   const mutate = useMutation({
@@ -450,8 +454,9 @@ function ActionsRow({ venue, onDone }: { venue: AdminHotel; onDone: () => void }
   }
   function doSuspend() {
     if (!confirm('Suspendre cet hôtel ? Il deviendra invisible publiquement.')) return;
-    const reason = window.prompt('Motif (facultatif)') ?? undefined;
-    mutate.mutate({ kind: 'suspend', payload: reason || undefined });
+    const reason = (window.prompt('Motif de suspension (requis)') ?? '').trim();
+    if (!reason) return toast.error('Motif requis.');
+    mutate.mutate({ kind: 'suspend', payload: reason });
   }
   function doReinstate() {
     if (!confirm('Réactiver cet hôtel ?')) return;
@@ -470,7 +475,13 @@ function ActionsRow({ venue, onDone }: { venue: AdminHotel; onDone: () => void }
     <div className="rounded-2xl border border-white/[0.07] bg-[#0C0C0C] p-4 flex flex-wrap gap-2">
       {isPendingState && (
         <>
-          <PrimaryAction icon={CheckCircle2} label="Approuver" tone="emerald" onClick={doApprove} disabled={busy} />
+          <PrimaryAction
+            icon={CheckCircle2}
+            label={canApprove ? 'Approuver' : 'Checklist incomplet'}
+            tone="emerald"
+            onClick={doApprove}
+            disabled={busy || !canApprove}
+          />
           <PrimaryAction icon={Send} label="Demander des changements" tone="blue" onClick={doRequestChanges} disabled={busy} />
           <PrimaryAction icon={XCircle} label="Rejeter" tone="red" onClick={doReject} disabled={busy} />
         </>

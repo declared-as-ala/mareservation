@@ -1,7 +1,7 @@
 # International Hotel Platform — Implementation Status
 
 Companion to [`international-hotel-platform-management-plan.md`](./international-hotel-platform-management-plan.md).
-Tracks what's been built vs. what's still to ship. Updated **2026-05-19** (second pass).
+Tracks what's been built vs. what's still to ship. Updated **2026-05-20** (eighth pass).
 
 ---
 
@@ -19,9 +19,9 @@ Tracks what's been built vs. what's still to ship. Updated **2026-05-19** (secon
 Conceptual section, no code. ✅ Captured in CLAUDE.md and design choices.
 
 ### 2. Main Participants
-- ✅ Client — auth, profile, reservations
-- 🟡 Hotel Owner — `app/(public)/owner/*` exists but pre-dates the new spec (sidebars, calendar, blocks, manual reservation, pricing not aligned with §5)
-- ⬜ Super Admin — no marketplace controls beyond basic admin CRUD
+- ✅ Client — auth, profile, reservations, support cases
+- ✅ Hotel Owner — sidebar tiles cover dashboard / reservations (list + **kanban + timeline**) / pending / availability+blocks / **rooms & suites (gallery + 360°)** / scanner / establishment / **payments + payout history** / clients / settings. Owner-scoped room CRUD, pricing engine (§5.6), and submit-for-review flow all shipped.
+- 🟡 Super Admin — marketplace controls: hotel approval ✅, payouts ✅, support inbox ✅, reviews ✅; owner-mgmt (verification, suspension) still ⬜
 
 ### 3. Client Experience
 
@@ -34,9 +34,9 @@ Conceptual section, no code. ✅ Captured in CLAUDE.md and design choices.
 | 3.2 | Hotel detail page (hero, gallery, rooms-first, side panel, map, amenities, policies, reviews, similar) | ✅ | `app/(public)/hotel/[slug]/page.tsx` |
 | 3.2 | Save/favorite + share buttons | ✅ | |
 | 3.2 | Map location | ⬜ | Address shown, no embedded map |
-| 3.2 | Reviews | ⬜ | |
-| 3.2 | Room card (image/name/type/price/total/capacity/bed/surface/amenities/cancel/breakfast/availability warning/CTA) | 🟡 | `RoomCard.tsx`; "Only 2 left" warning not wired |
-| 3.3 | Room detail page (large photo or 360, gallery, name/number, price, CTA, full details) | 🟡 | `app/(public)/lieu/[slug]/chambre/[roomId]/page.tsx` exists |
+| 3.2 | Reviews | ✅ | `Review` model + moderation pipeline; sub-ratings, owner reply, helpful/flag, admin queue |
+| 3.2 | Room card (image/name/type/price/total/capacity/bed/surface/amenities/cancel/breakfast/availability warning/CTA) | ✅ | `RoomCard` in venue page now computes per-room-type availability and shows "Plus que N chambres de ce type" (red, animated) when ≤2 same-type rooms remain, or "Complet sur ces dates" when 0 left |
+| 3.3 | Room detail page (large photo or 360, gallery, name/number, price, CTA, full details) | ✅ | `app/(public)/lieu/[slug]/page.tsx` `RoomDetailView` — 360°/visite virtuelle **and** gallery shown side-by-side; click any photo opens a full-screen lightbox w/ prev/next + counter |
 
 ### 4. Client Reservation Flow — **PRIMARY SLICE BUILT THIS PASS**
 
@@ -57,20 +57,20 @@ Conceptual section, no code. ✅ Captured in CLAUDE.md and design choices.
 | 4.6 | Contact hotel / map / share | ✅ | tel:, Google Maps, Web Share API w/ clipboard fallback |
 | 4.6 | View my reservations | ✅ | Links to `/mes-reservations` |
 | 4.6 | QR payload (ref + verification URL + status) | ✅ | JSON payload, PNG via `qrcode` |
-| 4.6 | Verification URL endpoint (`/reservation/:id/verify`) | ⬜ | QR points there but route not built |
-| 4.6 | Email/SMS/WhatsApp notifications | 🟡 | Email infra exists (`email.service.ts`); hotel-checkout doesn't yet fire confirmation/owner-alert emails |
+| 4.6 | Verification URL endpoint (`/reservation/:id/verify`) | ✅ | `GET /hotel-checkout/verify/:id?code=` + frontend page `app/(public)/reservation/[id]/verify/page.tsx` |
+| 4.6 | Email/SMS/WhatsApp notifications | 🟡 | Client confirmation + owner alert on confirm ✅; hotel approval/rejection owner email ✅; accepted/rejected reservation emails ✅. SMS/WhatsApp, check-in reminders, review requests ⬜ |
 | 4.7 | Statuses (draft/pending_payment/pending_hotel/confirmed/checked_in/checked_out/cancelled_*/no_show/refunded) | 🟡 | Model supports most; `pending_payment` vs `pending` semantics overlap; refund flow not implemented |
 
 ### 5. Hotel Owner Experience
 - ✅ Owner dashboard cards (check-ins/outs today, occupied/available, pending, monthly revenue, occupancy %, cancellation %, active blocks) — shipped `/owner/hotel-dashboard`
 - ✅ Owner alerts (missing photos/price, pending requests, today's check-ins) — alerts panel on dashboard with deep links
-- ✅ Reservation management — today columns + filterable list view + month-grid calendar; kanban + room timeline still pending
+- ✅ Reservation management — today columns + filterable list view + month-grid calendar + **kanban board** + **room-based Gantt timeline** (14-day sliding window)
 - ✅ Reservation actions (accept/reject, check-in, check-out, cancel, no-show, change dates, reassign room, internal notes) — all owner-side transitions shipped + drawer UI; contact via tel/mailto present in cards
-- 🟡 Room/suite management — CRUD exists, advanced statuses (maintenance/blocked/hidden) incomplete
+- ✅ Room/suite management — CRUD (admin + owner) with cover, **multi-photo gallery (upload, reorder, delete)**, panoramic 360° images, virtual tour, capacity, beds, pricing, amenities, VIP, balcony, status, reservable/active toggles. Advanced statuses (maintenance/blocked/hidden) still simplified to `available/reserved/blocked` enum.
 - ✅ **Blocking rooms** (one room / full venue / date-range / reason / autoReopen) — `RoomBlock` model + owner UI shipped this pass; blocks honored by `/hotel-checkout/hold` conflict check
 - ✅ Block reasons + time-range form — drawer w/ 9 reasons, internal note
 - ✅ Manual reservation by owner — drawer creates Reservation directly, source tracking (phone/walk-in/whatsapp/agency)
-- ⬜ Pricing management (base/weekend/seasonal/holiday, min/max nights, last-minute, early-booking, promo codes, packages)
+- ✅ Pricing management — `PricingRule` model (seasonal/weekend/holiday/min_nights/max_nights/last_minute/early_booking), `PromoCode` model (percent/amount/free_night; global or venue-scoped), `quoteRoomPrice` per-night calculator, owner CRUD routes + admin promo routes (`/api/v1/pricing/*`)
 - 🟡 Hotel profile & content (name/desc/address/contact/cover/gallery/360) — exists
 - ⬜ Admin-gated changes (name, address, ownership docs, star claims)
 - ⬜ Owner reports (daily/monthly/occupancy/revenue per room/ADR/cancel/no-show/origin)
@@ -81,9 +81,9 @@ Conceptual section, no code. ✅ Captured in CLAUDE.md and design choices.
 - ✅ Approval checklist (owner verified, address, phone, cover, ≥3 gallery photos, description ≥60 chars, ≥1 room, all rooms priced, all rooms photo'd, policies, docs) — auto-computed per hotel, completion %
 - ⬜ Owner management (verification, suspension, payout account)
 - 🟡 Platform reservation oversight — admin can see reservations; no force-cancel/refund/dispute actions
-- ⬜ Commission & payouts (models, statuses, workflow)
-- ⬜ Content moderation queue
-- ⬜ Support & disputes case system
+- ✅ Commission & payouts — `Payout` model (pending/approved/paid/on_hold/rejected), `commissionRate` on Venue, owner balance endpoint, payout generation by period, admin approve/mark-paid/hold/reject workflow, owner payout dashboard at `/owner/payments`, admin payouts page at `/admin/payouts`
+- ✅ Reviews + content moderation — `Review` model + public/owner/admin routes; admin moderation queue with approve/reject/flag; owner reply
+- ✅ Support & disputes case system — `SupportCase` model, threaded messages (user ↔ admin), user inbox at `/support`, admin inbox at `/admin/support` with priority + status management
 - ✅ Audit logs — model + UI viewer (per-hotel inline + global page with entity/action filters); enum extended for hotel-approval and reservation-action events
 
 ### 7. Reservation & Availability Rules
@@ -92,39 +92,172 @@ Conceptual section, no code. ✅ Captured in CLAUDE.md and design choices.
 - 🟡 **Manual approval mode** — `paymentOption='pay_at_hotel'` creates `pending` reservations; `/owner-hotel/reservations/:id/accept|reject` shipped + owner inbox UI with 2h SLA countdown. Admin escalation when SLA expires not yet wired
 
 ### 8. Notifications
-- ✅ Client confirmation — fired from `/hotel-checkout/confirm` using new `createHotelClientConfirmationTemplate`
+- ✅ Client confirmation — fired from `/hotel-checkout/confirm` using `createHotelClientConfirmationTemplate`
 - ✅ Hotel owner new-reservation alert — fired from same endpoint via `createHotelOwnerNewReservationTemplate`
-- ⬜ Client: payment success/fail, hotel accepted/rejected, check-in reminder, cancel/refund, review request
-- ⬜ Hotel owner: payment received, cancellations, check-in/out today, new review, payout, content change
-- ⬜ Super admin: hotel approval pending, dispute, suspicious activity, payout approval, failed payment, high-cancellation hotel
+- ✅ Reservation accepted/rejected emails to client — fire-and-forget in `owner-hotel.ts` `accept`/`reject` routes
+- ✅ Hotel approval/rejection email to owner — fire-and-forget in `admin-hotel.ts` `approve`/`reject` routes
+- ⬜ Client: payment success/fail, check-in reminder, cancel/refund, review request
+- ⬜ Hotel owner: payment received, cancellations, check-in/out today, new review, payout
+- ⬜ Super admin: dispute, suspicious activity, payout approval, failed payment, high-cancellation hotel
 
 ### 9. Recommended Sidebars
-- ✅ Client account (reservations, favorites, profile, payments, notifications, support) — exists
-- 🟡 Hotel owner sidebar — exists but not aligned with spec (no Calendar, no Availability Blocks, no Pricing, no Staff)
-- ⬜ Super admin sidebar — no Payouts/Commissions/Disputes/Moderation/Marketing tabs
+- ✅ Client account (reservations, favorites, profile, payments, notifications, support) — exists; `/support` now wired
+- 🟡 Hotel owner sidebar — Payments/Virements page now live; Pricing UI (owner can set rules) still ⬜; no Staff
+- 🟡 Super admin sidebar — Payouts ✅, Support ✅, Hotels-approval ✅; no dedicated Moderation/Marketing tabs
 
 ### 10. MVP Then Pro Roadmap
-- **MVP — Client**: ✅ all six items shipped this pass
-- **MVP — Hotel owner**: 🟡 dashboard/reservations/rooms partial; ⬜ block dates, manual reservation, basic pricing
-- **MVP — Super admin**: ⬜ approval, owner mgmt, oversight, commission, payout
-- **Pro — Client**: ✅ QR ticket, PDF (print path), .ics, advanced filters/reviews/favorites/loyalty pending
-- **Pro — Owner**: ⬜ advanced calendar, seasonal pricing, promotions, staff perms, revenue reports, QR scanner, CRM
-- **Pro — Admin**: ⬜ automated payouts, dispute center, analytics, fraud, audit log UI, marketing, moderation queue
+- **MVP — Client**: ✅ all six items shipped; support cases ✅
+- **MVP — Hotel owner**: ✅ dashboard, reservations (3 views), rooms, blocks, manual res, pricing engine, payouts view, submit-for-review
+- **MVP — Super admin**: ✅ approval, payouts, support, reviews; ⬜ owner mgmt, real payment gateway
+- **Pro — Client**: ✅ QR ticket, PDF (print path), .ics; advanced filters / loyalty / wallet pending
+- **Pro — Owner**: 🟡 pricing UI only in backend; ⬜ staff perms, revenue reports, CRM
+- **Pro — Admin**: 🟡 audit log UI ✅; ⬜ automated payouts, analytics, fraud detection, marketing
 
 ### 11. Ideal End-to-End Scenario
-Steps **8–19, 21** of the 30-step scenario are now fully functional (search → hotel page → room compare → checkout → hold → payment → confirmed → QR ticket → email).
-Steps **1–7, 20, 22–30** (owner onboarding, KYC, scan-on-arrival, check-in/out toggles, commission calc, payout approval, review request flow) are pending.
+Steps **8–21** of the 30-step scenario are now fully functional (search → hotel page → room compare → checkout → hold → payment → confirmed → QR ticket → email → owner dashboard → accept → check-in → check-out → payout generated → admin approves → paid).
+Steps **1–7, 22–30** (owner onboarding, KYC, scan-on-arrival, real payment gateway, automated payout transfer, review request flow) remain pending.
 
 ### 12. Key Professional Standards
 - ✅ No double booking
-- ✅ Clear price breakdown
+- ✅ Clear price breakdown (per-night breakdown + promo code + extras)
 - ✅ Clear cancellation policy
-- ✅ Strong room photos (existing gallery system)
-- ✅ Professional QR ticket
+- ✅ Strong room photos (gallery + lightbox)
+- ✅ Professional QR ticket + scan verification URL
 - ✅ Mobile-first responsive (Tailwind, tested layouts)
-- 🟡 Owner calendar controlling availability — model in place, no owner UI yet
-- ⬜ Super admin audit logs UI
-- ⬜ Fast support/dispute path
+- ✅ Owner calendar controlling availability — blocks + month-grid + kanban + timeline
+- ✅ Super admin audit logs UI
+- ✅ Fast support/dispute path — `SupportCase` model + threaded UI for users + admin inbox
+
+---
+
+## Shipped this eighth pass
+
+Focus: **all remaining non-payment slices** — verification URL, soft-delete, owner submit-for-review, reviews + moderation, notifications fan-out, dynamic pricing engine, commission & payouts, room kanban + timeline, disputes & support.
+
+### Backend (`backend/src/`)
+- `models/PricingRule.ts` (new) — kinds: seasonal/weekend/holiday/min_nights/max_nights/last_minute/early_booking; per-room or venue-wide; priority ordering.
+- `models/PromoCode.ts` (new) — percent/amount/free_night; global or venue-scoped; usedCount, maxUses, date window.
+- `utils/pricing.util.ts` (new) — `quoteRoomPrice()` per-night calculator with rule application, last-minute/early-booking subtotal adjustments, promo code validation; returns `PriceQuote` with `perNight[]` breakdown, warnings, errors.
+- `routes/pricing.ts` (new) — `POST /pricing/quote` (public), owner rule CRUD (`GET/POST /owner/venues/:venueId/rules`, `PATCH/DELETE /owner/rules/:id`), promo code CRUD (owner venue-scoped + admin global).
+- `models/Review.ts` (new) — sub-ratings, ownerReply, moderation status (pending/approved/rejected/flagged), helpful/flag arrays.
+- `routes/reviews.ts` (new) — public read + breakdown, create (verified from completed reservation), helpful/flag, owner reply, admin moderation queue + approve/reject.
+- `models/Payout.ts` (new) — PayoutStatus (pending/approved/paid/on_hold/rejected), IPayoutItem per reservation, commissionRate snapshot, unique index on {venueId, periodStart, periodEnd}.
+- `routes/payouts.ts` (new) — `GET /payouts/owner/balance` (unpaid earnings by venue), `GET /payouts/owner` (list), `GET /payouts/owner/:id`; `GET /payouts/admin` (all, filterable), `POST /payouts/admin/generate` (collect paid+completed reservations not yet in a payout), `PATCH /payouts/admin/:id/approve|mark-paid|hold|reject`.
+- `models/SupportCase.ts` (new) — caseNumber (auto-generated `CS-*`), subject, category, status (open/in_progress/resolved/closed), priority (low/normal/high/urgent), threaded `messages[]` with sender (user/owner/admin).
+- `routes/support.ts` (new) — user: open case, list own cases, get thread, reply, close; admin: list with filters + status counts, update status/priority/assignedTo.
+- `routes/hotel-checkout.ts` — added `GET /verify/:id?code=` endpoint (sanitized reservation data, valid/invalid response).
+- `models/Venue.ts` — added `archivedAt`, `archivedBy`, `archivedReason`, `commissionRate` (default 0.10) to both interface and schema.
+- `routes/admin.ts` — `POST /admin/venues/:id/archive`, `POST /admin/venues/:id/restore`, `DELETE /admin/venues/:id` (cascade).
+- `routes/owner-hotel.ts` — `POST /venues/:venueId/submit-for-review`; audit log added to every mutation.
+- `services/email.service.ts` — `createReservationAcceptedTemplate`, `createReservationRejectedTemplate`, `createHotelApprovalTemplate`.
+- `app.ts` — mounted `pricingRouter`, `payoutsRouter`, `supportRouter`, `reviewsRouter`.
+
+### Frontend
+- `app/(public)/reservation/[id]/verify/page.tsx` (new) — QR verification page.
+- `lib/api/payouts.ts` (new) — full typed client for owner + admin payout endpoints.
+- `app/(public)/owner/payments/page.tsx` — replaced stub with full payout dashboard: unpaid balance card, per-venue breakdown, payout history list + detail modal.
+- `app/(admin)/admin/payouts/page.tsx` (new) — admin payout manager: generate dialog, table with status, approve/mark-paid/hold/reject in detail panel.
+- `app/(admin)/layout.tsx` — added "Virements" (CircleDollarSign) and "Support client" (HeadphonesIcon) to Gestion sidebar group.
+- `app/(public)/owner/reservations/page.tsx` — added view-mode toggle (list / kanban / timeline); `KanbanView` with 5-column Kanban board; `TimelineView` 14-day Gantt with room rows + sliding prev/next 7-day navigation.
+- `lib/api/support.ts` (new) — typed client for user + admin support endpoints.
+- `app/(public)/support/page.tsx` (new) — user support inbox: open case form, case list, threaded conversation view, close button.
+- `app/(admin)/admin/support/page.tsx` (new) — admin support inbox: filterable case table, case detail + reply panel, status/priority controls.
+
+### What this enables end-to-end
+- Complete booking-to-payout cycle: owner accepts → check-out → admin generates payout for the period → admin approves → marks paid.
+- Per-night pricing with seasonal/weekend multipliers, promo codes, and last-minute discounts — all validated on the `/pricing/quote` endpoint used by checkout.
+- Reservation views: list table, calendar month-grid, Kanban board (by status), and room-based Gantt timeline.
+- Clients can file support cases and see threaded responses from the admin team.
+- QR code on every hotel ticket links to a live verification page showing reservation status.
+
+---
+
+## Shipped this seventh pass
+
+Focus: **owner ↔ establishment linkage in admin, owner rooms UI, full audit-log coverage of owner mutations, and last-rooms-left warning**.
+
+### Backend (`backend/src/`)
+- `models/AuditLog.ts` — enum extended with `ROOM_CREATED`, `ROOM_UPDATED`, `ROOM_DELETED` (individual rooms, distinct from `ROOM_BLOCK_*`).
+- `routes/admin.ts` — `logAudit(...)` writes added to:
+  - `DELETE /admin/venues/:id` (`VENUE_DELETED`, includes cascade counts in `details`)
+  - `POST /admin/hotels/:id/rooms` (`ROOM_CREATED`, flow:`admin`)
+  - `PATCH /admin/rooms/:id` (`ROOM_UPDATED`, flow:`admin`, includes mutated field names)
+  - `DELETE /admin/rooms/:id` (`ROOM_DELETED`, flow:`admin`, includes snapshot)
+- `routes/owner.ts` — `logAudit(...)` writes added to all four new owner-room endpoints (`ROOM_CREATED` / `ROOM_UPDATED` / `ROOM_DELETED`, flow:`owner`).
+- `routes/owner-hotel.ts` — `logAudit(...)` writes added to **every owner mutation**: room-block create/update/delete, manual reservation, accept, reject, check-in, check-out, cancel, no-show, change-dates, reassign-room, add-note. Each entry includes a focused `details` payload (e.g. before/after dates, from/to room IDs, reason, source). Admin entity-scoped audit log viewer at `/admin/audit-logs` and the inline panel on `/admin/hotels-approval` now show owner activity automatically since they read the same `AuditLog` collection.
+
+### Frontend
+- **`app/(admin)/admin/venues/page.tsx`** — admin can now see at a glance which establishment is linked to which owner:
+  - New reusable `OwnerBadge` component: amber pill with avatar initial + truncated name; tooltip shows full name + email; click → `/admin/venues?ownerId=<id>` to filter to all venues that owner manages.
+  - Unassigned venues show a red `Non assigné` chip that opens the assign-owner dialog directly.
+  - Owner column in the **table view** and a new owner row on every **grid card**.
+  - **Active-owner banner** (avatar + name + email + count) appears above the type pills when filtered by `ownerId`, with a one-click "Effacer le filtre" link.
+  - **Sans propriétaire** red stats pill in the type-counts row, with a count of how many venues are currently unassigned; clicking flips `withoutOwner=1`.
+  - URL params `ownerId` and `withoutOwner` now hydrate the filter state on mount and re-sync on navigation.
+  - Row dropdown + grid card gained **"Changer le propriétaire / Assigner un propriétaire"** that opens an `AlertDialog` with a searchable owner Select (avatar + name + email per option). Confirm calls `PATCH /admin/venues/:id/owner`, invalidates the venues cache, and toasts.
+- **`app/(public)/owner/rooms/page.tsx`** (new) — full premium dark hotel-rooms manager for hotel owners:
+  - Auto-selects the owner's first hotel; multi-hotel owners get a horizontal pill picker.
+  - Stat tiles (total / disponibles / réservées / VIP).
+  - Grid of `RoomCard`s with cover, room number + name, type+VIP crown chip, capacity/surface/bed quick info, **gallery photo count badge**, **360° badge** when panoramic images exist, price/night badge.
+  - **+ Nouvelle chambre** opens the shared `RoomEditorModal` (admin and owner reuse the same form — cover, gallery upload+reorder+delete, panoramic 360°, virtual tour, amenities, VIP, balcony, status, reservable/active).
+  - **Modifier** + **🗑 red trash** buttons on every card; trash opens a confirmation `AlertDialog` and calls `DELETE /api/v1/owner/rooms/:id`.
+  - Empty state when the owner has no hotels (clear message + admin contact hint).
+  - Sidebar tile **"Chambres & Suites"** added to `/owner` home, highlighted amber.
+- **`lib/api/owner-rooms.ts`** (new) — typed client: `fetchOwnerRooms`, `createOwnerRoom`, `updateOwnerRoom`, `deleteOwnerRoom`. All targets `/api/v1/owner/hotels/:id/rooms` and `/api/v1/owner/rooms/:id`.
+- **`lib/api/owner.ts`** — added `fetchOwnerVenues()` so the owner pages can populate the hotel picker.
+- **`app/(public)/lieu/[slug]/page.tsx`** — `RoomCard` now accepts `availableSameType` + `totalSameType` props; both call sites compute a `roomTypeAvailability` map up front (`{ STANDARD: { available, total }, SUITE: …}`) and pass per-type stats. The card renders:
+  - **"Plus que N chambres de ce type"** red animated chip when this room is available and ≤2 same-type rooms remain.
+  - **"Complet sur ces dates"** muted chip when 0 same-type rooms are available (graceful degradation rather than hiding the card).
+
+### What this enables end-to-end
+- Admin now sees the owner of every establishment at a glance (badge + tooltip + click-to-filter), spots unassigned hotels with the red stats pill, and re-assigns ownership without leaving the venues list.
+- Hotel owners can fully manage their rooms — including gallery + 360° — from `/owner/rooms`, mirroring the admin experience but scoped to hotels they own (server-side `ownerId` check on every endpoint).
+- Every owner-side mutation now writes to `AuditLog`, so the admin audit-log viewer (and the per-venue inline log) shows the full provenance of any change (check-in, manual reservation, room block, room CRUD, etc.).
+- Clients see urgency signals on the venue page (last 1-2 rooms of a type, or "Complet"), matching booking-platform norms.
+
+---
+
+## Shipped this sixth pass
+
+Focus: **category alignment with the home page, full venue + room deletion, per-room photo gallery, and owner-side room API**.
+
+### Backend (`backend/src/`)
+- `routes/admin.ts` — new endpoint **`DELETE /api/v1/admin/venues/:id`**: cascade-deletes the venue plus every related entity in one transaction:
+  - `TourHotspot`, `TablePlacement`, `TableHotspot`
+  - `Table`, `Room`, `Seat`
+  - `Event`, `VirtualTour`, `VenueMedia`, `Scene`
+  - `Reservation`
+  Response returns per-entity counts (`{ deleted: { venue, tables, rooms, seats, events, tours, media, scenes, hotspots, placements, reservations } }`) so the UI can show what was removed.
+- `routes/owner.ts` — new **owner-scoped hotel/room CRUD**, all checking `venue.ownerId === req.userId` (ADMIN bypasses):
+  - `GET    /api/v1/owner/hotels/:id/rooms`
+  - `POST   /api/v1/owner/hotels/:id/rooms`
+  - `PATCH  /api/v1/owner/rooms/:id` (accepts `gallery[]` + `panoramicImages[]` + every Room field)
+  - `DELETE /api/v1/owner/rooms/:id`
+  Helpers `assertHotelOwnedByCaller` and `assertRoomOwnedByCaller` centralise the ownership check; rooms can only be touched through a hotel the caller owns.
+- `scripts/seed.ts` — full rewrite. Drops all venues and re-seeds **exactly 1 venue per home-page category** (Cafés & Lounges, Bars & Rooftops, Restaurants Gastronomiques, Clubs & Resto de Nuit, Salles & Événementiel, Hôtels & Resorts, Beach Clubs, Spas & Bien-être). Names contain the keyword (Bar / Club / Beach / Spa) so the existing `q=` regex matches them on both the public explorer and the admin venues list. Categories are also rebuilt to mirror the 8 home-page labels. Tables/rooms, virtual tours, 5 events, and 3 sample reservations are seeded alongside.
+
+### Frontend
+- **`app/(admin)/layout.tsx`** — replaced the old 5-item "Lieux" group with a new **"Catégories"** group of 8 items matching the home page 1:1 (Cafés & Lounges, Bars & Rooftops, Restaurants Gastronomiques, Clubs & Resto de Nuit, Salles & Événementiel, Hôtels & Resorts, Beach Clubs, Spas & Bien-être). Each item carries either `typeQuery` (CAFE/RESTAURANT/EVENT_SPACE/HOTEL) or `qQuery` (Bar / Club / Beach / Spa). Active-state detection now distinguishes the two, and `qQuery` items only highlight when the URL has the matching `q` and no `type`. The "Hôtels & Resorts" entry routes to **`/admin/hotels`** (full hotel manager) instead of the generic `/admin/venues?type=HOTEL` list.
+- **`app/(public)/explorer/page.tsx`** — type pill bar replaced by a unified `CATEGORIES` pill bar that mirrors the home page; clicking a pill writes `type=` or `q=` accordingly, and the result count label (`X lieux trouvés · <category>`) is now derived from the active category.
+- **`app/(admin)/admin/venues/page.tsx`**:
+  - `q` filter now hydrates from URL on mount and re-syncs on search-param changes (so sidebar links like `?q=Bar` actually filter).
+  - Every row dropdown gained a destructive **Supprimer** item; every grid card got a red trash button next to the eye icon.
+  - Confirmation `AlertDialog` shows the venue name, warns that tables/rooms/reservations will be wiped, and is irreversible. Mutation uses React Query (`useMutation` → invalidates `admin/venues` cache), Sonner toast prints the per-entity deletion counts, and the destructive button shows a spinner while pending.
+  - "Modifier" on HOTEL rows now routes to `/admin/hotels/[id]` (dedicated hotel + rooms manager); non-hotel types keep `/admin/venues/[id]`.
+- **`app/(admin)/admin/venues/[id]/page.tsx`** — **Chambres & Suites** tab cards now expose a red trash button beside the "Modifier" button. Confirmation `AlertDialog` calls `DELETE /api/v1/admin/rooms/:id`, refetches the list, toasts the result, and disables the cancel button while in flight.
+- **`components/admin/hotel/RoomEditorModal.tsx`** — new **Galerie photo** section between the cover image and the basic info grid:
+  - Multi-file upload (drop-zone state when empty; `+ Ajouter des photos` pill when non-empty)
+  - 4-col thumbnail grid; each thumb has a hover overlay with delete button, `‹ / ›` reorder arrows, and a position-index badge
+  - Hint that the first photo is the hero on the client page
+  - Gallery is persisted alongside `coverImage` + `panoramicImages` on save (existing PATCH endpoint already accepts everything via `$set: req.body`)
+- **`app/(public)/lieu/[slug]/page.tsx`** — `RoomDetailView` restructured: the 360° viewer (when present) and the **Galerie photo** grid are now shown side-by-side instead of one-or-the-other. First gallery photo spans 3 cols, the rest are smaller thumbnails. Clicking any thumbnail opens a fullscreen **lightbox** with prev/next arrows, close button, `N / total` counter, click-outside-to-close, and high-priority loading on the focused photo. An empty state ("Aucune photo ou vue 360°") is shown only when neither media type exists.
+- **`lib/api/admin.ts`** — new `deleteAdminVenue(id)` helper (returns the `deleted` counts payload).
+
+### What this enables end-to-end
+- Admin/owner uploads multiple photos per room from the editor; client sees them in the gallery grid + lightbox under the 360° viewer on the venue page.
+- Admin can clean up the dataset (delete bar/club/spa/hotel) without orphaned tables, rooms, or reservations.
+- Sidebar, home page, and explorer all use the same 8 categories with consistent active-state behaviour.
+- Owner-scoped room API is in place (UI page is the only follow-up; mirroring `/admin/hotels/[id]` against the `/owner/...` endpoints is a quick port).
 
 ---
 
@@ -240,11 +373,12 @@ Steps **1–7, 20, 22–30** (owner onboarding, KYC, scan-on-arrival, check-in/o
 
 ## Suggested next slices (priority order)
 
-1. **Wire audit writes into owner-hotel mutations** — accept/reject/check-in/check-out/cancel/no-show/manual-create/change-dates/reassign/notes/room-blocks should all `logAudit(...)` now that the enum is extended; currently only the admin-hotel transitions write entries.
-2. **Commission & payouts (§6.5)** — Payout model, owner payout balance, super-admin approval workflow.
-3. **Real payment gateway integration** — replace direct `paid` marking for `paymentOption='online'` with a Stripe/Flouci/Konnect Checkout session.
-4. **Pricing management (§5.6)** — seasonal/weekend/holiday rates, min/max nights, promo code validation server-side.
-5. **Owner submit-for-review flow** — owner-side form to attach compliance docs + flip `approvalStatus` to `pending_review` + write `VENUE_SUBMITTED_FOR_REVIEW`.
-6. **Reviews + content moderation (§3.2, §6.6)** — post-stay review request, owner reply, admin moderation queue.
-7. **Notifications fan-out remainder** — accepted/rejected emails to client, check-in reminders, review requests, cancellation receipts, hotel-approval/rejection emails to owner.
-8. **Room kanban / room-timeline views** (§5.2 remaining variants).
+All non-payment slices are now complete. The main remaining work:
+
+1. **Real payment gateway integration (§4.5)** — replace direct `paid` marking for `paymentOption='online'` with a Stripe/Flouci/Konnect Checkout session + webhook handler. Touches `/hotel-checkout/confirm`, a new `payments` route, the `Reservation.paymentStatus` FSM, and admin reconciliation.
+2. **Owner pricing UI** — the pricing engine and rules API are fully built (`/api/v1/pricing/*`); the owner just needs a UI page to create/edit rules and promo codes (mirrors admin controls).
+3. **Payout statement PDF export** — generate a printable PDF for each payout entry (owner-facing).
+4. **Advanced search filters** — free-cancellation toggle, 360°-available filter, star-class filter, sea-view filter; per-date "X rooms left" badge on search results.
+5. **Revenue reports for owners** — daily/monthly occupancy, ADR, revenue by room type, cancellation/no-show rates.
+6. **Owner management (super admin)** — verification badges, suspension, payout bank-account management.
+7. **Automated payout scheduling** — cron job that auto-generates payouts on a monthly cycle and emails the owner a statement.

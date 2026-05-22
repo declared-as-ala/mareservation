@@ -1,10 +1,12 @@
 /** Backend venue type enum (uppercase). French labels for UI. */
-export type VenueType = 'CAFE' | 'RESTAURANT' | 'HOTEL' | 'CINEMA' | 'EVENT_SPACE';
+export type VenueType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'COWORKING' | 'CINEMA' | 'EVENT_SPACE';
 
 export const VENUE_TYPE_LABELS: Record<string, string> = {
   CAFE: 'Café',
+  CAFE_LOUNGE: 'Café & Lounge',
   RESTAURANT: 'Restaurant',
   HOTEL: 'Hôtel',
+  COWORKING: 'Coworking',
   CINEMA: 'Cinéma',
   EVENT_SPACE: 'Événements',
 };

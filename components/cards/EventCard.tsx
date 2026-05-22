@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Calendar, MapPin, Music, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, Music, ArrowRight, ScanEye } from 'lucide-react';
 import { CardFooter, CardHeader } from '@/components/ui/card';
 import { BaseCard } from '@/components/shared/BaseCard';
 import { TypeBadge } from '@/components/shared/TypeBadge';
@@ -15,6 +15,11 @@ function getVenueName(ev: Event): string {
   return '';
 }
 
+function venueHas360(ev: Event): boolean {
+  const venue = ev.venueId as any;
+  return Boolean(venue && typeof venue === 'object' && (venue.hasVirtualTour || venue.immersiveFile || venue.immersiveType === 'view-360'));
+}
+
 interface EventCardProps {
   event: Event;
   className?: string;
@@ -23,13 +28,23 @@ interface EventCardProps {
 export function EventCard({ event, className }: EventCardProps) {
   const href = `/evenement/${event.slug || event._id}`;
   const start = new Date(event.startAt);
+  const cover = event.coverImage ?? event.imageUrl;
+  const activeTickets = (event.ticketTypes ?? []).filter((ticket) => ticket.isActive !== false);
+  const minPrice = activeTickets.length
+    ? Math.min(...activeTickets.map((ticket) => Number(ticket.price || 0)))
+    : null;
+  const remaining = activeTickets.reduce(
+    (sum, ticket) => sum + Math.max(0, Number(ticket.capacity || 0) - Number(ticket.sold || 0)),
+    0
+  );
+  const has360 = venueHas360(event);
 
   return (
     <Link href={href} className={cn('group block', className)}>
       <BaseCard className="flex h-full flex-col overflow-hidden bg-zinc-900/60 border-zinc-800 shadow-md hover:border-amber-400/30 hover:shadow-lg">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-800">
-          {event.imageUrl ? (
-            <Image src={event.imageUrl} alt={event.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px" />
+          {cover ? (
+            <Image src={cover} alt={event.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px" />
           ) : (
             <div className="flex h-full items-center justify-center bg-zinc-800 text-zinc-600">
               <Music className="size-12 opacity-40" />
@@ -40,6 +55,12 @@ export function EventCard({ event, className }: EventCardProps) {
             {event.isVedette && (
               <span className="rounded-full bg-[#D4AF37] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm shadow-[#D4AF37]/30">
                 ⭐ Vedette
+              </span>
+            )}
+            {has360 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-black/70 px-2.5 py-0.5 text-[11px] font-bold text-amber-200 backdrop-blur">
+                <ScanEye className="size-3" />
+                360
               </span>
             )}
           </div>
@@ -60,6 +81,10 @@ export function EventCard({ event, className }: EventCardProps) {
                 {getVenueName(event)}
               </span>
             )}
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2 text-xs">
+            <span className="text-zinc-500">{remaining > 0 ? `${remaining} billets restants` : 'Billets limites'}</span>
+            {minPrice != null ? <span className="font-bold text-amber-300">Des {minPrice} TND</span> : null}
           </div>
         </CardHeader>
 

@@ -1,11 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 
-type SupportedType = 'CAFE' | 'RESTAURANT' | 'HOTEL' | 'CINEMA' | 'EVENT' | 'EVENT_SPACE';
+type SupportedType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'COWORKING' | 'CINEMA' | 'EVENT' | 'EVENT_SPACE';
 
 const LABELS: Record<SupportedType, string> = {
   CAFE: 'Café',
+  CAFE_LOUNGE: 'Café & Lounge',
   RESTAURANT: 'Restaurant',
   HOTEL: 'Hôtel',
+  COWORKING: 'Coworking',
   CINEMA: 'Cinéma',
   EVENT: 'Événement',
   EVENT_SPACE: 'Événements',
@@ -13,8 +15,10 @@ const LABELS: Record<SupportedType, string> = {
 
 const COLORS: Record<SupportedType, string> = {
   CAFE: 'bg-emerald-500/15 text-emerald-400',
+  CAFE_LOUNGE: 'bg-emerald-500/15 text-emerald-400',
   RESTAURANT: 'bg-orange-500/15 text-orange-400',
   HOTEL: 'bg-sky-500/15 text-sky-400',
+  COWORKING: 'bg-blue-500/15 text-blue-400',
   CINEMA: 'bg-purple-500/15 text-purple-400',
   EVENT: 'bg-pink-500/15 text-pink-400',
   EVENT_SPACE: 'bg-pink-500/15 text-pink-400',

@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type CartItemType = 'venue_table' | 'venue_room' | 'event_ticket';
+export type CartItemType = 'venue_table' | 'venue_room' | 'venue_coworking' | 'event_ticket';
 
 export interface CartOrderMenuItem {
   itemId: string;
@@ -29,6 +29,7 @@ export interface CartItem {
   tableId?: string;
   roomId?: string;
   seatId?: string;
+  reservableUnitId?: string;
   eventId?: string;
   slug?: string;
   orderType?: 'table_only' | 'with_menu';
@@ -36,6 +37,10 @@ export interface CartItem {
   menuTotal?: number;
   holdId?: string;
   holdExpiresAt?: string;
+  coworkingDurationType?: 'hourly' | 'half_day' | 'full_day';
+  coworkingHours?: number;
+  coworkingAddons?: Array<{ key: string; name: string; quantity: number; unitPrice: number }>;
+  coworkingAddonsTotal?: number;
 }
 
 /** Cart items expire after 24 hours (in milliseconds). */

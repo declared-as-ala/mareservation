@@ -69,6 +69,7 @@ const DASHBOARD_PATTERN = /^\/dashboard($|\/)/;
 const ADMIN_PATTERN = /^\/admin($|\/)/;
 const OWNER_PATTERN = /^\/owner($|\/)/;
 const LOGIN_PATTERN = /^\/login($|\/)/;
+const ROOT_PATTERN = /^\/$/;
 const USER_ACCOUNT_PATTERN = /^\/(mes-reservations|profile)($|\/)/;
 
 // Public routes that should never go through auth checks
@@ -182,6 +183,18 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
+  // Redirect authenticated users from public home to their role workspace.
+  if (ROOT_PATTERN.test(pathname) && hasValidToken) {
+    const payload = decodeJwtPayload(accessTokenCookie!);
+    const role = typeof payload?.role === 'string' ? payload.role : null;
+    if (role === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    if (isOwnerRole(role)) {
+      return NextResponse.redirect(new URL('/owner', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -193,6 +206,8 @@ export const config = {
     '/owner/:path*',
     '/mes-reservations/:path*',
     '/profile',
+    '/profile/:path*',
     '/login',
+    '/',
   ],
 };

@@ -86,7 +86,7 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
   const img = getVenueImage(venue);
   const price = venue.startingPrice ?? venue.priceRangeMin;
   const amenities = guessAmenities(venue);
-  const isLuxury = venue.isVedette || starRating >= 5;
+  const isLuxury = starRating >= 5;
 
   return (
     <motion.div
@@ -117,12 +117,12 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-            {/* Top-left: Luxury badge */}
-            {isLuxury && (
+            {/* Top-left: Vedette or Luxe badge */}
+            {(venue.isVedette || isLuxury) && (
               <div className="absolute top-3 left-3">
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400 backdrop-blur-md">
                   <Crown className="size-2.5" />
-                  Luxe
+                  {venue.isVedette ? 'Vedette' : 'Luxe'}
                 </span>
               </div>
             )}
@@ -181,6 +181,22 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
                 {amenities.length > 4 && (
                   <span className="text-[10px] text-neutral-600">+{amenities.length - 4}</span>
                 )}
+              </div>
+            )}
+
+            {/* Availability / Popular indicator */}
+            {(venue.isFeatured || venue.isVedette) && (
+              <div className="flex items-center gap-1.5">
+                {venue.isVedette ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Disponible
+                  </span>
+                ) : venue.isFeatured ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                    Populaire
+                  </span>
+                ) : null}
               </div>
             )}
 

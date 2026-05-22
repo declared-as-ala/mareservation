@@ -54,6 +54,7 @@ function getMarkerColor(marker: TableMarker): string {
 
 function buildMarkerHtml(marker: TableMarker, isSelected: boolean): string {
   const isAvailable = marker.table?.defaultStatus === 'available';
+  const isBlocked = marker.table?.defaultStatus === 'blocked';
   const isVip = marker.table?.isVip;
   const size = isSelected ? 44 : 36;
 
@@ -74,7 +75,7 @@ function buildMarkerHtml(marker: TableMarker, isSelected: boolean): string {
     : String(marker.table?.tableNumber ?? '?');
 
   const opacity = isAvailable ? '1' : '0.65';
-  const cursor = isAvailable ? 'pointer' : 'default';
+  const cursor = isAvailable || isBlocked ? 'pointer' : 'default';
 
   // Outer glow ring (pulse effect for available tables)
   const pulseRing = isAvailable && !isSelected

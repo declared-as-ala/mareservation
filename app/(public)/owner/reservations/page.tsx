@@ -17,6 +17,8 @@ import {
   Eye,
   Filter,
   Hotel,
+  Kanban,
+  LayoutList,
   Loader2,
   LogIn,
   LogOut,
@@ -107,6 +109,7 @@ export default function OwnerReservationsPage() {
   const [filterTo, setFilterTo] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'timeline'>('list');
 
   const { data: ownerData } = useQuery({
     queryKey: ['owner-dashboard'],
@@ -163,6 +166,29 @@ export default function OwnerReservationsPage() {
           <span className="text-xs text-neutral-500 tabular-nums">
             {reservations.length} résultat{reservations.length > 1 ? 's' : ''}
           </span>
+          {/* View mode toggle */}
+          <div className="flex rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+            {([
+              { mode: 'list' as const, icon: LayoutList, title: 'Liste' },
+              { mode: 'kanban' as const, icon: Kanban, title: 'Kanban' },
+              { mode: 'timeline' as const, icon: CalendarDays, title: 'Timeline' },
+            ] as const).map(({ mode, icon: Icon, title }) => (
+              <button
+                key={mode}
+                type="button"
+                title={title}
+                onClick={() => setViewMode(mode)}
+                className={cn(
+                  'px-3 h-9 text-xs transition',
+                  viewMode === mode
+                    ? 'bg-amber-400/10 text-amber-400'
+                    : 'text-neutral-500 hover:text-neutral-300',
+                )}
+              >
+                <Icon className="size-3.5" />
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={() => refetch()}
@@ -263,6 +289,10 @@ export default function OwnerReservationsPage() {
           </div>
         ) : reservations.length === 0 ? (
           <EmptyState />
+        ) : viewMode === 'kanban' ? (
+          <KanbanView reservations={reservations} onSelect={(id) => setSelectedId(id)} onMutated={refresh} />
+        ) : viewMode === 'timeline' ? (
+          <TimelineView reservations={reservations} onSelect={(id) => setSelectedId(id)} />
         ) : (
           <div className="rounded-2xl border border-white/[0.07] bg-[#0C0C0C] overflow-hidden">
             <div className="overflow-x-auto">
@@ -304,6 +334,249 @@ export default function OwnerReservationsPage() {
           onMutated={refresh}
         />
       )}
+    </div>
+  );
+}
+
+/* ─── kanban view ─────────────────────────────────────────────────── */
+
+const KANBAN_COLS: { key: string; label: string; color: string }[] = [
+  { key: 'pending',    label: 'En attente',  color: 'border-amber-400/30 bg-amber-400/5' },
+  { key: 'confirmed',  label: 'Confirmées',  color: 'border-emerald-400/30 bg-emerald-400/5' },
+  { key: 'checked_in', label: 'Sur place',   color: 'border-blue-400/30 bg-blue-400/5' },
+  { key: 'completed',  label: 'Terminées',   color: 'border-zinc-600/30 bg-zinc-800/30' },
+  { key: 'cancelled',  label: 'Annulées',    color: 'border-red-400/20 bg-red-400/5' },
+];
+
+function KanbanView({
+  reservations,
+  onSelect,
+  onMutated,
+}: {
+  reservations: OwnerReservation[];
+  onSelect: (id: string) => void;
+  onMutated: () => void;
+}) {
+  const byStatus = Object.fromEntries(
+    KANBAN_COLS.map((col) => [
+      col.key,
+      reservations.filter((r) => statusKey(r.status) === col.key),
+    ])
+  );
+
+  return (
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-4 min-w-max">
+        {KANBAN_COLS.map((col) => {
+          const items = byStatus[col.key] ?? [];
+          return (
+            <div
+              key={col.key}
+              className={cn('w-72 flex-shrink-0 rounded-2xl border p-3', col.color)}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
+                  {col.label}
+                </span>
+                <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-xs text-neutral-400">
+                  {items.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {items.length === 0 && (
+                  <p className="py-6 text-center text-xs text-neutral-700">Aucune</p>
+                )}
+                {items.map((r) => {
+                  const room = typeof r.roomId === 'object' && r.roomId ? r.roomId : null;
+                  return (
+                    <button
+                      key={r._id}
+                      onClick={() => onSelect(r._id)}
+                      className="group w-full rounded-xl border border-white/[0.07] bg-[#0C0C0C] p-3 text-left transition hover:border-white/15"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-mono text-[10px] font-bold text-amber-400">
+                          {r.reservationCode ?? r._id.slice(-6).toUpperCase()}
+                        </span>
+                        <span className="text-[10px] text-neutral-600">
+                          {room ? (room.name ?? `#${room.roomNumber}`) : '—'}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-sm font-medium text-neutral-100">
+                        {guestName(r)}
+                      </p>
+                      <p className="mt-1 text-[10px] text-neutral-600">
+                        {fmtDate(r.startAt)} → {fmtDate(r.endAt)}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs font-medium text-emerald-400">
+                          {Math.round(r.totalPrice ?? 0).toLocaleString()} DT
+                        </span>
+                        {r.nights && (
+                          <span className="text-[10px] text-neutral-600">{r.nights}n</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── timeline view ───────────────────────────────────────────────── */
+
+const TIMELINE_COLORS: Record<string, string> = {
+  pending:    'bg-amber-400/20 border-amber-400/40 text-amber-300',
+  confirmed:  'bg-emerald-400/20 border-emerald-400/40 text-emerald-300',
+  checked_in: 'bg-blue-400/20 border-blue-400/40 text-blue-300',
+  completed:  'bg-zinc-700/40 border-zinc-600/40 text-zinc-400',
+  cancelled:  'bg-red-400/10 border-red-400/20 text-red-400',
+  no_show:    'bg-red-400/10 border-red-400/20 text-red-400',
+};
+
+function TimelineView({
+  reservations,
+  onSelect,
+}: {
+  reservations: OwnerReservation[];
+  onSelect: (id: string) => void;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [refDate, setRefDate] = useState<Date>(today);
+  const DAYS = 14;
+
+  const days = Array.from({ length: DAYS }, (_, i) => {
+    const d = new Date(refDate);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  // Group by room
+  const roomMap = new Map<string, { label: string; reservations: OwnerReservation[] }>();
+  for (const r of reservations) {
+    if (!['pending', 'confirmed', 'checked_in', 'completed'].includes(statusKey(r.status))) continue;
+    const room = typeof r.roomId === 'object' && r.roomId ? r.roomId : null;
+    const roomKey = (typeof r.roomId === 'string' ? r.roomId : r.roomId?._id) ?? 'no-room';
+    const roomLabel = room ? (room.name ?? `Chambre #${room.roomNumber}`) : 'Sans chambre';
+    if (!roomMap.has(roomKey)) roomMap.set(roomKey, { label: roomLabel, reservations: [] });
+    roomMap.get(roomKey)!.reservations.push(r);
+  }
+  const rooms = [...roomMap.entries()];
+
+  function dayIdx(date: Date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - refDate.getTime()) / 86_400_000);
+  }
+
+  const todayIdx = dayIdx(today);
+
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-[#0C0C0C] overflow-hidden">
+      {/* Nav */}
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+        <button
+          onClick={() => { const d = new Date(refDate); d.setDate(d.getDate() - 7); setRefDate(d); }}
+          className="rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
+        >
+          ← 7 jours
+        </button>
+        <button
+          onClick={() => setRefDate(new Date(today))}
+          className="text-xs text-amber-400 hover:underline"
+        >
+          Aujourd&apos;hui
+        </button>
+        <button
+          onClick={() => { const d = new Date(refDate); d.setDate(d.getDate() + 7); setRefDate(d); }}
+          className="rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs text-neutral-400 hover:text-white"
+        >
+          7 jours →
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: `${DAYS * 60 + 160}px` }}>
+          {/* Day header */}
+          <div className="flex border-b border-white/[0.06] bg-white/[0.02]">
+            <div className="w-40 shrink-0 px-3 py-2 text-[10px] text-neutral-700">Chambre</div>
+            {days.map((d, i) => {
+              const isToday = i === todayIdx;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'w-[60px] shrink-0 border-l border-white/[0.04] py-2 text-center text-[10px]',
+                    isToday ? 'bg-amber-400/5 text-amber-400 font-semibold' : 'text-neutral-600',
+                  )}
+                >
+                  <div>{d.toLocaleDateString('fr-FR', { weekday: 'narrow' })}</div>
+                  <div>{d.getDate()}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Rows */}
+          {rooms.length === 0 && (
+            <div className="py-12 text-center text-sm text-neutral-600">
+              Aucune réservation active dans la fenêtre.
+            </div>
+          )}
+          {rooms.map(([roomKey, { label, reservations: roomReservations }]) => (
+            <div key={roomKey} className="relative flex min-h-[52px] border-b border-white/[0.04]">
+              <div className="w-40 shrink-0 px-3 py-2">
+                <p className="truncate text-xs font-medium text-neutral-300">{label}</p>
+              </div>
+              <div className="relative flex flex-1">
+                {/* Day grid lines */}
+                {days.map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'w-[60px] shrink-0 border-l border-white/[0.04]',
+                      i === todayIdx && 'bg-amber-400/[0.03]',
+                    )}
+                  />
+                ))}
+                {/* Reservation bars */}
+                {roomReservations.map((r) => {
+                  const start = dayIdx(new Date(r.startAt));
+                  const end = dayIdx(new Date(r.endAt));
+                  const clampedStart = Math.max(0, start);
+                  const clampedEnd = Math.min(DAYS - 1, end - 1);
+                  if (clampedStart > DAYS - 1 || clampedEnd < 0) return null;
+                  const spanDays = clampedEnd - clampedStart + 1;
+                  const colorClass = TIMELINE_COLORS[statusKey(r.status)] ?? TIMELINE_COLORS.confirmed;
+                  return (
+                    <button
+                      key={r._id}
+                      onClick={() => onSelect(r._id)}
+                      title={`${guestName(r)} · ${fmtDate(r.startAt)} → ${fmtDate(r.endAt)}`}
+                      className={cn(
+                        'absolute top-1.5 h-8 rounded border text-[10px] font-medium px-1.5 truncate transition hover:brightness-110',
+                        colorClass,
+                      )}
+                      style={{
+                        left: `${clampedStart * 60 + 1}px`,
+                        width: `${spanDays * 60 - 2}px`,
+                      }}
+                    >
+                      {guestName(r)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

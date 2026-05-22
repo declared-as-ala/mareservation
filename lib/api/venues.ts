@@ -81,6 +81,45 @@ export function getVenueAvailabilityStreamUrl(idOrSlug: string): string {
   return `${API_BASE}/api/v1/venues/${encodeURIComponent(idOrSlug)}/availability-stream`;
 }
 
+export interface PublicReservableUnit {
+  _id: string;
+  venueId: string;
+  unitType: 'table' | 'room' | 'seat_zone' | 'seat' | 'coworking_desk' | 'coworking_office' | 'coworking_meeting_room';
+  label: string;
+  code: string;
+  capacityMin?: number;
+  capacityMax?: number;
+  priceType?: 'fixed' | 'perPerson' | 'perNight' | 'perSession' | 'free';
+  basePrice: number;
+  currency?: string;
+  status: 'active' | 'inactive' | 'maintenance' | 'hidden';
+  isReservable: boolean;
+}
+
+export interface PublicCoworkingAddon {
+  _id: string;
+  venueId: string;
+  key: string;
+  name: string;
+  unitPrice: number;
+  isActive: boolean;
+  maxQty?: number;
+}
+
+export async function fetchVenueReservableUnits(idOrSlug: string): Promise<PublicReservableUnit[]> {
+  const raw = await apiGetRaw<PublicReservableUnit[] | { success?: boolean; data?: PublicReservableUnit[] }>(
+    `/venues/${encodeURIComponent(idOrSlug)}/reservable-units`
+  );
+  return Array.isArray(raw) ? raw : ((raw as { data?: PublicReservableUnit[] })?.data ?? []);
+}
+
+export async function fetchVenueCoworkingAddons(idOrSlug: string): Promise<PublicCoworkingAddon[]> {
+  const raw = await apiGetRaw<PublicCoworkingAddon[] | { success?: boolean; data?: PublicCoworkingAddon[] }>(
+    `/venues/${encodeURIComponent(idOrSlug)}/coworking-addons`
+  );
+  return Array.isArray(raw) ? raw : ((raw as { data?: PublicCoworkingAddon[] })?.data ?? []);
+}
+
 /** Venue with optional startAt/endAt for table/room/seat availability status (available | reserved). */
 export async function fetchVenueWithAvailability(
   idOrSlug: string,

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { fetchFavorites, toggleFavorite } from '@/lib/api/favorites';
 import { Button } from '@/components/ui/button';
 import type { Venue } from '@/lib/api/types';
+import { getVenueHref } from '@/lib/venueHref';
 
 function FavoriteVenueCard({ venue }: { venue: Venue }) {
   const qc = useQueryClient();
@@ -20,7 +21,7 @@ function FavoriteVenueCard({ venue }: { venue: Venue }) {
   });
 
   const img = venue.coverImage;
-  const href = `/lieu/${venue.slug ?? venue._id}`;
+  const href = getVenueHref(venue);
 
   return (
     <div className="group rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden hover:border-amber-400/40 transition-all duration-200 shadow-sm">

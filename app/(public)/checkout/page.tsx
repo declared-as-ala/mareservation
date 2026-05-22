@@ -184,13 +184,14 @@ export default function CheckoutPage() {
           new Date(new Date(item.dateTime).getTime() + 2 * 60 * 60 * 1000).toISOString();
 
         const bookingType =
-          item.type === 'venue_room' ? 'ROOM' : item.type === 'event_ticket' ? 'SEAT' : 'TABLE';
+          item.type === 'venue_room' ? 'ROOM' : item.type === 'event_ticket' ? 'SEAT' : item.type === 'venue_coworking' ? 'COWORKING' : 'TABLE';
 
         const result = await createReservation({
           venueId: item.venueId ?? '',
           tableId: item.tableId,
           roomId: item.roomId,
           seatId: item.seatId,
+          reservableUnitId: item.reservableUnitId,
           bookingType,
           startAt,
           endAt,
@@ -199,6 +200,13 @@ export default function CheckoutPage() {
           guestLastName: data.lastName,
           guestPhone: data.phone,
           guestEmail: data.email,
+          orderType: item.orderType,
+          menuItems: item.orderType === 'with_menu'
+            ? (item.menuItems ?? []).map((m) => ({ itemId: m.itemId, quantity: m.quantity }))
+            : undefined,
+          coworkingDurationType: item.coworkingDurationType,
+          coworkingHours: item.coworkingHours,
+          coworkingAddons: item.coworkingAddons,
         });
         ids.push(result._id);
       }

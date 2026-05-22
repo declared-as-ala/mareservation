@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Video, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, MapPin, Sparkles, Star, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Venue } from '@/lib/api/types';
 import { TypeBadge } from '@/components/shared/TypeBadge';
 import { FavoriteButton } from '@/components/shared/FavoriteButton';
+import { getVenueHref } from '@/lib/venueHref';
 
 function getVenueImage(venue: Venue): string | null {
   if (venue.coverImage) return venue.coverImage;
@@ -22,16 +23,15 @@ interface VenueCardProps {
 export function VenueCard({ venue, className }: VenueCardProps) {
   if (!venue?._id) return null;
 
-  const href = `/lieu/${venue.slug || venue._id}`;
+  const href = getVenueHref(venue);
   const img = getVenueImage(venue);
   const venueName = venue.name || 'Lieu';
   const venueCity = venue.city || 'Tunisie';
+  const startingPrice = Number(venue.startingPrice ?? venue.priceRangeMin ?? 0);
 
   return (
     <Link href={href} className={cn('group block', className)}>
-      <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-md transition-all duration-300 hover:border-amber-400/30 hover:shadow-xl hover:shadow-black/40 hover:-translate-y-0.5">
-
-        {/* Image */}
+      <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:shadow-xl hover:shadow-black/40">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-white/[0.04]">
           {img ? (
             <Image
@@ -47,54 +47,61 @@ export function VenueCard({ venue, className }: VenueCardProps) {
             </div>
           )}
 
-          {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Top-right: 360 badge */}
-          {venue.hasVirtualTour && (
-            <div className="absolute top-3 right-3">
+          <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+            {venue.isVedette && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/20 px-2.5 py-0.5 text-[10px] font-semibold text-amber-100 backdrop-blur-sm">
+                <Sparkles className="size-3" />
+                Vedette
+              </span>
+            )}
+            {venue.isFeatured && !venue.isVedette && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/60 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                <Star className="size-3" />
+                Mis en avant
+              </span>
+            )}
+            {venue.hasVirtualTour && (
               <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/70 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
                 <Video className="size-3" />
                 360°
               </span>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Bottom-left: favorite */}
           <div className="absolute bottom-3 left-3">
             <FavoriteButton venueId={venue._id} size="sm" />
           </div>
 
-          {/* Bottom-right: type */}
           <div className="absolute bottom-3 right-3">
             <TypeBadge type={venue.type} />
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex flex-col flex-1 p-4 gap-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-1 text-sm font-semibold text-neutral-100 leading-tight">
-              {venueName}
-            </h3>
-          </div>
-
+        <div className="flex flex-1 flex-col gap-2 p-4">
+          <h3 className="line-clamp-1 text-sm font-semibold leading-tight text-neutral-100">{venueName}</h3>
           <div className="flex items-center gap-1.5 text-xs text-neutral-500">
             <MapPin className="size-3 shrink-0" />
             <span className="line-clamp-1">{venueCity}</span>
           </div>
+          {startingPrice > 0 && (
+            <div className="mt-0.5 inline-flex items-center rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
+              À partir de {startingPrice.toFixed(0)} TND
+            </div>
+          )}
         </div>
 
-        {/* Footer CTA */}
         <div className="px-4 pb-4">
-          <div className="flex items-center justify-between rounded-xl bg-white/[0.04] px-3 py-2.5 group-hover:bg-amber-400/10 group-hover:border-amber-400/20 border border-white/[0.06] transition-all">
-            <span className="text-xs font-semibold text-neutral-400 group-hover:text-amber-300 transition-colors">
+          <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2.5 transition-all group-hover:border-amber-400/20 group-hover:bg-amber-400/10">
+            <span className="text-xs font-semibold text-neutral-400 transition-colors group-hover:text-amber-300">
               Voir &amp; Réserver
             </span>
-            <ArrowUpRight className="size-3.5 text-neutral-600 group-hover:text-amber-300 transition-colors" />
+            <ArrowUpRight className="size-3.5 text-neutral-600 transition-colors group-hover:text-amber-300" />
           </div>
         </div>
       </div>
     </Link>
   );
 }
+

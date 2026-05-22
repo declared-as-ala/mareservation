@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchVenues } from '@/lib/api/venues';
 import { MapPin, ArrowRight } from 'lucide-react';
 import type { VenueType } from '@/lib/api/types';
+import { getVenueHref } from '@/lib/venueHref';
 
 interface SimilarVenuesProps {
   venueId: string;
@@ -44,7 +45,7 @@ export function SimilarVenues({ venueId, type, city }: SimilarVenuesProps) {
           return (
             <Link
               key={venue._id}
-              href={`/lieu/${venue.slug || venue._id}`}
+              href={getVenueHref(venue)}
               className="group rounded-xl overflow-hidden border bg-card hover:border-primary/50 transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="relative h-32 bg-muted overflow-hidden">

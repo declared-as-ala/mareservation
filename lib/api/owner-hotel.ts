@@ -259,3 +259,11 @@ export async function reassignRoom(id: string, roomId: string): Promise<void> {
 export async function addReservationNote(id: string, text: string): Promise<void> {
   await api.post(`/owner-hotel/reservations/${id}/note`, { text });
 }
+
+export async function submitVenueForReview(
+  venueId: string,
+  docs?: Array<{ url: string; label: string }>,
+  note?: string,
+): Promise<void> {
+  await api.post(`/owner-hotel/venues/${venueId}/submit-for-review`, { docs, note });
+}

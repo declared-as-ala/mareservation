@@ -46,7 +46,17 @@ import {
   type PaymentOption,
   type HotelCheckoutExtra,
 } from '@/lib/api/hotel-checkout';
+import { apiPostRaw } from '@/lib/api/client';
 import type { HotelRoom, Venue } from '@/lib/api/types';
+
+interface PriceQuote {
+  nights: number;
+  subtotal: number;
+  total: number;
+  promo?: { code: string; kind: string; discount: number };
+  errors: string[];
+  warnings: string[];
+}
 
 /* ─── helpers ─────────────────────────────────────────────────────────── */
 
@@ -324,7 +334,25 @@ export default function HotelCheckoutClient() {
   const nights = nightsBetween(checkIn, checkOut);
   const guestsTotal = adults + children;
   const pricePerNight = room?.pricePerNight ?? 0;
-  const subtotal = pricePerNight * nights;
+
+  // Dynamic quote from pricing engine (rules + promo)
+  const { data: priceQuote } = useQuery<PriceQuote>({
+    queryKey: ['pricing-quote', venueId, roomId, checkIn?.toISOString(), checkOut?.toISOString(), promoCode],
+    queryFn: async () => {
+      const json = await apiPostRaw<{ success?: boolean; data?: PriceQuote; errors?: string[]; warnings?: string[] }>('/pricing/quote', {
+        venueId,
+        roomId,
+        startAt: checkIn!.toISOString(),
+        endAt: checkOut!.toISOString(),
+        promoCode: promoCode || undefined,
+      });
+      return (json?.data ?? json) as PriceQuote;
+    },
+    enabled: !!(venueId && roomId && checkIn && checkOut && nights >= 1),
+    staleTime: 30_000,
+  });
+
+  const subtotal = priceQuote?.total ?? pricePerNight * nights;
   const taxes = Math.round(subtotal * TAX_RATE);
   const extrasTotal = useMemo(
     () => extras.reduce((s, e) => s + extraTotal(e, nights, guestsTotal), 0),
@@ -653,7 +681,7 @@ export default function HotelCheckoutClient() {
 
           {/* ── right: live summary ───────────────────────────────────── */}
           <aside className="lg:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-3">
               <BookingSummary
                 venue={venue ?? undefined}
                 room={room}
@@ -667,7 +695,22 @@ export default function HotelCheckoutClient() {
                 extrasTotal={extrasTotal}
                 extras={extras}
                 total={total}
+                promo={priceQuote?.promo}
               />
+              {(priceQuote?.warnings ?? []).length > 0 && (
+                <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 space-y-1">
+                  {priceQuote!.warnings.map((w, i) => (
+                    <p key={i} className="text-[11px] text-amber-300">{w}</p>
+                  ))}
+                </div>
+              )}
+              {(priceQuote?.errors ?? []).length > 0 && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 space-y-1">
+                  {priceQuote!.errors.map((e, i) => (
+                    <p key={i} className="text-[11px] text-red-300">{e}</p>
+                  ))}
+                </div>
+              )}
             </div>
           </aside>
         </div>
@@ -1225,6 +1268,7 @@ function BookingSummary({
   extrasTotal,
   extras,
   total,
+  promo,
 }: {
   venue?: Venue;
   room?: HotelRoom;
@@ -1238,6 +1282,7 @@ function BookingSummary({
   extrasTotal: number;
   extras: HotelCheckoutExtra[];
   total: number;
+  promo?: { code: string; kind: string; discount: number };
 }) {
   const activeExtras = extras.filter((e) => e.quantity > 0);
   const cover = room?.coverImage ?? room?.gallery?.[0];
@@ -1266,6 +1311,9 @@ function BookingSummary({
 
         <dl className="space-y-1.5 text-sm">
           <SumRow label={`${room?.pricePerNight?.toLocaleString('fr-FR') ?? '—'} DT × ${nights} nuit${nights > 1 ? 's' : ''}`} value={fmtMoney(subtotal)} muted />
+          {promo && (
+            <SumRow label={`Promo ${promo.code}`} value={`− ${fmtMoney(promo.discount)}`} promo />
+          )}
           <SumRow label="Taxes & frais (10%)" value={fmtMoney(taxes)} muted />
           {activeExtras.length > 0 && (
             <>
@@ -1385,11 +1433,11 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SumRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function SumRow({ label, value, muted, promo }: { label: string; value: string; muted?: boolean; promo?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <dt className={cn('text-xs', muted ? 'text-neutral-600' : 'text-neutral-500')}>{label}</dt>
-      <dd className={cn('text-xs font-medium tabular-nums', muted ? 'text-neutral-500' : 'text-neutral-200')}>{value}</dd>
+      <dt className={cn('text-xs', promo ? 'text-emerald-400' : muted ? 'text-neutral-600' : 'text-neutral-500')}>{label}</dt>
+      <dd className={cn('text-xs font-medium tabular-nums', promo ? 'text-emerald-400' : muted ? 'text-neutral-500' : 'text-neutral-200')}>{value}</dd>
     </div>
   );
 }

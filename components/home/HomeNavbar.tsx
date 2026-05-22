@@ -11,6 +11,7 @@ import {
   Sparkles,
   CalendarDays,
   Compass,
+  BriefcaseBusiness,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -21,6 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger 
 
 const navigationItems = [
   { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
+  { label: 'Coworking', href: '/coworking', icon: BriefcaseBusiness },
   { label: 'Événements', href: '/evenements', icon: CalendarDays },
 ];
 

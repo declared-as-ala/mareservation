@@ -43,6 +43,18 @@ function getVenueId(r: { venueId: string | { _id?: string } }): string {
   return typeof v === 'string' ? v : '';
 }
 
+function getEventName(r: { eventId?: string | { title?: string } }) {
+  const event = r.eventId;
+  if (typeof event === 'object' && event?.title) return event.title;
+  return '';
+}
+
+function getTicketLabel(notes?: string) {
+  if (!notes?.includes('event_ticket:')) return '';
+  const raw = notes.split('event_ticket:')[1]?.split(';')[0];
+  return raw || '';
+}
+
 export default function ReservationConfirmationPage() {
   const params = useParams();
   const id = params.id as string;
@@ -91,6 +103,9 @@ export default function ReservationConfirmationPage() {
   const start = new Date(data.startAt);
   const end = new Date(data.endAt);
   const venueName = getVenueName(data);
+  const eventName = getEventName(data as any);
+  const isEventTicket = Boolean(eventName || (data as any).source === 'event_checkout' || data.notes?.includes('event_ticket:'));
+  const ticketLabel = getTicketLabel(data.notes);
   const code = data.confirmationCode ?? data.reservationCode ?? id.slice(-8).toUpperCase();
 
   return (
@@ -100,8 +115,12 @@ export default function ReservationConfirmationPage() {
           <div className="mx-auto size-20 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4">
             <CheckCircle2 className="size-10 text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-100 mb-2">Réservation confirmée !</h1>
-          <p className="text-zinc-400 text-sm mb-4">Votre réservation a bien été enregistrée.</p>
+          <h1 className="text-2xl font-bold text-zinc-100 mb-2">
+            {isEventTicket ? 'Ticket evenement confirme !' : 'Réservation confirmée !'}
+          </h1>
+          <p className="text-zinc-400 text-sm mb-4">
+            {isEventTicket ? 'Votre billet QR est pret. Presentez-le a l entree.' : 'Votre réservation a bien été enregistrée.'}
+          </p>
           <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-full px-5 py-2">
             <QrCode className="size-4 text-amber-400" />
             <span className="font-mono text-amber-400 font-semibold tracking-wider text-sm">{code}</span>
@@ -109,7 +128,12 @@ export default function ReservationConfirmationPage() {
         </div>
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
-          <h2 className="font-semibold text-zinc-100 text-lg">{venueName}</h2>
+          <h2 className="font-semibold text-zinc-100 text-lg">{eventName || venueName}</h2>
+          {isEventTicket && (
+            <p className="text-sm text-zinc-500">
+              {ticketLabel ? `Billet ${ticketLabel}` : 'Billet evenement'} - {venueName}
+            </p>
+          )}
           <div className="grid sm:grid-cols-3 gap-3 text-sm">
             <div className="flex items-center gap-2 text-zinc-400">
               <Calendar className="size-4 text-amber-400/60 shrink-0" />
@@ -125,12 +149,41 @@ export default function ReservationConfirmationPage() {
             {data.partySize != null && (
               <div className="flex items-center gap-2 text-zinc-400">
                 <Users className="size-4 text-amber-400/60 shrink-0" />
-                <span>{data.partySize} personne{data.partySize > 1 ? 's' : ''}</span>
+                <span>{data.partySize} {isEventTicket ? 'billet' : 'personne'}{data.partySize > 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
+          {isEventTicket && data.priceBreakdown ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 text-sm">
+              <div className="flex items-center justify-between text-zinc-400">
+                <span>Sous-total</span>
+                <span>{data.priceBreakdown.subtotal ?? 0} TND</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-zinc-400">
+                <span>Frais service</span>
+                <span>{data.priceBreakdown.serviceFee ?? 0} TND</span>
+              </div>
+            </div>
+          ) : null}
           {data.totalPrice != null && data.totalPrice > 0 && (
             <p className="text-amber-400 font-semibold">Total : {data.totalPrice} TND</p>
+          )}
+          {Array.isArray((data as any).menuItems) && (data as any).menuItems.length > 0 && (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+              <p className="text-xs uppercase tracking-wider text-zinc-500 mb-2">Precommande menu</p>
+              <div className="space-y-1.5 text-sm">
+                {(data as any).menuItems.map((m: any, idx: number) => (
+                  <div key={`${m.menuItemId || idx}`} className="flex items-center justify-between text-zinc-300">
+                    <span>{m.name} x{m.quantity}</span>
+                    <span>{Math.round((m.unitPrice || 0) * (m.quantity || 0))} TND</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-zinc-800 flex items-center justify-between text-sm">
+                <span className="text-zinc-500">Sous-total menu</span>
+                <span className="text-amber-400 font-semibold">{(data as any).menuTotal ?? 0} TND</span>
+              </div>
+            </div>
           )}
         </div>
 

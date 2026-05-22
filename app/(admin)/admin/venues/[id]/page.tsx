@@ -8,16 +8,22 @@ import { fetchVenueByIdOrSlug } from '@/lib/api/venues';
 import { fetchScenes } from '@/lib/api/scenes';
 import {
   updateAdminVenue,
+  createAdminVenueScene,
+  deleteAdminVenueScene,
   fetchAdminOwners,
   assignVenueOwner,
   fetchAdminVenueTables,
   createAdminTable,
+  updateAdminTable,
   deleteAdminTable,
   fetchAdminTablePlacements,
   createAdminTablePlacement,
   updateAdminTablePlacement,
   deleteAdminTablePlacement,
   fetchAdminVenueScenes,
+  fetchAdminReservableUnits,
+  createAdminSceneHotspot,
+  deleteAdminSceneHotspot,
   fetchAdminHotelRooms,
   createAdminHotelRoom,
   updateAdminHotelRoom,
@@ -25,6 +31,7 @@ import {
   type AdminTableRow,
   type AdminTablePlacement,
   type AdminHotelRoom,
+  fetchAdminReservations,
 } from '@/lib/api/admin';
 import { uploadImageFile } from '@/lib/api/client';
 import { fetchAdminVenueMenu, createMenuItem, updateMenuItem, deleteMenuItem } from '@/lib/api/menu';
@@ -57,7 +64,7 @@ import {
   Phone, Hash, FileText, Building2, Camera,
   Sparkles, ImagePlus, UtensilsCrossed, ScanLine,
   BedDouble, Crown, DollarSign, Bath,
-  Film, CalendarDays, BookOpen, Clapperboard, PartyPopper,
+  Film, CalendarDays, BookOpen, Clapperboard, PartyPopper, Clock3, CheckCircle, AlertCircle,
 } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
@@ -66,6 +73,9 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import { Panorama360Editor, type Panorama360EditorApis } from '@/components/dashboard/Panorama360Editor';
+import { deleteOwnerTableBlock, fetchOwnerTableBlocks } from '@/lib/api/owner-table';
+import { deleteOwnerCoworkingBlock, fetchOwnerCoworkingBlocks } from '@/lib/api/owner-coworking';
 
 const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
@@ -244,10 +254,16 @@ export default function AdminVenueDetailPage() {
     queryFn: () => fetchAdminVenueScenes(id),
     enabled: !!id,
   });
+  const { data: adminReservations = [] } = useQuery({
+    queryKey: ['admin-reservations-for-venue', id],
+    queryFn: () => fetchAdminReservations(),
+    enabled: !!id,
+  });
 
   const venueType = form?.type || (venue as any)?.type || '';
   const isHotel = venueType === 'HOTEL';
   const isRestaurantOrCafe = venueType === 'RESTAURANT' || venueType === 'CAFE';
+  const isCoworking = venueType === 'COWORKING';
   const isCinema = venueType === 'CINEMA';
   const isEventSpace = venueType === 'EVENT_SPACE';
   const showTables = isRestaurantOrCafe;
@@ -287,6 +303,80 @@ export default function AdminVenueDetailPage() {
   const [ownerAssigning, setOwnerAssigning] = useState(false);
 
   const effectiveSceneId = activeSceneId ?? (scenes[0]?._id ?? null);
+
+  const tablePlacementApis: Panorama360EditorApis = {
+    fetchScenes: async (venueId) => {
+      const data = await fetchAdminVenueScenes(venueId);
+      return data.scenes.map((scene) => ({ _id: scene._id, name: scene.name, image: scene.image }));
+    },
+    createScene: (venueId, payload) =>
+      createAdminVenueScene(venueId, { name: payload.name, image: payload.image, description: payload.description }),
+    deleteScene: (_venueId, sceneId) => deleteAdminVenueScene(sceneId),
+    fetchHotspots: async (venueId) => {
+      const data = await fetchAdminVenueScenes(venueId);
+      return data.hotspots;
+    },
+    createHotspot: (venueId, payload) => createAdminSceneHotspot({ venueId, ...payload }),
+    deleteHotspot: (_venueId, hotspotId) => deleteAdminSceneHotspot(hotspotId),
+    fetchPlacements: (venueId) => fetchAdminTablePlacements(venueId),
+    createPlacement: (venueId, payload) =>
+      createAdminTablePlacement({
+        venueId,
+        sceneId: payload.sceneId,
+        yaw: payload.yaw,
+        pitch: payload.pitch,
+        tableId: payload.tableId,
+      }),
+    updatePlacement: (_venueId, placementId, payload) => updateAdminTablePlacement(placementId, payload),
+    deletePlacement: (_venueId, placementId) => deleteAdminTablePlacement(placementId),
+    fetchTables: (venueId) => fetchAdminVenueTables(venueId),
+    createTable: (venueId, payload) =>
+      createAdminTable({
+        venueId,
+        tableNumber: Math.max(0, ...tables.map((table) => Number(table.tableNumber || 0))) + 1,
+        name: payload.name,
+        capacity: payload.capacity,
+        capacityMax: payload.capacity,
+        price: payload.price,
+        minimumSpend: payload.minimumSpend,
+        isVip: payload.isVip,
+        defaultStatus: 'available',
+      }),
+    updateTable: (_venueId, tableId, payload) => updateAdminTable(tableId, payload),
+    deleteTable: (_venueId, tableId) => deleteAdminTable(tableId),
+    fetchBlocks: fetchOwnerTableBlocks,
+    deleteBlock: deleteOwnerTableBlock,
+  };
+
+  const unitPlacementApis: Panorama360EditorApis = {
+    fetchScenes: async (venueId) => {
+      const data = await fetchAdminVenueScenes(venueId);
+      return data.scenes.map((scene) => ({ _id: scene._id, name: scene.name, image: scene.image }));
+    },
+    createScene: (venueId, payload) =>
+      createAdminVenueScene(venueId, { name: payload.name, image: payload.image, description: payload.description }),
+    deleteScene: (_venueId, sceneId) => deleteAdminVenueScene(sceneId),
+    fetchHotspots: async (venueId) => {
+      const data = await fetchAdminVenueScenes(venueId);
+      return data.hotspots;
+    },
+    createHotspot: (venueId, payload) => createAdminSceneHotspot({ venueId, ...payload }),
+    deleteHotspot: (_venueId, hotspotId) => deleteAdminSceneHotspot(hotspotId),
+    fetchPlacements: (venueId) => fetchAdminTablePlacements(venueId),
+    createPlacement: (venueId, payload) =>
+      createAdminTablePlacement({
+        venueId,
+        sceneId: payload.sceneId,
+        yaw: payload.yaw,
+        pitch: payload.pitch,
+        reservableUnitId: payload.reservableUnitId,
+      }),
+    updatePlacement: (_venueId, placementId, payload) => updateAdminTablePlacement(placementId, payload),
+    deletePlacement: (_venueId, placementId) => deleteAdminTablePlacement(placementId),
+    fetchUnits: (venueId) => fetchAdminReservableUnits(venueId),
+    fetchBlocks: fetchOwnerCoworkingBlocks,
+    deleteBlock: deleteOwnerCoworkingBlock,
+  };
 
   useEffect(() => {
     if (venue && typeof venue === 'object') setForm(toForm(venue as unknown as Record<string, unknown>));
@@ -341,6 +431,39 @@ export default function AdminVenueDetailPage() {
 
   const removeGalleryUrl = (i: number) => {
     if (form) setForm({ ...form, gallery: form.gallery.filter((_, idx) => idx !== i) });
+  };
+
+  const handleUnifiedTourUpload = async (files: FileList | null) => {
+    if (!files || !form) return;
+    const list = Array.from(files).slice(0, 10);
+    if (!list.length) return;
+    setUploading(true);
+    try {
+      let primaryConsumed = !!form.immersiveFile;
+      for (const [idx, file] of list.entries()) {
+        const url = await uploadImageFile(file);
+        if (!primaryConsumed) {
+          setForm((prev) => prev ? {
+            ...prev,
+            immersiveType: 'view-360',
+            immersiveSourceType: 'upload',
+            immersiveFile: url,
+          } : prev);
+          primaryConsumed = true;
+        } else {
+          await createAdminVenueScene(id, {
+            name: `Snapshot ${Date.now()}-${idx + 1}`,
+            image: url,
+          });
+        }
+      }
+      await refetchTour();
+      toast.success('Espace 360° mis à jour.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload 360°.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // ── Immersive file upload ──
@@ -599,6 +722,16 @@ export default function AdminVenueDetailPage() {
   if (!form) return <DetailPageSkeleton />;
 
   const showFileUpload = form.immersiveType !== 'none';
+  const filteredVenueReservations = (adminReservations as any[]).filter((r) => {
+    const rid = String((r as any)?.venueId?._id ?? (r as any)?.venueId ?? '');
+    return rid === id;
+  }).slice(0, 20);
+  const reservationStats = {
+    total: filteredVenueReservations.length,
+    pending: filteredVenueReservations.filter((r) => ['pending', 'PENDING'].includes(String(r.status))).length,
+    confirmed: filteredVenueReservations.filter((r) => ['confirmed', 'CONFIRMED', 'checked_in'].includes(String(r.status))).length,
+  };
+  const immersiveCount = (tourData?.scenes?.length ?? 0) + (form.immersiveFile ? 1 : 0);
 
   return (
     <div className="space-y-6 pb-10">
@@ -645,10 +778,39 @@ export default function AdminVenueDetailPage() {
           </Button>
         </div>
       </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="rounded-2xl border-border/40 bg-background/60">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Type</p>
+              <p className="text-sm font-semibold">{VENUE_TYPE_LABELS[form.type as keyof typeof VENUE_TYPE_LABELS] ?? form.type}</p>
+            </div>
+            <Building2 className="size-4 text-amber-400" />
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-border/40 bg-background/60">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Réservations</p>
+              <p className="text-sm font-semibold">{reservationStats.total}</p>
+            </div>
+            <CalendarDays className="size-4 text-amber-400" />
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-border/40 bg-background/60">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">360° Assets</p>
+              <p className="text-sm font-semibold">{immersiveCount}</p>
+            </div>
+            <ScanLine className="size-4 text-amber-400" />
+          </CardContent>
+        </Card>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="info">
-          <TabsList className="flex flex-wrap h-auto gap-0.5 bg-muted/50 backdrop-blur rounded-xl p-1 border border-border/30">
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-zinc-900/70 backdrop-blur rounded-2xl p-1.5 border border-zinc-800/80">
             <TabsTrigger value="info" className="rounded-lg gap-1.5 data-[state=active]:shadow-md">
               <Info className="size-3.5" /> Informations
             </TabsTrigger>
@@ -988,75 +1150,18 @@ export default function AdminVenueDetailPage() {
               </Card>
             </div>
 
-            {/* Immersive 360° */}
             <Card className="rounded-2xl border-border/40 shadow-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-2">
-                  <div className="size-8 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-                    <Map className="size-4 text-amber-500" />
-                  </div>
+              <CardContent className="py-6">
+                <div className="flex items-start gap-3 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
+                  <ScanLine className="size-4 text-amber-400 mt-0.5" />
                   <div>
-                    <CardTitle className="text-base">Visite virtuelle / Média 360°</CardTitle>
-                    <CardDescription className="text-xs">Uploadez un média 360° pour offrir une expérience immersive</CardDescription>
+                    <p className="text-sm font-semibold text-amber-300">Espace 360° unifié</p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      La gestion immersive se fait uniquement dans l’onglet <strong className="text-zinc-200">Visite virtuelle 360°</strong>.
+                      Un seul upload = vue 360°, plusieurs uploads = vue 360° avec snapshots/scènes.
+                    </p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="grid gap-2">
-                  <Label htmlFor="immersiveType" className="text-xs font-medium">Type de visite</Label>
-                  <Select value={form.immersiveType} onValueChange={(v) => setForm({ ...form, immersiveType: v as ImmersiveType, ...(v === 'none' ? { immersiveSourceType: '' as ImmersiveSourceType | '', immersiveUrl: '', immersiveFile: '' } : { immersiveSourceType: 'upload' }) })}>
-                    <SelectTrigger id="immersiveType" className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Aucune</SelectItem>
-                      <SelectItem value="virtual-tour">Visite virtuelle</SelectItem>
-                      <SelectItem value="view-360">Vue 360°</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {showFileUpload && (
-                  <div className="space-y-4">
-                    <input ref={fileInputRef} type="file" accept="image/*,video/*,.hdr,.exr" onChange={handleFileUpload} className="hidden" />
-
-                    {form.immersiveFile ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-xl bg-emerald-500/5 border border-emerald-500/20 px-4 py-2.5">
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle2 className="size-4 text-emerald-500" />
-                            <span className="font-medium text-emerald-600">Fichier uploadé</span>
-                          </div>
-                          <Button type="button" variant="ghost" size="sm" className="h-7 text-xs rounded-lg text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                            onClick={() => setForm({ ...form, immersiveFile: '' })}>
-                            <Trash2 className="size-3 mr-1" /> Retirer
-                          </Button>
-                        </div>
-                        <div className="aspect-video w-full overflow-hidden rounded-xl border bg-muted relative">
-                          {form.immersiveFile.match(/\.(mp4|webm|ogg)$/i)
-                            ? <video src={form.immersiveFile} controls className="h-full w-full object-contain" />
-                            : <Image src={form.immersiveFile} alt="Aperçu" fill className="object-contain" sizes="100vw" />
-                          }
-                        </div>
-                      </div>
-                    ) : (
-                      <DropZone
-                        onFile={handleImmersiveDropUpload}
-                        uploading={uploading}
-                        accept="image/*,video/*,.hdr,.exr"
-                        label="Glissez votre fichier 360° ici"
-                        sublabel="Images panoramiques, vidéos 360° ou fichiers HDR"
-                      />
-                    )}
-                  </div>
-                )}
-
-                {form.immersiveType === 'none' && (
-                  <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-4">
-                    <div className="size-10 rounded-xl bg-muted flex items-center justify-center">
-                      <Map className="size-5 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">Aucune expérience immersive configurée. Sélectionnez un type ci-dessus pour commencer.</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1614,16 +1719,67 @@ export default function AdminVenueDetailPage() {
                   </Button>
                 </CardContent>
               </Card>
-            ) : (
-              <VirtualTourBuilder
+            ) : isRestaurantOrCafe || isCoworking ? (
+              <Panorama360Editor
                 venueId={id}
-                initialScenes={tourData?.scenes ?? []}
-                initialHotspots={tourData?.hotspots ?? []}
-                onUpdated={() => {
-                  refetchTour();
-                  queryClient.invalidateQueries({ queryKey: ['venue', id] });
-                }}
+                mode={isCoworking ? 'units' : 'tables'}
+                api={isCoworking ? unitPlacementApis : tablePlacementApis}
               />
+            ) : (
+              <div className="space-y-4">
+                <Card className="rounded-2xl border-border/40">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2"><ScanLine className="size-4 text-amber-400" /> Gestion immersive 360°</CardTitle>
+                    <CardDescription className="text-xs">
+                      Upload 1 image = mode 360 simple. Upload 2+ images = mode snapshots/scènes.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => void handleUnifiedTourUpload(e.target.files)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl gap-2"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                      Ajouter photo(s) 360°
+                    </Button>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+                        <p className="text-[11px] text-zinc-500">Mode actif</p>
+                        <p className="text-sm font-semibold text-white">{immersiveCount <= 1 ? '360 simple' : '360 + snapshots'}</p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+                        <p className="text-[11px] text-zinc-500">Image principale</p>
+                        <p className="text-sm font-semibold text-white">{form.immersiveFile ? 'Configurée' : 'Aucune'}</p>
+                      </div>
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+                        <p className="text-[11px] text-zinc-500">Snapshots/scènes</p>
+                        <p className="text-sm font-semibold text-white">{tourData?.scenes?.length ?? 0}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <VirtualTourBuilder
+                  venueId={id}
+                  initialScenes={tourData?.scenes ?? []}
+                  initialHotspots={tourData?.hotspots ?? []}
+                  onUpdated={() => {
+                    refetchTour();
+                    queryClient.invalidateQueries({ queryKey: ['venue', id] });
+                  }}
+                />
+              </div>
             )}
           </TabsContent>
 
@@ -1863,22 +2019,55 @@ export default function AdminVenueDetailPage() {
 
           {/* ── TAB: Réservations (all types) ────────────────────── */}
           <TabsContent value="reservations" className="pt-5">
-            <Card className="rounded-2xl border-border/40">
-              <CardContent className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                <div className="size-14 rounded-2xl bg-muted flex items-center justify-center">
-                  <BookOpen className="size-7 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Réservations</p>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-                    La gestion des réservations pour ce lieu sera disponible prochainement.
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-medium text-amber-400">
-                  <Sparkles className="size-3" /> Bientôt disponible
-                </span>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="rounded-2xl border-border/40 lg:col-span-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2"><BookOpen className="size-4 text-amber-400" /> Réservations du lieu</CardTitle>
+                  <CardDescription className="text-xs">20 dernières réservations liées à cet espace</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {filteredVenueReservations.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-zinc-700 p-8 text-center text-sm text-zinc-500">
+                      Aucune réservation trouvée pour ce lieu.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredVenueReservations.map((r: any) => (
+                        <div key={String(r._id)} className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2.5 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{r.reservationCode || r._id}</p>
+                            <p className="text-[11px] text-zinc-500 truncate">{r.guestFirstName || r.customerName || 'Client'} • {r.bookingType || '-'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-zinc-400">{r.startAt ? new Date(r.startAt).toLocaleDateString('fr-FR') : '--'}</p>
+                            <p className="text-[11px] font-semibold text-amber-300">{r.totalPrice ? `${r.totalPrice} TND` : '--'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="rounded-2xl border-border/40">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Statut rapide</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2.5">
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-zinc-300"><Clock3 className="size-4 text-amber-400" /> En attente</div>
+                    <span className="text-sm font-bold text-white">{reservationStats.pending}</span>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-zinc-300"><CheckCircle className="size-4 text-emerald-400" /> Confirmées</div>
+                    <span className="text-sm font-bold text-white">{reservationStats.confirmed}</span>
+                  </div>
+                  <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-zinc-300"><AlertCircle className="size-4 text-blue-400" /> Total</div>
+                    <span className="text-sm font-bold text-white">{reservationStats.total}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

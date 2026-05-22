@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue } from '@/lib/api/admin';
+import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List, Trash2, Loader2, User, UserPlus, ShieldAlert, Mail, Archive, ArchiveRestore } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
   Select,
@@ -39,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-type VenueRow = { _id: string; name: string; type: string; city: string; coverImage?: string };
+type VenueRow = { _id: string; name: string; type: string; city: string; coverImage?: string; archivedAt?: string | null };
 type OwnerRef = { _id: string; fullName?: string; email?: string };
 type VenueRowWithOwner = VenueRow & { ownerId?: OwnerRef | string };
 
@@ -68,6 +69,58 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
+function OwnerBadge({
+  owner,
+  ownerLabel,
+  ownerEmail,
+  venueId,
+  onAssignClick,
+  compact = false,
+}: {
+  owner?: OwnerRef | string;
+  ownerLabel?: string;
+  ownerEmail?: string;
+  venueId: string;
+  onAssignClick: () => void;
+  compact?: boolean;
+}) {
+  if (!owner || (typeof owner === 'object' && !owner._id)) {
+    return (
+      <button
+        type="button"
+        onClick={onAssignClick}
+        className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-300 hover:bg-red-500/15 hover:border-red-500/40 transition-all"
+        aria-label="Assigner un propriétaire"
+      >
+        <ShieldAlert className="size-3" />
+        Non assigné
+      </button>
+    );
+  }
+  const name = ownerLabel || (typeof owner === 'object' ? owner.fullName || owner.email : '');
+  const email = ownerEmail || (typeof owner === 'object' ? owner.email : '');
+  const id = typeof owner === 'object' ? owner._id : owner;
+  const initial = (name || email || '?').charAt(0).toUpperCase();
+  return (
+    <Link
+      href={`/admin/venues?ownerId=${id}`}
+      title={email ? `${name} · ${email}` : name}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] pr-2.5 text-[11px] font-medium text-amber-200/90 hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-amber-200 transition-all',
+        compact ? 'py-0.5 pl-0.5' : 'py-1 pl-1'
+      )}
+    >
+      <span className={cn(
+        'flex items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black font-bold shrink-0',
+        compact ? 'size-4 text-[9px]' : 'size-5 text-[10px]'
+      )}>
+        {initial}
+      </span>
+      <span className="truncate max-w-[180px]">{name || email || 'Propriétaire'}</span>
+    </Link>
+  );
+}
+
 function VenueImage({ coverImage, name }: { coverImage?: string; name: string }) {
   if (coverImage) {
     return (
@@ -89,10 +142,38 @@ export default function AdminVenuesPage() {
   const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') ?? '');
   const [q, setQ] = useState(() => searchParams.get('q') ?? '');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [withoutOwner, setWithoutOwner] = useState(false);
+  const [ownerFilter, setOwnerFilter] = useState(() => searchParams.get('ownerId') ?? '');
+  const [withoutOwner, setWithoutOwner] = useState(() => searchParams.get('withoutOwner') === '1');
   const [pendingDelete, setPendingDelete] = useState<VenueRowWithOwner | null>(null);
+  const [assignTarget, setAssignTarget] = useState<VenueRowWithOwner | null>(null);
+  const [assigningOwnerId, setAssigningOwnerId] = useState<string>('');
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [archivedFilter, setArchivedFilter] = useState<'active' | 'only'>(
+    () => (searchParams.get('archived') === 'only' ? 'only' : 'active'),
+  );
   const queryClient = useQueryClient();
+
+  async function handleAssignOwner() {
+    if (!assignTarget) return;
+    setIsAssigning(true);
+    try {
+      await assignVenueOwner(assignTarget._id, assigningOwnerId || null);
+      toast.success(
+        assigningOwnerId
+          ? 'Propriétaire assigné'
+          : 'Propriétaire retiré',
+      );
+      queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+      setAssignTarget(null);
+      setAssigningOwnerId('');
+    } catch (err) {
+      toast.error('Échec', {
+        description: err instanceof Error ? err.message : 'Réessayez plus tard.',
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  }
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAdminVenue(id),
@@ -115,18 +196,41 @@ export default function AdminVenuesPage() {
   useEffect(() => {
     setTypeFilter(searchParams.get('type') ?? '');
     setQ(searchParams.get('q') ?? '');
+    setOwnerFilter(searchParams.get('ownerId') ?? '');
+    setWithoutOwner(searchParams.get('withoutOwner') === '1');
+    setArchivedFilter(searchParams.get('archived') === 'only' ? 'only' : 'active');
   }, [searchParams]);
 
   const { data: venuesData = [], isLoading } = useQuery({
-    queryKey: ['admin', 'venues', typeFilter, q, ownerFilter, withoutOwner],
+    queryKey: ['admin', 'venues', typeFilter, q, ownerFilter, withoutOwner, archivedFilter],
     queryFn: () =>
       fetchAdminVenues({
         type: typeFilter || undefined,
         q: q || undefined,
         ownerId: ownerFilter || undefined,
         withoutOwner,
+        archived: archivedFilter === 'only' ? 'only' : undefined,
       }),
   });
+
+  async function handleArchive(v: VenueRowWithOwner) {
+    try {
+      await archiveAdminVenue(v._id);
+      toast.success(`${v.name} archivé`);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+    } catch (err) {
+      toast.error('Échec', { description: err instanceof Error ? err.message : 'Réessayez.' });
+    }
+  }
+  async function handleRestore(v: VenueRowWithOwner) {
+    try {
+      await restoreAdminVenue(v._id);
+      toast.success(`${v.name} restauré`);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+    } catch (err) {
+      toast.error('Échec', { description: err instanceof Error ? err.message : 'Réessayez.' });
+    }
+  }
   const venues = venuesData as VenueRowWithOwner[];
   const { data: owners = [] } = useQuery({
     queryKey: ['admin', 'owners'],
@@ -138,6 +242,13 @@ export default function AdminVenuesPage() {
     acc[v.type] = (acc[v.type] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  const activeOwner = ownerFilter
+    ? owners.find((o) => o._id === ownerFilter) ?? null
+    : null;
+  const unassignedCount = venues.filter(
+    (v) => !v.ownerId || (typeof v.ownerId === 'object' && !v.ownerId._id),
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -163,6 +274,34 @@ export default function AdminVenuesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Active owner filter banner */}
+      {activeOwner && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black text-sm font-bold shrink-0">
+              {(activeOwner.fullName || activeOwner.email).charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-amber-200 truncate">
+                Établissements de {activeOwner.fullName || activeOwner.email}
+              </p>
+              <p className="text-xs text-amber-200/60 truncate flex items-center gap-1.5">
+                <Mail className="size-3" />
+                {activeOwner.email}
+                <span className="text-amber-200/30">·</span>
+                <span>{venues.length} lieu{venues.length !== 1 ? 'x' : ''}</span>
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/venues"
+            className="text-xs text-zinc-400 hover:text-zinc-100 transition-colors shrink-0"
+          >
+            Effacer le filtre
+          </Link>
+        </div>
+      )}
 
       {/* Stats Pills */}
       {!isLoading && venues.length > 0 && (
@@ -195,6 +334,29 @@ export default function AdminVenuesPage() {
               <span className="tabular-nums font-semibold">{count}</span>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setArchivedFilter(archivedFilter === 'only' ? 'active' : 'only')}
+            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition-all ${
+              archivedFilter === 'only'
+                ? 'bg-zinc-700/40 text-zinc-200 border-zinc-600'
+                : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-700'
+            }`}
+          >
+            <Archive className="size-3.5" />
+            Archivés
+          </button>
+          {unassignedCount > 0 && !withoutOwner && !ownerFilter && (
+            <button
+              type="button"
+              onClick={() => setWithoutOwner(true)}
+              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border bg-red-500/[0.06] text-red-300 border-red-500/20 hover:bg-red-500/10 hover:border-red-500/30 transition-all"
+            >
+              <ShieldAlert className="size-3.5" />
+              Sans propriétaire
+              <span className="tabular-nums font-semibold">{unassignedCount}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -324,7 +486,15 @@ export default function AdminVenuesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-zinc-400">
-                      {typeof v.ownerId === 'object' ? (v.ownerId.fullName || v.ownerId.email || '—') : '—'}
+                      <OwnerBadge
+                        owner={v.ownerId}
+                        venueId={v._id}
+                        onAssignClick={() => {
+                          const cur = typeof v.ownerId === 'object' && v.ownerId ? v.ownerId._id : '';
+                          setAssigningOwnerId(cur);
+                          setAssignTarget(v);
+                        }}
+                      />
                     </TableCell>
                     <TableCell className="text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
@@ -364,11 +534,40 @@ export default function AdminVenuesPage() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                const cur = typeof v.ownerId === 'object' && v.ownerId ? v.ownerId._id : '';
+                                setAssigningOwnerId(cur);
+                                setAssignTarget(v);
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <UserPlus className="size-4" />
+                              {typeof v.ownerId === 'object' && v.ownerId ? 'Changer le propriétaire' : 'Assigner un propriétaire'}
+                            </DropdownMenuItem>
+                            {v.archivedAt ? (
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); handleRestore(v); }}
+                                className="flex items-center gap-2 text-emerald-400 focus:text-emerald-300 focus:bg-emerald-500/10"
+                              >
+                                <ArchiveRestore className="size-4" />
+                                Restaurer
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onSelect={(e) => { e.preventDefault(); handleArchive(v); }}
+                                className="flex items-center gap-2"
+                              >
+                                <Archive className="size-4" />
+                                Archiver
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
                               onSelect={(e) => { e.preventDefault(); setPendingDelete(v); }}
                               className="flex items-center gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
                             >
                               <Trash2 className="size-4" />
-                              Supprimer
+                              Supprimer définitivement
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -409,6 +608,17 @@ export default function AdminVenuesPage() {
                     </div>
                   </div>
                 </div>
+                <div className="mt-3">
+                  <OwnerBadge
+                    owner={v.ownerId}
+                    venueId={v._id}
+                    onAssignClick={() => {
+                      const cur = typeof v.ownerId === 'object' && v.ownerId ? v.ownerId._id : '';
+                      setAssigningOwnerId(cur);
+                      setAssignTarget(v);
+                    }}
+                  />
+                </div>
                 <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800">
                   <Button
                     variant="outline"
@@ -447,6 +657,78 @@ export default function AdminVenuesPage() {
           ))}
         </div>
       )}
+
+      {/* Assign owner dialog */}
+      <AlertDialog
+        open={!!assignTarget}
+        onOpenChange={(open) => {
+          if (!open && !isAssigning) {
+            setAssignTarget(null);
+            setAssigningOwnerId('');
+          }
+        }}
+      >
+        <AlertDialogContent className="border-zinc-800 bg-zinc-950">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-zinc-100">
+              Lier <span className="text-amber-400">{assignTarget?.name}</span> à un propriétaire
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Sélectionnez un propriétaire d&apos;établissement. Il aura accès aux réservations, chambres et au tableau de bord de ce lieu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Select value={assigningOwnerId || 'none'} onValueChange={(v) => setAssigningOwnerId(v === 'none' ? '' : v)}>
+              <SelectTrigger className="w-full border-zinc-700 bg-zinc-900 text-zinc-100">
+                <SelectValue placeholder="Choisir un propriétaire…" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-900 border-zinc-800 max-h-[280px]">
+                <SelectItem value="none">Aucun (retirer le propriétaire)</SelectItem>
+                {owners.map((owner) => (
+                  <SelectItem key={owner._id} value={owner._id}>
+                    <span className="flex items-center gap-2">
+                      <span className="size-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black text-[10px] font-bold flex items-center justify-center">
+                        {(owner.fullName || owner.email).charAt(0).toUpperCase()}
+                      </span>
+                      <span className="font-medium">{owner.fullName || owner.email}</span>
+                      {owner.fullName && (
+                        <span className="text-zinc-500 text-xs">{owner.email}</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {owners.length === 0 && (
+              <p className="text-xs text-zinc-500">
+                Aucun propriétaire enregistré. Créez un compte avec le rôle <strong>ESTABLISHMENT_OWNER</strong> dans /admin/users.
+              </p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isAssigning} className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800">
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isAssigning}
+              onClick={(e) => { e.preventDefault(); handleAssignOwner(); }}
+              className="bg-amber-400 text-black hover:bg-amber-300"
+            >
+              {isAssigning ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Enregistrement…
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <UserPlus className="size-4" />
+                  {assigningOwnerId ? 'Lier' : 'Retirer'}
+                </span>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirmation */}
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
