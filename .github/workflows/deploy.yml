@@ -31,7 +31,13 @@ jobs:
           git pull origin main
 
           echo "⚙️ Copying environment file..."
-          if [ ! -f .env ]; then
+          if [ -f ~/mareservation/.env ]; then
+            cp -f ~/mareservation/.env .env
+            echo "✅ Synchronized .env from ~/mareservation/.env"
+          elif [ -f /root/mareservation/.env ]; then
+            cp -f /root/mareservation/.env .env
+            echo "✅ Synchronized .env from /root/mareservation/.env"
+          elif [ ! -f .env ]; then
             cp .env.example .env
             echo "⚠️ Created .env from template - PLEASE UPDATE WITH YOUR SECRETS!"
           fi
@@ -82,7 +88,7 @@ jobs:
             import('mongoose').then(async (m) => {
               const uri = process.env.MONGO_URI || 'mongodb://admin:changeme@mongodb:27017/mareservation?authSource=admin';
               await m.connect(uri);
-              const count = await m.connection.db.collection('categories').countDocuments();
+              const count = await m.connection.db.collection('venues').countDocuments();
               if (count === 0) {
                 console.log('📂 Database categories collection is empty. Seeding database...');
                 const { execSync } = await import('child_process');
