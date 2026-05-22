@@ -1,0 +1,195 @@
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import categoriesRouter from './routes/categories';
+import tagsRouter from './routes/tags';
+import metaRouter from './routes/meta';
+import venuesRouter from './routes/venues';
+import tablesRouter from './routes/tables';
+import eventsRouter from './routes/events';
+import reservationsRouter from './routes/reservations';
+import authRouter from './routes/auth';
+import searchRouter from './routes/search';
+import adminRouter from './routes/admin';
+import uploadsRouter from './routes/uploads';
+import organizerRouter from './routes/organizer';
+import ownerRouter from './routes/owner';
+import sosConseilRouter from './routes/sos-conseil';
+import favoritesRouter from './routes/favorites';
+import scenesRouter from './routes/scenes';
+import menuItemsRouter from './routes/menuItems';
+import paymentsRouter from './routes/payments';
+import menuDuJourRouter from './routes/menu-du-jour';
+import hotelCheckoutRouter from './routes/hotel-checkout';
+import ownerHotelRouter from './routes/owner-hotel';
+import adminHotelRouter from './routes/admin-hotel';
+import reviewsRouter from './routes/reviews';
+import pricingRouter from './routes/pricing';
+import payoutsRouter from './routes/payouts';
+import supportRouter from './routes/support';
+import ownerEventsRouter from './routes/owner-events';
+import eventCheckoutRouter from './routes/event-checkout';
+import ownerTableRouter from './routes/owner-table';
+import ownerCoworkingRouter from './routes/owner-coworking';
+import { errorMiddleware } from './middlewares/error.middleware';
+import { apiLimiter } from './middlewares/rateLimit.middleware';
+import { getEmailHealth } from './services/email.service';
+import path from 'path';
+
+dotenv.config();
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), 'uploads');
+
+const app = express();
+const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3000';
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://mareservtaion-frontend.vercel.app',
+  CORS_ORIGIN,
+].filter(Boolean);
+const VERCEL_PREVIEW_ORIGIN_REGEX = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(cors({
+  origin: (origin, cb) => {
+    const isAllowed = Boolean(
+      !origin ||
+      ALLOWED_ORIGINS.includes(origin) ||
+      VERCEL_PREVIEW_ORIGIN_REGEX.test(origin)
+    );
+    if (isAllowed) cb(null, origin || ALLOWED_ORIGINS[0]);
+    else cb(null, false);
+  },
+  credentials: true,
+}));
+// Request logger for debugging and operations visibility.
+app.use((req, res, next) => {
+  const start = Date.now();
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || 'unknown';
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`[api] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms}ms) ip=${ip}`);
+  });
+  next();
+});
+app.use(express.json());
+app.use(cookieParser());
+app.use('/uploads', express.static(UPLOAD_DIR));
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'Ma Reservation API',
+    version: '1.0',
+    health: '/api/v1/health',
+    message: 'Use /api/v1/* endpoints. Health check at GET /api/v1/health',
+  });
+});
+
+// Avoid 404s from browser favicon requests
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/favicon.png', (req, res) => res.status(204).end());
+
+// API v1 — primary (rate limited)
+app.get('/api/v1/health', (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+  res.status(dbConnected ? 200 : 503).json({
+    status: dbConnected ? 'ok' : 'degraded',
+    db: dbConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/v1/health/email', async (req, res) => {
+  try {
+    const health = await getEmailHealth();
+    const ok =
+      health.emailFromConfigured &&
+      (health.smtpConfigured ? health.smtpVerified === true : health.resendConfigured);
+
+    res.status(ok ? 200 : 503).json({
+      status: ok ? 'ok' : 'degraded',
+      ...health,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Email health check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+app.use('/api/v1', apiLimiter);
+app.use('/api/v1/categories', categoriesRouter);
+app.use('/api/v1/tags', tagsRouter);
+app.use('/api/v1/meta', metaRouter);
+app.use('/api/v1/venues', venuesRouter);
+app.use('/api/v1/tables', tablesRouter);
+app.use('/api/v1/events', eventsRouter);
+app.use('/api/v1/reservations', reservationsRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/search', searchRouter);
+app.use('/api/v1/uploads', uploadsRouter);
+app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/organizer', organizerRouter);
+app.use('/api/v1/owner', ownerRouter);
+app.use('/api/v1/sos-conseil', sosConseilRouter);
+app.use('/api/v1/favorites', favoritesRouter);
+app.use('/api/v1/scenes', scenesRouter);
+app.use('/api/v1/menu', menuItemsRouter);
+app.use('/api/v1/payments', paymentsRouter);
+app.use('/api/v1/menu-du-jour', menuDuJourRouter);
+app.use('/api/v1/hotel-checkout', hotelCheckoutRouter);
+app.use('/api/v1/owner-hotel', ownerHotelRouter);
+app.use('/api/v1/admin-hotel', adminHotelRouter);
+app.use('/api/v1/reviews', reviewsRouter);
+app.use('/api/v1/pricing', pricingRouter);
+app.use('/api/v1/payouts', payoutsRouter);
+app.use('/api/v1/support', supportRouter);
+app.use('/api/v1/owner-events', ownerEventsRouter);
+app.use('/api/v1/event-checkout', eventCheckoutRouter);
+app.use('/api/v1/owner-table', ownerTableRouter);
+app.use('/api/v1/owner-coworking', ownerCoworkingRouter);
+
+// Legacy /api/* (backward compatibility during migration)
+app.get('/health', (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+  res.status(dbConnected ? 200 : 503).json({
+    status: dbConnected ? 'ok' : 'degraded',
+    db: dbConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString(),
+  });
+});
+app.use('/api/categories', categoriesRouter);
+app.use('/api/venues', venuesRouter);
+app.use('/api/tables', tablesRouter);
+app.use('/api/events', eventsRouter);
+app.use('/api/reservations', reservationsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/search', searchRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/menu', menuItemsRouter);
+app.use('/api/menu-du-jour', menuDuJourRouter);
+
+// Explicit 404 — ensures clear JSON response for unknown routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Not Found',
+    path: req.path,
+    message: 'Use /api/v1/* endpoints. Health check at GET /api/v1/health',
+  });
+});
+
+// Centralized error handler (must be last)
+app.use(errorMiddleware);
+
+export default app;
