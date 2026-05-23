@@ -73,7 +73,6 @@ const SupportCaseSchema = new Schema<ISupportCase>(
 
 SupportCaseSchema.index({ userId: 1, status: 1, createdAt: -1 });
 SupportCaseSchema.index({ status: 1, priority: -1, createdAt: -1 });
-SupportCaseSchema.index({ caseNumber: 1 });
 
 SupportCaseSchema.pre('save', function (next) {
   if (!this.caseNumber) {

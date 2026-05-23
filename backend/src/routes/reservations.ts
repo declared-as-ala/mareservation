@@ -141,10 +141,18 @@ router.get('/availability/table/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const dateRaw = String(req.query.date || '').trim();
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : new Date().toISOString().slice(0, 10);
+    const parseDateKey = (raw: string) => {
+      const normalized = raw.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+      const parsed = new Date(normalized);
+      if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+      return new Date().toISOString().slice(0, 10);
+    };
+    const date = parseDateKey(dateRaw);
 
-    const dayStart = new Date(`${date}T00:00:00.000Z`);
-    const dayEnd = new Date(`${date}T23:59:59.999Z`);
+    const [year, month, day] = date.split('-').map(Number);
+    const dayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
     const now = new Date();
 
     const tableDoc = await Table.findById(tableId).select('venueId').lean();

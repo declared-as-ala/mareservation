@@ -2,6 +2,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
 const windowMs = 15 * 60 * 1000; // 15 minutes
+const DEFAULT_API_RATE_LIMIT_MAX = Math.max(1, Number(process.env.API_RATE_LIMIT_MAX) || 1000);
 
 // On Vercel, the real client IP is in X-Forwarded-For
 const keyGenerator = (req: Request) => {
@@ -27,7 +28,7 @@ function logRateLimitHit(req: Request) {
 
 export const apiLimiter = rateLimit({
   windowMs,
-  max: 200,
+  max: DEFAULT_API_RATE_LIMIT_MAX,
   message: { success: false, message: 'Trop de requêtes. Réessayez plus tard.' },
   standardHeaders: true,
   legacyHeaders: false,
