@@ -94,7 +94,7 @@ export interface Venue {
 
 export interface Event {
   _id: string;
-  venueId: string | { _id: string; name: string; city?: string; address?: string };
+  venueId: string | { _id: string; name: string; city?: string; address?: string; type?: string; coverImage?: string; phone?: string };
   title: string;
   type: string;
   slug?: string;
@@ -140,7 +140,21 @@ export interface Reservation {
   tableId?: unknown;
   roomId?: unknown;
   seatId?: unknown;
-  eventId?: string | { _id: string; title?: string; startAt?: string };
+  eventId?: string | {
+    _id: string;
+    title?: string;
+    slug?: string;
+    type?: string;
+    description?: string;
+    coverImage?: string;
+    afficheImageUrl?: string;
+    galleryUrls?: string[];
+    startAt?: string;
+    endsAt?: string;
+    organizerName?: string;
+    ageRestriction?: string;
+    termsFr?: string;
+  };
   reservableUnitId?: string;
   bookingType: BookingType;
   startAt: string;

@@ -824,8 +824,8 @@ router.get('/me/:id', authenticate, async (req: AuthRequest, res) => {
       .populate('tableId')
       .populate('roomId')
       .populate('seatId')
-      .populate('venueId', 'name address city type')
-      .populate('eventId', 'title startAt')
+      .populate('venueId', 'name address city type coverImage phone')
+      .populate('eventId', 'title slug type description coverImage afficheImageUrl galleryUrls startAt endsAt organizerName ageRestriction termsFr')
       .lean();
     if (!reservation) return res.status(404).json({ error: 'RÃ©servation non trouvÃ©e' });
     res.json({ success: true, data: reservation });
