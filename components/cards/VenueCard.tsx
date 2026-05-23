@@ -27,8 +27,6 @@ export function VenueCard({ venue, className }: VenueCardProps) {
   const img = getVenueImage(venue);
   const venueName = venue.name || 'Lieu';
   const venueCity = venue.city || 'Tunisie';
-  const startingPrice = Number(venue.startingPrice ?? venue.priceRangeMin ?? 0);
-
   return (
     <Link href={href} className={cn('group block', className)}>
       <div className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:shadow-xl hover:shadow-black/40">
@@ -85,11 +83,6 @@ export function VenueCard({ venue, className }: VenueCardProps) {
             <MapPin className="size-3 shrink-0" />
             <span className="line-clamp-1">{venueCity}</span>
           </div>
-          {startingPrice > 0 && (
-            <div className="mt-0.5 inline-flex items-center rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[11px] font-semibold text-amber-200">
-              À partir de {startingPrice.toFixed(0)} TND
-            </div>
-          )}
         </div>
 
         <div className="px-4 pb-4">
