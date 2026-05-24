@@ -170,8 +170,200 @@ function TimelineSlots({
   );
 }
 
+// ── Clock face time picker ────────────────────────────────────────────────────────────
 
-// ── Step indicator ─────────────────────────────────────────────────────────
+function ClockPicker({
+  slots,
+  selectedTime,
+  onSelect,
+}: {
+  slots: { time: string; available: boolean }[];
+  selectedTime: string;
+  onSelect: (time: string) => void;
+}) {
+  const [phase, setPhase] = useState<'hour' | 'minute'>('hour');
+  const [pickedHour, setPickedHour] = useState<number | null>(() =>
+    selectedTime ? parseInt(selectedTime.split(':')[0], 10) : null
+  );
+
+  const availableHours = useMemo(
+    () => [...new Set(slots.filter((s) => s.available).map((s) => parseInt(s.time.split(':')[0], 10)))],
+    [slots]
+  );
+  const availableMinutes = useMemo(
+    () =>
+      pickedHour !== null
+        ? slots.filter((s) => s.available && parseInt(s.time.split(':')[0], 10) === pickedHour).map((s) => parseInt(s.time.split(':')[1], 10))
+        : [],
+    [slots, pickedHour]
+  );
+
+  // All distinct hours that appear in the slots (sorted)
+  const allHours = useMemo(
+    () => [...new Set(slots.map((s) => parseInt(s.time.split(':')[0], 10)))].sort((a, b) => a - b),
+    [slots]
+  );
+
+  // Split into two rings: outer = first 12 hours, inner = remaining
+  const outerHours = allHours.slice(0, 12);
+  const innerHours = allHours.slice(12);
+
+  const SIZE = 230;
+  const cx = SIZE / 2;
+  const cy = SIZE / 2;
+  const outerR = 90;
+  const innerR = 56;
+
+  function polar(idx: number, total: number, r: number) {
+    const angle = (idx / total) * Math.PI * 2 - Math.PI / 2;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  }
+
+  function handEnd(hour: number) {
+    const oIdx = outerHours.indexOf(hour);
+    if (oIdx !== -1) return polar(oIdx, outerHours.length, outerR);
+    const iIdx = innerHours.indexOf(hour);
+    if (iIdx !== -1) return polar(iIdx, Math.max(innerHours.length, 1), innerR);
+    return null;
+  }
+
+  const selHour = selectedTime ? parseInt(selectedTime.split(':')[0], 10) : null;
+  const selMin  = selectedTime ? parseInt(selectedTime.split(':')[1], 10) : null;
+
+  function handleHourClick(h: number) {
+    if (!availableHours.includes(h)) return;
+    setPickedHour(h);
+    const mins = slots
+      .filter((s) => s.available && parseInt(s.time.split(':')[0], 10) === h)
+      .map((s) => parseInt(s.time.split(':')[1], 10));
+    if (mins.length === 1) {
+      onSelect(`${String(h).padStart(2, '0')}:${String(mins[0]).padStart(2, '0')}`);
+    } else {
+      setPhase('minute');
+    }
+  }
+
+  function handleMinuteClick(m: number) {
+    if (pickedHour === null) return;
+    onSelect(`${String(pickedHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    setPhase('hour');
+  }
+
+  const handPos = phase === 'hour' && selHour !== null ? handEnd(selHour) : null;
+  const minutePositions = availableMinutes.map((m, idx) => ({
+    m,
+    pos: polar(idx, Math.max(availableMinutes.length, 1), outerR),
+  }));
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      {/* Digital display */}
+      <div className="flex items-center gap-2 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-6 py-2.5">
+        <Clock className="size-4 text-amber-400" />
+        <span className={cn('font-mono text-3xl font-black tabular-nums tracking-wider', selectedTime ? 'text-amber-400' : 'text-neutral-600')}>
+          {selectedTime || '--:--'}
+        </span>
+      </div>
+
+      {/* Back to hour link */}
+      {phase === 'minute' && pickedHour !== null && (
+        <button type="button" onClick={() => setPhase('hour')} className="text-xs text-amber-400/80 hover:text-amber-400 underline underline-offset-2">
+          ← Changer l’heure
+        </button>
+      )}
+
+      {/* SVG Clock */}
+      <svg width={SIZE} height={SIZE} className="select-none overflow-visible">
+        {/* Outer ring track */}
+        <circle cx={cx} cy={cy} r={outerR + 18} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="36" />
+        {/* Inner ring track */}
+        {innerHours.length > 0 && (
+          <circle cx={cx} cy={cy} r={innerR + 14} fill="none" stroke="rgba(255,255,255,0.025)" strokeWidth="28" />
+        )}
+        {/* Clock face */}
+        <circle cx={cx} cy={cy} r={SIZE / 2 - 1} fill="rgba(13,13,13,0.6)" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+
+        {/* Hand */}
+        {handPos && (
+          <line x1={cx} y1={cy} x2={handPos.x} y2={handPos.y}
+            stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" opacity="0.55" />
+        )}
+        {/* Center dot */}
+        <circle cx={cx} cy={cy} r={4} fill="#f59e0b" />
+
+        {/* ── Hour phase ── */}
+        {phase === 'hour' && (
+          <>
+            {outerHours.map((h, idx) => {
+              const pos = polar(idx, outerHours.length, outerR);
+              const avail = availableHours.includes(h);
+              const sel = selHour === h;
+              return (
+                <g key={h} onClick={() => handleHourClick(h)} style={{ cursor: avail ? 'pointer' : 'default' }}>
+                  <circle cx={pos.x} cy={pos.y} r={19}
+                    fill={sel ? '#f59e0b' : avail ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.01)'}
+                    stroke={sel ? '#f59e0b' : avail ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.03)'}
+                    strokeWidth="1.5"
+                    className="transition-all duration-200"
+                  />
+                  <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                    fontSize="12" fontWeight={sel ? '900' : '700'}
+                    fill={sel ? '#000' : avail ? '#e5e5e5' : '#333333'}
+                  >{h}</text>
+                </g>
+              );
+            })}
+            {innerHours.map((h, idx) => {
+              const pos = polar(idx, Math.max(innerHours.length, 1), innerR);
+              const avail = availableHours.includes(h);
+              const sel = selHour === h;
+              return (
+                <g key={h} onClick={() => handleHourClick(h)} style={{ cursor: avail ? 'pointer' : 'default' }}>
+                  <circle cx={pos.x} cy={pos.y} r={16}
+                    fill={sel ? '#f59e0b' : avail ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.01)'}
+                    stroke={sel ? '#f59e0b' : avail ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.02)'}
+                    strokeWidth="1.5"
+                  />
+                  <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central"
+                    fontSize="11" fontWeight={sel ? '900' : '700'}
+                    fill={sel ? '#000' : avail ? '#a3a3a3' : '#2a2a2a'}
+                  >{h}</text>
+                </g>
+              );
+            })}
+          </>
+        )}
+
+        {/* ── Minute phase ── */}
+        {phase === 'minute' && minutePositions.map(({ m, pos }) => {
+          const sel = selMin === m;
+          return (
+            <g key={m} onClick={() => handleMinuteClick(m)} style={{ cursor: 'pointer' }}>
+              <circle cx={pos.x} cy={pos.y} r={22}
+                fill={sel ? '#f59e0b' : 'rgba(255,255,255,0.06)'}
+                stroke={sel ? '#f59e0b' : 'rgba(255,255,255,0.14)'}
+                strokeWidth="1.5"
+              />
+              <text x={pos.x} y={pos.y - 2} textAnchor="middle" dominantBaseline="central"
+                fontSize="11" fontWeight="800"
+                fill={sel ? '#000' : '#d4d4d4'}
+              >∶{String(m).padStart(2, '0')}</text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Hint */}
+      <p className="text-[10px] text-neutral-600">
+        {phase === 'hour'
+          ? 'Touchez une heure disponible'
+          : `Choisissez les minutes pour ${String(pickedHour).padStart(2, '0')}h`}
+      </p>
+    </div>
+  );
+}
+
+// ── Step indicator ──────────────────────────────────────────────────────────────
 
 function StepBar({ current, total }: { current: number; total: number }) {
   return (
@@ -634,94 +826,16 @@ export function StepReservationModal({
               )}
             </div>
 
-            {/* ── Time — horloge-style grouped picker ── */}
-            <div className="space-y-4">
+            {/* ── Time — horloge ── */}
+            <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                <Clock className="size-3.5 text-amber-400" /> Heure d'arrivée
+                <Clock className="size-3.5 text-amber-400" /> Heure d’arrivée
               </label>
-
-              {/* Period groups */}
-              {([
-                { label: 'Matin',       emoji: '\uD83C\uDF05', from: 6,  to: 12 },
-                { label: 'Après-midi', emoji: '\u2600\uFE0F',  from: 12, to: 17 },
-                { label: 'Soir',        emoji: '\uD83C\uDF19', from: 17, to: 24 },
-              ] as const).map(({ label, emoji, from, to }) => {
-                const periodSlots = slots.filter((s) => {
-                  const h = parseInt(s.time.split(':')[0], 10);
-                  return h >= from && h < to;
-                });
-                if (periodSlots.length === 0) return null;
-                return (
-                  <div key={label}>
-                    {/* Period header */}
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <span className="text-sm">{emoji}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">{label}</span>
-                      <div className="flex-1 h-px bg-white/[0.05]" />
-                    </div>
-                    {/* Slot pills */}
-                    <div className="flex flex-wrap gap-2">
-                      {periodSlots.map((slot) => {
-                        const isSelected = selectedTime === slot.time;
-                        const [hh, mm] = slot.time.split(':');
-                        return (
-                          <button
-                            key={slot.time}
-                            type="button"
-                            onClick={() => slot.available && setSelectedTime(slot.time)}
-                            disabled={!slot.available}
-                            className={cn(
-                              'relative flex flex-col items-center justify-center rounded-2xl border transition-all duration-200 w-[68px] py-3 group',
-                              isSelected && slot.available && [
-                                'border-amber-400 bg-amber-400 shadow-lg shadow-amber-400/30 scale-105',
-                              ],
-                              !isSelected && slot.available && [
-                                'border-white/[0.08] bg-white/[0.03]',
-                                'hover:border-amber-400/50 hover:bg-amber-400/8 hover:scale-105',
-                              ],
-                              !slot.available && [
-                                'border-red-500/10 bg-red-500/5 cursor-not-allowed opacity-40',
-                              ]
-                            )}
-                          >
-                            {/* Hour — big */}
-                            <span className={cn(
-                              'text-xl font-black tabular-nums leading-none',
-                              isSelected ? 'text-black' : slot.available ? 'text-neutral-200' : 'text-red-400/50'
-                            )}>
-                              {hh}
-                            </span>
-                            {/* Minutes */}
-                            <span className={cn(
-                              'text-[11px] font-bold tabular-nums mt-0.5',
-                              isSelected ? 'text-black/70' : slot.available ? 'text-neutral-500' : 'text-red-400/40'
-                            )}>
-                              :{mm}
-                            </span>
-                            {/* Available dot */}
-                            {slot.available && !isSelected && (
-                              <span className="absolute top-1.5 right-2 size-1.5 rounded-full bg-emerald-500/70" />
-                            )}
-                            {/* Taken X */}
-                            {!slot.available && (
-                              <span className="absolute top-1 right-1.5 text-[9px] text-red-400/60">✕</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Selected time pill */}
-              {selectedTime && (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
-                  <Clock className="size-3.5 text-amber-400" />
-                  <span className="text-xs text-neutral-400">Heure choisie :</span>
-                  <span className="font-mono text-sm font-black text-amber-400">{selectedTime}</span>
-                </div>
-              )}
+              <ClockPicker
+                slots={slots}
+                selectedTime={selectedTime}
+                onSelect={setSelectedTime}
+              />
             </div>
 
             {/* ── Party size ── */}
