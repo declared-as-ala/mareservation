@@ -47,6 +47,14 @@ export async function addAdminReservationNote(id: string, note: string) {
   return apiPostRaw<{ success: boolean; message: string; data: unknown }>(`/admin/reservations/${id}/note`, { note });
 }
 
+export async function checkoutReservation(id: string) {
+  return apiPatchRaw<{ success: boolean; message: string }>(`/reservations/${id}/checkout`, {});
+}
+
+export async function markCheckedIn(id: string) {
+  return apiPatchRaw<{ success: boolean; message: string }>(`/reservations/${id}/checkin`, {});
+}
+
 export async function fetchAdminVenues(params?: { page?: number; limit?: number; type?: string; city?: string; q?: string; ownerId?: string; withoutOwner?: boolean; archived?: 'only' | '1' }) {
   try {
     const sp = new URLSearchParams();

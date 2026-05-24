@@ -64,16 +64,32 @@ export type StepReservationModalProps = {
 };
 
 const TIME_SLOTS = [
-  '11:30', '12:00', '12:30', '13:00', '13:30',
-  '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
+  '20:00', '20:30', '21:00', '21:30', '22:00',
 ];
 
 const STEPS = [
-  { id: 0, label: 'Table', icon: MapPin },
-  { id: 1, label: 'Horaire', icon: Clock },
-  { id: 2, label: 'Options', icon: ChefHat },
+  { id: 0, label: 'Table',     icon: MapPin },
+  { id: 1, label: 'Horaire',   icon: Clock },
+  { id: 2, label: 'Options',   icon: ChefHat },
   { id: 3, label: 'Confirmer', icon: CheckCircle2 },
 ];
+
+// ── Date strip helpers ───────────────────────────────────────────────────────
+function getDayStrip(count = 14): { label: string; short: string; value: string; day: number }[] {
+  const today = new Date();
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const value = d.toISOString().slice(0, 10);
+    const label = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+    const short = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    return { label: label.charAt(0).toUpperCase() + label.slice(1, 3), short, value, day: d.getDate() };
+  });
+}
 
 // ── Hold timer ─────────────────────────────────────────────────────────────
 
@@ -110,7 +126,7 @@ function HoldTimer({ seconds }: { seconds: number }) {
   );
 }
 
-// ── Timeline slots ─────────────────────────────────────────────────────────
+// ── Timeline slots (step 0 only — shows taken slots as reference) ─────────────────
 
 function TimelineSlots({
   timeline,
@@ -135,36 +151,25 @@ function TimelineSlots({
     </div>
   );
 
-  const free = timeline.slots.filter((s) => s.available);
   const taken = timeline.slots.filter((s) => !s.available);
+  if (taken.length === 0) return (
+    <p className="text-xs text-emerald-400/70 flex items-center gap-1.5">
+      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+      Tous les créneaux sont disponibles
+    </p>
+  );
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-3 text-xs">
-        <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/8 px-2.5 py-1.5 text-emerald-400">
-          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          {free.length} libre{free.length !== 1 ? 's' : ''}
-        </div>
-        {taken.length > 0 && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/8 px-2.5 py-1.5 text-red-400">
-            <span className="size-1.5 rounded-full bg-red-500" />
-            {taken.length} pris
-          </div>
-        )}
-      </div>
-
-      {taken.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {taken.map((slot) => (
-            <span key={`t-${slot.time}`} className="rounded-lg border border-red-500/20 bg-red-500/8 px-2 py-1 text-[11px] text-red-400/70 line-through">
-              {formatRange(slot.startAt, slot.endAt)}
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="flex flex-wrap gap-1.5">
+      {taken.map((slot) => (
+        <span key={`t-${slot.time}`} className="rounded-lg border border-red-500/20 bg-red-500/8 px-2 py-1 text-[11px] text-red-400/60 line-through">
+          {slot.time.slice(0, 5)}
+        </span>
+      ))}
     </div>
   );
 }
+
 
 // ── Step indicator ─────────────────────────────────────────────────────────
 
@@ -586,123 +591,200 @@ export function StepReservationModal({
         );
 
       // ── STEP 1: Date, time & party size ───────────────────────────────────
-      case 1:
+      case 1: {
+        const dayStrip = getDayStrip(14);
+        const slots = timeline?.slots?.length
+          ? timeline.slots.map((s) => ({ time: s.time, available: s.available }))
+          : TIME_SLOTS.map((time) => ({ time, available: true }));
         return (
           <div className="space-y-5">
-            {/* Date picker */}
+
+            {/* ── Date strip ── */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                <Calendar className="size-3.5 text-amber-400" /> Date de réservation
+                <Calendar className="size-3.5 text-amber-400" /> Date
               </label>
-              <input
-                type="date"
-                value={selectedDate}
-                min={todayStr()}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-neutral-200 focus:border-amber-400/50 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition-all"
-              />
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                {dayStrip.map((d) => {
+                  const isSelected = selectedDate === d.value;
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => setSelectedDate(d.value)}
+                      className={cn(
+                        'flex flex-col items-center shrink-0 w-14 rounded-2xl border py-2.5 transition-all duration-150',
+                        isSelected
+                          ? 'border-amber-400 bg-amber-400 text-black shadow-lg shadow-amber-400/25'
+                          : 'border-white/[0.08] bg-white/[0.03] text-neutral-500 hover:border-amber-400/30 hover:text-amber-300'
+                      )}
+                    >
+                      <span className={cn('text-[10px] font-bold uppercase tracking-wider', isSelected ? 'text-black/70' : 'text-neutral-600')}>
+                        {d.label}
+                      </span>
+                      <span className={cn('text-xl font-black mt-0.5 tabular-nums', isSelected ? 'text-black' : 'text-neutral-200')}>
+                        {d.day}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
               {selectedDate && (
                 <p className="text-xs text-neutral-600 capitalize">{formatDate(selectedDate)}</p>
               )}
             </div>
 
-            {/* Time slots */}
-            <div className="space-y-3">
+            {/* ── Time — horloge-style grouped picker ── */}
+            <div className="space-y-4">
               <label className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                 <Clock className="size-3.5 text-amber-400" /> Heure d'arrivée
               </label>
 
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                {(timeline?.slots?.length
-                  ? timeline.slots.map((s) => ({ time: s.time, available: s.available }))
-                  : TIME_SLOTS.map((time) => ({ time, available: true }))
-                ).map((slot) => {
-                  const isSelected = selectedTime === slot.time;
-                  return (
-                    <button
-                      key={slot.time}
-                      type="button"
-                      onClick={() => slot.available && setSelectedTime(slot.time)}
-                      disabled={!slot.available}
-                      className={cn(
-                        'relative rounded-xl border py-2.5 text-xs font-semibold transition-all duration-150',
-                        isSelected && slot.available && [
-                          'border-amber-400 bg-amber-400 text-black',
-                          'shadow-lg shadow-amber-400/25',
-                        ],
-                        !isSelected && slot.available && [
-                          'border-white/[0.08] bg-white/[0.03] text-neutral-400',
-                          'hover:border-amber-400/40 hover:text-amber-400 hover:bg-amber-400/5',
-                        ],
-                        !slot.available && [
-                          'border-red-500/15 bg-red-500/5 text-red-500/40 line-through cursor-not-allowed',
-                        ]
-                      )}
-                    >
-                      {slot.time}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Period groups */}
+              {([
+                { label: 'Matin',       emoji: '\uD83C\uDF05', from: 6,  to: 12 },
+                { label: 'Après-midi', emoji: '\u2600\uFE0F',  from: 12, to: 17 },
+                { label: 'Soir',        emoji: '\uD83C\uDF19', from: 17, to: 24 },
+              ] as const).map(({ label, emoji, from, to }) => {
+                const periodSlots = slots.filter((s) => {
+                  const h = parseInt(s.time.split(':')[0], 10);
+                  return h >= from && h < to;
+                });
+                if (periodSlots.length === 0) return null;
+                return (
+                  <div key={label}>
+                    {/* Period header */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-sm">{emoji}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-600">{label}</span>
+                      <div className="flex-1 h-px bg-white/[0.05]" />
+                    </div>
+                    {/* Slot pills */}
+                    <div className="flex flex-wrap gap-2">
+                      {periodSlots.map((slot) => {
+                        const isSelected = selectedTime === slot.time;
+                        const [hh, mm] = slot.time.split(':');
+                        return (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            onClick={() => slot.available && setSelectedTime(slot.time)}
+                            disabled={!slot.available}
+                            className={cn(
+                              'relative flex flex-col items-center justify-center rounded-2xl border transition-all duration-200 w-[68px] py-3 group',
+                              isSelected && slot.available && [
+                                'border-amber-400 bg-amber-400 shadow-lg shadow-amber-400/30 scale-105',
+                              ],
+                              !isSelected && slot.available && [
+                                'border-white/[0.08] bg-white/[0.03]',
+                                'hover:border-amber-400/50 hover:bg-amber-400/8 hover:scale-105',
+                              ],
+                              !slot.available && [
+                                'border-red-500/10 bg-red-500/5 cursor-not-allowed opacity-40',
+                              ]
+                            )}
+                          >
+                            {/* Hour — big */}
+                            <span className={cn(
+                              'text-xl font-black tabular-nums leading-none',
+                              isSelected ? 'text-black' : slot.available ? 'text-neutral-200' : 'text-red-400/50'
+                            )}>
+                              {hh}
+                            </span>
+                            {/* Minutes */}
+                            <span className={cn(
+                              'text-[11px] font-bold tabular-nums mt-0.5',
+                              isSelected ? 'text-black/70' : slot.available ? 'text-neutral-500' : 'text-red-400/40'
+                            )}>
+                              :{mm}
+                            </span>
+                            {/* Available dot */}
+                            {slot.available && !isSelected && (
+                              <span className="absolute top-1.5 right-2 size-1.5 rounded-full bg-emerald-500/70" />
+                            )}
+                            {/* Taken X */}
+                            {!slot.available && (
+                              <span className="absolute top-1 right-1.5 text-[9px] text-red-400/60">✕</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
 
-              {/* Custom time override */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-600 shrink-0">Ou choisir manuellement :</span>
-                <input
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-neutral-200 focus:border-amber-400/50 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition-all"
-                />
-              </div>
+              {/* Selected time pill */}
+              {selectedTime && (
+                <div className="flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
+                  <Clock className="size-3.5 text-amber-400" />
+                  <span className="text-xs text-neutral-400">Heure choisie :</span>
+                  <span className="font-mono text-sm font-black text-amber-400">{selectedTime}</span>
+                </div>
+              )}
             </div>
 
-            {/* Party size */}
+            {/* ── Party size ── */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                 <Users className="size-3.5 text-amber-400" /> Nombre de personnes
               </label>
 
-              <div className="flex items-center gap-0 rounded-xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setPartySize((n) => Math.max(1, n - 1))}
-                  disabled={partySize <= 1}
-                  className="flex items-center justify-center w-14 h-14 text-neutral-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-25 disabled:cursor-not-allowed transition-all border-r border-white/[0.06]"
-                  aria-label="Réduire"
-                >
-                  <Minus className="size-4" />
-                </button>
-
-                <div className="flex-1 flex flex-col items-center justify-center py-2">
-                  <span className="text-3xl font-black text-white tabular-nums">{partySize}</span>
-                  <span className="text-[10px] text-neutral-600">
-                    {partySize === 1 ? 'personne' : 'personnes'} · max {maxCapacity}
-                  </span>
+              {/* Visual icon selector up to 8, then +/- for larger */}
+              {maxCapacity <= 12 ? (
+                <div className="grid grid-cols-6 gap-2">
+                  {Array.from({ length: maxCapacity }, (_, i) => i + 1).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setPartySize(n)}
+                      className={cn(
+                        'flex flex-col items-center rounded-xl border py-2.5 text-xs transition-all duration-150',
+                        partySize === n
+                          ? 'border-amber-400 bg-amber-400/15 text-amber-400 font-black shadow shadow-amber-400/15'
+                          : 'border-white/[0.08] bg-white/[0.03] text-neutral-500 hover:border-amber-400/30 hover:text-amber-300'
+                      )}
+                    >
+                      <span className="text-base">{n <= 6 ? ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣'][n-1] : n}</span>
+                      <span className="text-[9px] mt-0.5 font-semibold">{n === 1 ? 'pers.' : 'pers.'}</span>
+                    </button>
+                  ))}
                 </div>
+              ) : (
+                <div className="flex items-center gap-0 rounded-2xl border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+                  <button type="button" onClick={() => setPartySize((n) => Math.max(1, n - 1))} disabled={partySize <= 1}
+                    className="flex items-center justify-center w-14 h-14 text-neutral-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-25 transition-all border-r border-white/[0.06]">
+                    <Minus className="size-4" />
+                  </button>
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-black text-white tabular-nums">{partySize}</span>
+                    <span className="text-[10px] text-neutral-600">{partySize === 1 ? 'personne' : 'personnes'} · max {maxCapacity}</span>
+                  </div>
+                  <button type="button" onClick={() => setPartySize((n) => Math.min(maxCapacity, n + 1))} disabled={partySize >= maxCapacity}
+                    className="flex items-center justify-center w-14 h-14 text-neutral-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-25 transition-all border-l border-white/[0.06]">
+                    <Plus className="size-4" />
+                  </button>
+                </div>
+              )}
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => setPartySize((n) => Math.min(maxCapacity, n + 1))}
-                  disabled={partySize >= maxCapacity}
-                  className="flex items-center justify-center w-14 h-14 text-neutral-400 hover:text-white hover:bg-white/[0.05] disabled:opacity-25 disabled:cursor-not-allowed transition-all border-l border-white/[0.06]"
-                  aria-label="Augmenter"
-                >
-                  <Plus className="size-4" />
-                </button>
+            {/* Selected summary pill */}
+            <div className="flex flex-wrap gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-2 text-xs">
+                <Calendar className="size-3.5 text-amber-400" />
+                <span className="text-amber-300 font-semibold capitalize">{formatDate(selectedDate)}</span>
+                <span className="text-neutral-600">·</span>
+                <Clock className="size-3.5 text-amber-400" />
+                <span className="text-amber-300 font-bold">{selectedTime}</span>
+                <span className="text-neutral-600">·</span>
+                <Users className="size-3.5 text-amber-400" />
+                <span className="text-amber-300 font-semibold">{partySize} pers.</span>
               </div>
             </div>
 
-            {/* Availability summary */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-              <TimelineSlots
-                timeline={timeline}
-                loading={timelineLoading}
-                error={timelineError}
-              />
-            </div>
           </div>
         );
+      }
 
       // ── STEP 2: Contact & order mode ──────────────────────────────────────
       case 2:
@@ -795,30 +877,6 @@ export function StepReservationModal({
             {/* Menu section */}
             {orderMode === 'with_menu' && (
               <div className="space-y-4">
-                {/* Progress bar */}
-                {minimumSpend > 0 && (
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-neutral-500">Minimum à atteindre</span>
-                      <span className={cn('font-bold tabular-nums', menuMeetsMinimum ? 'text-emerald-400' : 'text-amber-400')}>
-                        {menuTotal.toFixed(2)} / {minimumSpend} DT
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-                      <motion.div
-                        className={cn('h-full rounded-full', menuMeetsMinimum ? 'bg-emerald-500' : 'bg-amber-400')}
-                        animate={{ width: `${Math.min(100, (menuTotal / minimumSpend) * 100)}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                    {!menuMeetsMinimum && (
-                      <p className="text-[10px] text-amber-400">
-                        Encore {(minimumSpend - menuTotal).toFixed(2)} DT pour atteindre le minimum.
-                      </p>
-                    )}
-                  </div>
-                )}
-
                 {/* Menu items */}
                 {menuData.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] py-10 text-center">
@@ -889,10 +947,10 @@ export function StepReservationModal({
               {/* Details rows */}
               <div className="p-4 space-y-2.5">
                 {[
-                  { icon: Calendar, label: 'Date', value: formatDate(selectedDate) },
-                  { icon: Clock, label: 'Arrivée', value: `${selectedTime} → ${fmtTime(endAtIso)}` },
-                  { icon: Users, label: 'Personnes', value: `${partySize} pers.` },
-                  { icon: Phone, label: 'Téléphone', value: guestPhone || '—' },
+                  { icon: Calendar, label: 'Date',      value: formatDate(selectedDate) },
+                  { icon: Clock,    label: 'Arrivée',   value: selectedTime },
+                  { icon: Users,    label: 'Personnes', value: `${partySize} pers.` },
+                  { icon: Phone,    label: 'Téléphone', value: guestPhone || '—' },
                 ].map(({ icon: Icon, label, value }) => (
                   <div key={label} className="flex items-center justify-between text-sm">
                     <span className="text-neutral-500 flex items-center gap-2">
@@ -999,6 +1057,50 @@ export function StepReservationModal({
             <div className="px-5 py-3.5 border-b border-white/[0.05]">
               <StepBar current={step} total={STEPS_COUNT} />
             </div>
+
+            {/* ── Sticky minimum spend bar (step 2, with_menu only) ── */}
+            {step === 2 && orderMode === 'with_menu' && minimumSpend > 0 && (
+              <div className={cn(
+                'relative border-b px-5 py-3 transition-all duration-300',
+                menuMeetsMinimum
+                  ? 'border-emerald-500/20 bg-emerald-500/5'
+                  : 'border-amber-400/15 bg-amber-400/[0.04]'
+              )}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{menuMeetsMinimum ? '✅' : '🛒'}</span>
+                    <span className="text-xs font-bold text-neutral-300">
+                      {menuMeetsMinimum ? 'Minimum atteint !' : 'Minimum à atteindre'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      'font-mono text-sm font-black tabular-nums',
+                      menuMeetsMinimum ? 'text-emerald-400' : 'text-amber-400'
+                    )}>
+                      {menuTotal.toFixed(2)}
+                    </span>
+                    <span className="text-neutral-600 text-xs">/</span>
+                    <span className="text-neutral-500 text-xs font-semibold">{minimumSpend} DT</span>
+                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <motion.div
+                    className={cn(
+                      'h-full rounded-full transition-colors duration-500',
+                      menuMeetsMinimum ? 'bg-emerald-500' : 'bg-amber-400'
+                    )}
+                    animate={{ width: `${Math.min(100, (menuTotal / minimumSpend) * 100)}%` }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                  />
+                </div>
+                {!menuMeetsMinimum && (
+                  <p className="mt-1.5 text-[10px] text-amber-400/70">
+                    Encore <span className="font-bold text-amber-400">{(minimumSpend - menuTotal).toFixed(2)} DT</span> pour valider la commande
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* ── Body ── */}
             <div className="flex-1 overflow-y-auto px-5 py-5">

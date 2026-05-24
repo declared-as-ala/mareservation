@@ -1113,4 +1113,39 @@ router.patch('/:id/cancel', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// PATCH /api/v1/reservations/:id/checkout — owner/admin: mark customer as checked out (table freed)
+router.patch('/:id/checkout', authenticate, async (req: AuthRequest, res) => {
+  try {
+    if (!req.userId) return res.status(401).json({ error: 'Authentication required' });
+    const reservation = await Reservation.findById(req.params.id).lean();
+    if (!reservation) return res.status(404).json({ error: 'Réservation introuvable.' });
+
+    // Allow admin, or owner of the venue
+    const isAdmin = req.userRole === 'ADMIN' || req.userRole === 'SUPERADMIN';
+    if (!isAdmin) {
+      const { Venue } = await import('../models/Venue');
+      const venue = await Venue.findOne({ _id: reservation.venueId, ownerId: req.userId }).lean();
+      if (!venue) return res.status(403).json({ error: 'Accès refusé. Vous n\'êtes pas le propriétaire de ce lieu.' });
+    }
+
+    if (reservation.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Cette réservation est déjà annulée.' });
+    }
+    if (reservation.status === 'COMPLETED') {
+      return res.status(400).json({ error: 'Cette réservation est déjà terminée.' });
+    }
+
+    await Reservation.findByIdAndUpdate(req.params.id, {
+      status: 'COMPLETED',
+      checkInStatus: 'checked_out',
+      checkedOutAt: new Date(),
+    });
+
+    return res.json({ success: true, message: 'Table libérée. Le client a été enregistré comme parti.' });
+  } catch (err) {
+    console.error('Checkout error:', err);
+    return res.status(500).json({ error: 'Erreur lors du checkout.' });
+  }
+});
+
 export default router;
