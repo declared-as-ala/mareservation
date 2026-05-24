@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
-import { Calendar, Clock, Sparkles, AlertCircle, List, Armchair, HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Sparkles, AlertCircle, List, ChevronLeft, ChevronRight, Maximize2, Minimize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchVenueScenes, fetchVenueTablePlacements, type PublicTablePlacement } from '@/lib/api/venues';
 import { fetchScenes } from '@/lib/api/scenes';
@@ -16,7 +16,7 @@ const PanoramaEngine = dynamic(() => import('@/components/immersive/PanoramaEngi
 
 interface ImmersiveTableReservationProps {
   venue: Venue;
-  onClassicReserve: () => void;
+  onClassicReserve?: () => void;
   initialDate?: string;
   initialTime?: string;
 }
@@ -32,6 +32,16 @@ export default function ImmersiveTableReservation({
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
   const [selectedPlacement, setSelectedPlacement] = useState<PublicTablePlacement | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isFullscreen]);
 
   const startAtIso = useMemo(() => {
     try {
@@ -199,23 +209,14 @@ export default function ImmersiveTableReservation({
     );
   }
 
-  // Graceful fallback to classic reservation dialog if no scenes or placements
   if (immersiveSceneList.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-zinc-950/40 p-12 text-center">
         <AlertCircle className="size-10 text-neutral-600 mb-3" />
-        <h3 className="text-base font-bold text-neutral-300">Réservation en ligne</h3>
+        <h3 className="text-base font-bold text-neutral-300">Vue 360° non disponible</h3>
         <p className="mt-1 text-sm text-neutral-500 max-w-sm">
-          Ce lieu ne propose pas de visite immersive 360° pour le moment. Vous pouvez effectuer une réservation classique.
+          Ce lieu n&apos;a pas encore de visite immersive 360°. Revenez bientôt ou contactez l&apos;établissement.
         </p>
-        <button
-          type="button"
-          onClick={onClassicReserve}
-          className="mt-6 flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-6 text-sm font-bold text-black shadow-lg shadow-amber-400/20 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/30"
-        >
-          <Armchair className="size-4" />
-          Réserver ma table
-        </button>
       </div>
     );
   }
@@ -260,7 +261,7 @@ export default function ImmersiveTableReservation({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Accessible list view fallback */}
+          {/* List view fallback */}
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
@@ -270,19 +271,25 @@ export default function ImmersiveTableReservation({
             Vue liste
           </button>
 
-          {/* Classic Reservation Form Switcher */}
+          {/* Fullscreen toggle (desktop) */}
           <button
             type="button"
-            onClick={onClassicReserve}
-            className="flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-xs font-semibold text-neutral-300 transition-all hover:border-white/20 hover:bg-white/[0.05]"
+            onClick={() => setIsFullscreen(true)}
+            className="hidden sm:flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-xs font-semibold text-neutral-300 transition-all hover:border-amber-400/30 hover:bg-amber-400/[0.03] hover:text-amber-300"
           >
-            Réservation classique
+            <Maximize2 className="size-3.5" />
+            Plein écran
           </button>
         </div>
       </div>
 
       {/* ── 360° VIEWER WINDOW ── */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-zinc-950 shadow-2xl">
+      <div className={cn(
+        "relative w-full overflow-hidden bg-zinc-950 shadow-2xl transition-all duration-300",
+        isFullscreen
+          ? "fixed inset-0 z-[9999] rounded-none border-0"
+          : "aspect-video rounded-3xl border border-white/[0.08]"
+      )}>
         {currentScene ? (
           <div className="absolute inset-0">
             <PanoramaEngine
@@ -298,34 +305,77 @@ export default function ImmersiveTableReservation({
               onMarkerClick={handleMarkerClick}
             />
 
-            {/* Scene Name and Availability Overlays */}
+            {/* Scene Name */}
             <div className="absolute top-4 left-4 z-20 pointer-events-none flex flex-col gap-1.5">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3.5 py-1.5 text-[11px] font-bold text-white shadow-lg">
                 <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
-                {currentScene.name}
+                {immersiveSceneList.length > 1
+                  ? `Scène ${activeSceneIdx + 1} / ${immersiveSceneList.length}`
+                  : 'Vue 360°'}
               </span>
-              {currentScene.description && (
-                <span className="text-[10px] text-neutral-400 bg-black/40 backdrop-blur-xs px-2.5 py-1 rounded-md self-start border border-white/[0.03]">
+              {isFullscreen && currentScene.description && (
+                <span className="text-[10px] text-neutral-400 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-md self-start border border-white/[0.03]">
                   {currentScene.description}
                 </span>
               )}
             </div>
 
-            {/* Help Overlay (Legend) */}
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3.5 py-1.5 text-[10px] font-semibold text-neutral-300 shadow-lg">
-              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#22c55e]" /> Dispo</span>
-              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#ef4444]" /> Réservée</span>
-              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#f59e0b]" /> VIP</span>
-            </div>
+            {/* Legend (top-right) — hidden in fullscreen to give more space */}
+            {!isFullscreen && (
+              <div className="absolute top-4 right-4 z-20 hidden sm:flex items-center gap-3 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3.5 py-1.5 text-[10px] font-semibold text-neutral-300 shadow-lg">
+                <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#22c55e]" /> Dispo</span>
+                <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#ef4444]" /> Réservée</span>
+                <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#f59e0b]" /> VIP</span>
+              </div>
+            )}
 
-            {/* Prev/Next arrows for quick scene change */}
+            {/* Fullscreen: legend + close button */}
+            {isFullscreen && (
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                <div className="flex items-center gap-3 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3.5 py-1.5 text-[10px] font-semibold text-neutral-300 shadow-lg">
+                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#22c55e]" /> Dispo</span>
+                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#ef4444]" /> Réservée</span>
+                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-[#f59e0b]" /> VIP</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(false)}
+                  aria-label="Quitter le plein écran"
+                  className="flex size-9 items-center justify-center rounded-full bg-black/60 border border-white/10 text-white hover:bg-red-500/20 hover:border-red-400/30 transition-all"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Fullscreen toggle button (bottom-right, always visible on desktop) */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen((f) => !f)}
+              aria-label={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+              className="absolute bottom-4 right-4 z-20 hidden sm:flex size-9 items-center justify-center rounded-full bg-black/60 border border-white/10 text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all"
+            >
+              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            </button>
+
+            {/* Mobile fullscreen button (bottom-right, mobile only) */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen((f) => !f)}
+              aria-label={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+              className="absolute bottom-4 right-4 z-20 sm:hidden flex size-10 items-center justify-center rounded-full bg-black/70 border border-white/15 text-white transition-all active:scale-95"
+            >
+              {isFullscreen ? <Minimize2 className="size-4.5" /> : <Maximize2 className="size-4.5" />}
+            </button>
+
+            {/* Prev/Next arrows — desktop only (hidden on mobile, swipe is natural) */}
             {immersiveSceneList.length > 1 && (
               <>
                 <button
                   type="button"
                   aria-label="Scène précédente"
                   onClick={() => setActiveSceneIdx((i) => (i - 1 + immersiveSceneList.length) % immersiveSceneList.length)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all focus-visible:outline-none"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 hidden sm:flex size-10 rounded-full bg-black/55 border border-white/10 items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all focus-visible:outline-none"
                 >
                   <ChevronLeft className="size-5" />
                 </button>
@@ -333,11 +383,28 @@ export default function ImmersiveTableReservation({
                   type="button"
                   aria-label="Scène suivante"
                   onClick={() => setActiveSceneIdx((i) => (i + 1) % immersiveSceneList.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-black/55 border border-white/10 flex items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all focus-visible:outline-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 hidden sm:flex size-10 rounded-full bg-black/55 border border-white/10 items-center justify-center text-white hover:bg-amber-400/20 hover:border-amber-400/30 transition-all focus-visible:outline-none"
                 >
                   <ChevronRight className="size-5" />
                 </button>
               </>
+            )}
+
+            {/* Mobile: scene dots strip at bottom (when multiple scenes) */}
+            {isFullscreen && immersiveSceneList.length > 1 && (
+              <div className="absolute bottom-14 sm:hidden inset-x-0 z-20 flex justify-center gap-2 px-4">
+                {immersiveSceneList.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveSceneIdx(i)}
+                    className={cn(
+                      'rounded-full transition-all duration-300',
+                      i === activeSceneIdx ? 'w-6 h-2 bg-amber-400' : 'size-2 bg-white/25'
+                    )}
+                  />
+                ))}
+              </div>
             )}
           </div>
         ) : (

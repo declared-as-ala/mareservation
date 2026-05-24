@@ -443,7 +443,9 @@ function RoomDetailView({
                   <div className="absolute top-3 left-3 z-20 pointer-events-none">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
                       <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
-                      {currentScene.name}
+                      {immersiveScenes.length > 1
+                        ? `Scène ${sceneIdx + 1} / ${immersiveScenes.length}`
+                        : 'Vue 360°'}
                     </span>
                   </div>
                   {/* Arrows */}
@@ -1741,7 +1743,9 @@ export default function VenueDetailPage() {
                       <div className="absolute top-3 left-3 z-20 pointer-events-none">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white">
                           <span className="size-1.5 rounded-full bg-amber-400 shrink-0" />
-                          {currentImmersiveScene.name}
+                          {immersiveSceneList.length > 1
+                            ? `Scène ${activeImmersiveSceneIdx + 1} / ${immersiveSceneList.length}`
+                            : 'Vue 360°'}
                         </span>
                       </div>
 

@@ -11,16 +11,10 @@ import {
   UtensilsCrossed,
   MapPin,
   Phone,
-  Users,
   Clock,
   ArrowLeft,
   ArrowRight,
-  Minus,
-  Plus,
-  Sparkles,
-  Video,
   Star,
-  Armchair,
   ScanEye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,7 +23,6 @@ import { fetchVenueMenu } from '@/lib/api/menu';
 import type { Venue } from '@/lib/api/types';
 import { CinematicVenueHero } from '@/components/venue/CinematicVenueHero';
 import { VenueMenuSection } from '@/components/venue/VenueMenuSection';
-import { TableReservationDialog } from '@/components/venue/TableReservationDialog';
 import { HotelAmenitiesGrid } from '@/components/hotel/HotelAmenities';
 import { VenueMap } from '@/components/venue/VenueMap';
 import { SimilarVenues } from '@/components/venue/SimilarVenues';
@@ -51,41 +44,6 @@ function getAllImages(venue: Venue): string[] {
   return out;
 }
 
-function Stepper({
-  value,
-  onChange,
-  min = 1,
-  max = 20,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(min, value - 1))}
-        disabled={value <= min}
-        aria-label="Réduire"
-        className="flex size-7 items-center justify-center rounded-full border border-white/[0.08] text-neutral-500 transition-all hover:border-white/20 hover:text-white disabled:opacity-30"
-      >
-        <Minus className="size-3.5" />
-      </button>
-      <span className="w-6 text-center text-sm font-semibold text-neutral-100">{value}</span>
-      <button
-        type="button"
-        onClick={() => onChange(Math.min(max, value + 1))}
-        disabled={value >= max}
-        aria-label="Augmenter"
-        className="flex size-7 items-center justify-center rounded-full border border-white/[0.08] text-neutral-500 transition-all hover:border-white/20 hover:text-white disabled:opacity-30"
-      >
-        <Plus className="size-3.5" />
-      </button>
-    </div>
-  );
-}
 
 type TableCategory = 'CAFE' | 'RESTAURANT';
 
@@ -108,10 +66,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
   const meta = CATEGORY_META[category];
 
   const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reserver' | 'infos'>('reserver');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [time, setTime] = useState('20:00');
-  const [party, setParty] = useState(2);
-  const [reservationOpen, setReservationOpen] = useState(false);
 
   const { data: venue, isLoading, error } = useQuery({
     queryKey: ['table-venue', slug],
@@ -170,8 +124,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
     );
   }
 
-  const popularCount = menu.filter((m) => m.isPopular).length;
-
   return (
     <div className="min-h-screen bg-[#080808] text-neutral-100">
 
@@ -189,12 +141,9 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
         onBack={() => router.back()}
       />
 
-      {/* ── Two-column layout ── */}
-      <div className="mx-auto max-w-7xl px-4 py-8 lg:py-10">
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-
-          {/* ── Left ── */}
-          <div className="space-y-8 lg:col-span-2">
+      {/* ── Main content ── */}
+      <div className="mx-auto max-w-5xl px-4 py-8 lg:py-10">
+        <div className="space-y-8">
 
             {/* Explorer le lieu - Interactive Banner */}
             <div className="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-400/[0.02] to-amber-500/[0.05] p-5 shadow-lg backdrop-blur-sm">
@@ -373,9 +322,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
                   </div>
                   <ImmersiveTableReservation
                     venue={venue}
-                    onClassicReserve={() => setReservationOpen(true)}
-                    initialDate={date}
-                    initialTime={time}
                   />
                 </motion.div>
               )}
@@ -430,92 +376,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          {/* ── Right: reservation widget ── */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-3">
-              <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111111] to-[#0B0B0B] shadow-2xl">
-                <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-neutral-600">Réservation</span>
-                    <div className="text-lg font-bold text-white">Réservez votre table</div>
-                  </div>
-                  <div className="flex size-9 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/10">
-                    <Sparkles className="size-4 text-amber-400" />
-                  </div>
-                </div>
-
-                <div className="space-y-3 p-5">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-neutral-600">
-                        Date
-                      </label>
-                      <input
-                        type="date"
-                        min={new Date().toISOString().slice(0, 10)}
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-neutral-600">
-                        Heure
-                      </label>
-                      <input
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-2.5">
-                    <span className="flex items-center gap-2 text-sm text-neutral-400">
-                      <Users className="size-4" /> Convives
-                    </span>
-                    <Stepper value={party} onChange={setParty} min={1} max={20} />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={goToReserver}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40"
-                  >
-                    <ScanEye className="size-4" />
-                    Choisir ma table en 360°
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setReservationOpen(true)}
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] text-sm font-semibold text-neutral-200 transition-all hover:border-amber-400/30 hover:bg-amber-400/[0.06] hover:text-amber-300"
-                  >
-                    <Video className="size-4" />
-                    Réservation classique
-                  </button>
-
-                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-600">
-                    <ScanEye className="size-3.5 text-amber-500" />
-                    Choisissez votre table dans la vue 360°
-                  </div>
-                </div>
-              </div>
-
-              {venue.phone && (
-                <a
-                  href={`tel:${venue.phone}`}
-                  className="flex items-center justify-center gap-2 text-xs text-neutral-500 transition-colors hover:text-amber-400"
-                >
-                  <Phone className="size-3.5" />
-                  Contacter le lieu
-                </a>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -525,15 +385,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
         <SimilarVenues venueId={venue._id} type={venue.type} city={venue.city} />
       </div>
 
-      {/* ── Reservation dialog ── */}
-      <TableReservationDialog
-        open={reservationOpen}
-        onClose={() => setReservationOpen(false)}
-        venue={venue}
-        initialDate={date}
-        initialTime={time}
-        initialParty={party}
-      />
     </div>
   );
 }
