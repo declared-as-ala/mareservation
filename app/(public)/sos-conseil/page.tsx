@@ -614,6 +614,26 @@ export default function SOSConseilPage() {
           </div>
 
           <div className="lg:col-span-4 order-2 lg:sticky lg:top-6">
+            <div className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-4 mb-4">
+              <p className="text-sm font-semibold text-amber-300 mb-2">Exemples rapides</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  'Dîner romantique pour 2, vue mer, budget 200 TND',
+                  'Anniversaire 30 personnes, musique live, budget 800 TND',
+                  "Réunion d'affaire calme, 10 personnes, projecteur",
+                ].map((ex) => (
+                  <button
+                    key={ex}
+                    type="button"
+                    onClick={() => setField('details', ex)}
+                    className="text-xs rounded-lg px-3 py-1.5 border border-zinc-700 bg-zinc-900/50 text-zinc-200 hover:bg-zinc-900/60"
+                  >
+                    {ex.length > 36 ? `${ex.slice(0, 36)}...` : ex}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <SOSConseilAssistant
               getCurrentFormSnapshot={formSnapshotForChat}
               onAssistantReply={(payload) => {
