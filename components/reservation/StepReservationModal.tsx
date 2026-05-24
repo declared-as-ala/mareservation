@@ -172,13 +172,6 @@ function TimelineSlots({
 
 // ── Simple time slot picker ───────────────────────────────────────────────────
 
-const TIME_PERIODS = [
-  { label: 'Matin',      from: 8,  to: 12 },
-  { label: 'Dejeuner',   from: 12, to: 15 },
-  { label: 'Apres-midi', from: 15, to: 19 },
-  { label: 'Soir',       from: 19, to: 23 },
-];
-
 function SimpleTimePicker({
   slots,
   selectedTime,
@@ -188,76 +181,47 @@ function SimpleTimePicker({
   selectedTime: string;
   onSelect: (time: string) => void;
 }) {
-  const activePeriods = TIME_PERIODS.filter((p) =>
-    slots.some((s) => {
-      const h = parseInt(s.time.split(':')[0], 10);
-      return h >= p.from && h < p.to;
-    })
-  );
-
   return (
-    <div className="space-y-4">
-      {/* Selected time display */}
-      <div className="flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-5 py-3">
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
         <Clock className="size-4 text-amber-400 shrink-0" />
         <span className={cn(
-          'font-mono text-2xl font-black tabular-nums tracking-wider',
+          'font-mono text-xl font-black tabular-nums tracking-wider',
           selectedTime ? 'text-amber-400' : 'text-neutral-600'
         )}>
           {selectedTime || '--:--'}
         </span>
         {selectedTime && (
-          <span className="ml-auto text-xs text-neutral-500 font-medium">
-            Arrivée prévue
-          </span>
+          <span className="ml-auto text-[11px] text-neutral-500 font-medium">Arrivée prévue</span>
         )}
       </div>
 
-      {/* Slots grouped by period */}
-      <div className="space-y-3">
-        {activePeriods.map((period) => {
-          const periodSlots = slots.filter((s) => {
-            const h = parseInt(s.time.split(':')[0], 10);
-            return h >= period.from && h < period.to;
-          });
-
+      <div className="flex flex-wrap gap-1.5">
+        {slots.map((slot) => {
+          const isSelected = slot.time === selectedTime;
           return (
-            <div key={period.label}>
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                {period.label}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {periodSlots.map((slot) => {
-                  const isSelected = slot.time === selectedTime;
-                  return (
-                    <button
-                      key={slot.time}
-                      type="button"
-                      disabled={!slot.available}
-                      onClick={() => slot.available && onSelect(slot.time)}
-                      className={cn(
-                        'rounded-xl border px-3.5 py-2 text-[13px] font-semibold transition-all duration-150',
-                        isSelected
-                          ? 'border-amber-400 bg-amber-400 text-black shadow-md shadow-amber-400/25 scale-105'
-                          : slot.available
-                          ? 'border-white/[0.08] bg-white/[0.03] text-neutral-300 hover:border-amber-400/30 hover:bg-amber-400/5 hover:text-amber-300 cursor-pointer'
-                          : 'border-white/[0.04] bg-transparent text-neutral-700 line-through cursor-not-allowed opacity-35'
-                      )}
-                    >
-                      {slot.time.slice(0, 5)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <button
+              key={slot.time}
+              type="button"
+              disabled={!slot.available}
+              onClick={() => slot.available && onSelect(slot.time)}
+              className={cn(
+                'rounded-xl border px-3 py-2 text-[13px] font-semibold transition-all duration-150',
+                isSelected
+                  ? 'border-amber-400 bg-amber-400 text-black shadow-md shadow-amber-400/25 scale-105'
+                  : slot.available
+                  ? 'border-white/[0.08] bg-white/[0.03] text-neutral-300 hover:border-amber-400/30 hover:bg-amber-400/5 hover:text-amber-300 cursor-pointer'
+                  : 'border-white/[0.04] bg-transparent text-neutral-700 line-through cursor-not-allowed opacity-35'
+              )}
+            >
+              {slot.time.slice(0, 5)}
+            </button>
           );
         })}
       </div>
 
       {!selectedTime && (
-        <p className="text-center text-[11px] text-neutral-600">
-          Sélectionnez un créneau disponible
-        </p>
+        <p className="text-center text-[11px] text-neutral-600">Sélectionnez un créneau disponible</p>
       )}
     </div>
   );

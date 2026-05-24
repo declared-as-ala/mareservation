@@ -83,6 +83,8 @@ export interface Venue {
   checkOutPolicy?: string;
   availableTables?: number;
   hasEvent?: boolean;
+  reservationFeeType?: 'percentage' | 'fixed';
+  reservationFeeValue?: number;
   media?: VenueMediaItem[];
   virtualTours?: VirtualTour[];
   tablePlacements?: TablePlacement[];

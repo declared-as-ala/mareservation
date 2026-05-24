@@ -109,6 +109,8 @@ type VenueForm = {
   isVedette: boolean; phone: string; slug: string;
   immersiveType: ImmersiveType; immersiveSourceType: ImmersiveSourceType | '';
   immersiveUrl: string; immersiveFile: string;
+  reservationFeeType: 'percentage' | 'fixed' | '';
+  reservationFeeValue: string;
 };
 
 function toForm(venue: Record<string, unknown>): VenueForm {
@@ -132,6 +134,9 @@ function toForm(venue: Record<string, unknown>): VenueForm {
       ? venue.immersiveSourceType as ImmersiveSourceType : ''),
     immersiveUrl: String(venue.immersiveUrl ?? ''),
     immersiveFile: String(venue.immersiveFile ?? ''),
+    reservationFeeType: (['percentage', 'fixed'].includes(venue.reservationFeeType as string)
+      ? venue.reservationFeeType as 'percentage' | 'fixed' : ''),
+    reservationFeeValue: venue.reservationFeeValue != null ? String(venue.reservationFeeValue) : '',
   };
 }
 
@@ -390,6 +395,8 @@ export default function AdminVenueDetailPage() {
         immersiveProvider: 'custom' as const,
         immersiveUrl: payload.immersiveUrl || null,
         immersiveFile: payload.immersiveFile || null,
+        reservationFeeType: payload.reservationFeeType || null,
+        reservationFeeValue: payload.reservationFeeValue ? parseFloat(payload.reservationFeeValue) : null,
       };
       return updateAdminVenue(id, body);
     },
@@ -1057,6 +1064,63 @@ export default function AdminVenueDetailPage() {
                       </SelectContent>
                     </Select>
                     {ownerAssigning ? <p className="text-xs text-zinc-500">Mise a jour...</p> : null}
+                  </CardContent>
+                </Card>
+
+                {/* Reservation Fee */}
+                <Card className="rounded-2xl border-border/40 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                        <DollarSign className="size-4 text-amber-500" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Frais de réservation</CardTitle>
+                        <CardDescription className="text-xs">Appliqués automatiquement à chaque réservation</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs font-medium">Type de frais</Label>
+                      <Select
+                        value={form.reservationFeeType || 'none'}
+                        onValueChange={(v) => setForm({ ...form, reservationFeeType: v === 'none' ? '' : v as 'percentage' | 'fixed' })}
+                      >
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Aucun frais" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Aucun frais</SelectItem>
+                          <SelectItem value="percentage">Pourcentage (%)</SelectItem>
+                          <SelectItem value="fixed">Montant fixe (TND)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.reservationFeeType && (
+                      <div className="grid gap-1.5">
+                        <Label className="text-xs font-medium">
+                          {form.reservationFeeType === 'percentage' ? 'Pourcentage (%)' : 'Montant (TND)'}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={form.reservationFeeType === 'percentage' ? '100' : undefined}
+                          step="0.01"
+                          placeholder={form.reservationFeeType === 'percentage' ? 'Ex: 5' : 'Ex: 2.000'}
+                          value={form.reservationFeeValue}
+                          onChange={(e) => setForm({ ...form, reservationFeeValue: e.target.value })}
+                          className="rounded-xl"
+                        />
+                        {form.reservationFeeValue && (
+                          <p className="text-[11px] text-amber-500/80">
+                            {form.reservationFeeType === 'percentage'
+                              ? `${form.reservationFeeValue}% ajoutés au total de chaque réservation`
+                              : `${parseFloat(form.reservationFeeValue).toLocaleString('fr-TN')} TND fixe par réservation`}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

@@ -139,6 +139,8 @@ export type AdminVenuePayload = {
   immersiveUrl?: string | null;
   immersiveFile?: string | null;
   immersiveMeta?: Record<string, unknown> | null;
+  reservationFeeType?: 'percentage' | 'fixed' | null;
+  reservationFeeValue?: number | null;
 };
 
 export async function updateAdminVenue(id: string, payload: AdminVenuePayload) {

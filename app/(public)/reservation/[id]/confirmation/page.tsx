@@ -637,12 +637,34 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
                 </div>
               )}
             </div>
-            {reservation.totalPrice != null && reservation.totalPrice > 0 && (
-              <div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-400/15 bg-amber-400/5 px-5 py-4">
-                <span className="text-sm font-semibold text-zinc-400">Total à payer</span>
-                <span className="font-mono text-lg font-black text-amber-400">{formatMoney(reservation.totalPrice)}</span>
+            {(reservation.totalPrice != null && reservation.totalPrice > 0) || reservation.priceBreakdown?.serviceFee ? (
+              <div className="mt-4 space-y-2 rounded-2xl border border-white/8 bg-zinc-900/60 px-5 py-4">
+                {reservation.priceBreakdown?.subtotal != null && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500">Sous-total</span>
+                    <span className="font-semibold text-zinc-300">{formatMoney(reservation.priceBreakdown.subtotal)}</span>
+                  </div>
+                )}
+                {reservation.priceBreakdown?.serviceFee != null && reservation.priceBreakdown.serviceFee > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500">Frais de réservation</span>
+                    <span className="font-semibold text-amber-400/80">{formatMoney(reservation.priceBreakdown.serviceFee)}</span>
+                  </div>
+                )}
+                {reservation.priceBreakdown?.discount != null && reservation.priceBreakdown.discount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500">Réduction</span>
+                    <span className="font-semibold text-emerald-400">- {formatMoney(reservation.priceBreakdown.discount)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-white/8 pt-2">
+                  <span className="text-sm font-semibold text-zinc-300">Total à payer</span>
+                  <span className="font-mono text-lg font-black text-amber-400">
+                    {formatMoney(reservation.priceBreakdown?.total ?? reservation.totalPrice)}
+                  </span>
+                </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Footer strip */}
