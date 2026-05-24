@@ -14,6 +14,7 @@ import {
   Users,
   Clock,
   ArrowLeft,
+  ArrowRight,
   Minus,
   Plus,
   Sparkles,
@@ -184,6 +185,7 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
         isVedette={venue.isVedette}
         hasVirtualTour={!!hasVirtualTour}
         categoryBadge={{ icon: meta.icon, label: meta.label }}
+        isCompact={activeTab === 'reserver'}
         onBack={() => router.back()}
       />
 
@@ -194,22 +196,30 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
           {/* ── Left ── */}
           <div className="space-y-8 lg:col-span-2">
 
-            {/* Highlights */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { icon: UtensilsCrossed, value: menu.length, label: 'À la carte' },
-                { icon: Star, value: popularCount, label: 'Spécialités' },
-                { icon: ScanEye, value: hasVirtualTour ? '360°' : '—', label: 'Réservation 360°' },
-              ].map(({ icon: Icon, value, label }) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-center"
-                >
-                  <Icon className="mx-auto size-5 text-amber-400" />
-                  <div className="mt-2 font-serif text-2xl font-bold text-white">{value}</div>
-                  <div className="mt-0.5 text-[11px] leading-tight text-neutral-500">{label}</div>
+            {/* Explorer le lieu - Interactive Banner */}
+            <div className="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-400/[0.02] to-amber-500/[0.05] p-5 shadow-lg backdrop-blur-sm">
+              <div className="absolute top-0 right-0 -z-10 translate-x-12 -translate-y-12 h-36 w-36 rounded-full bg-amber-400/[0.04] blur-[40px]" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/35 bg-amber-400/10 text-amber-400 shadow-lg shadow-amber-400/5">
+                    <ScanEye className="size-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-neutral-100">Explorer le lieu</h2>
+                    <p className="text-xs text-neutral-400 mt-1 leading-relaxed max-w-md">
+                      Plongez dans l&apos;ambiance unique de notre établissement en immersion 360° et réservez votre table préférée directement sur plan.
+                    </p>
+                  </div>
                 </div>
-              ))}
+                <button
+                  type="button"
+                  onClick={goToReserver}
+                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-extrabold px-5 py-3 transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-amber-400/10 active:translate-y-0"
+                >
+                  Découvrir en 360°
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}

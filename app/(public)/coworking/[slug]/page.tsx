@@ -278,6 +278,7 @@ export default function CoworkingDetailPage() {
         isVedette={venue.isVedette}
         hasVirtualTour={!!hasVirtualTour}
         categoryBadge={{ icon: BriefcaseBusiness, label: 'Espace Coworking' }}
+        isCompact={activeTab === 'visite'}
         onBack={() => router.back()}
       />
 

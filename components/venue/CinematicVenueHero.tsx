@@ -43,6 +43,7 @@ interface CinematicVenueHeroProps {
   address?: string | null;
   /** Category chip shown above the title, e.g. coworking / cinema badge. */
   categoryBadge?: { icon: LucideIcon; label: string };
+  isCompact?: boolean;
   isVedette?: boolean;
   hasVirtualTour?: boolean;
   stars?: number;
@@ -61,6 +62,7 @@ export function CinematicVenueHero({
   city,
   address,
   categoryBadge,
+  isCompact = false,
   isVedette,
   hasVirtualTour,
   stars,
@@ -72,7 +74,12 @@ export function CinematicVenueHero({
   const Badge = categoryBadge?.icon;
 
   return (
-    <section className="relative h-[68vh] min-h-[460px] max-h-[760px] w-full overflow-hidden">
+    <section className={cn(
+      "relative w-full overflow-hidden transition-all duration-500 ease-in-out",
+      isCompact
+        ? "h-[25vh] min-h-[160px] max-h-[260px]"
+        : "h-[68vh] min-h-[460px] max-h-[760px]"
+    )}>
       {/* Cover */}
       {cover ? (
         <Image src={cover} alt={name} fill priority className="object-cover" sizes="100vw" />
@@ -108,55 +115,65 @@ export function CinematicVenueHero({
 
       {/* Bottom content */}
       <div className="absolute inset-x-0 bottom-0 z-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 pb-8 md:flex-row md:items-end md:justify-between">
+        <div className={cn(
+          "mx-auto flex flex-col px-4 transition-all duration-300 md:flex-row md:items-end md:justify-between",
+          isCompact ? "pb-3.5 gap-2" : "pb-8 gap-5"
+        )}>
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-2xl"
           >
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              {categoryBadge && Badge && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
-                  <Badge className="size-3" />
-                  {categoryBadge.label}
-                </span>
-              )}
-              {isVedette && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
-                  <Crown className="size-3" />
-                  Prestige
-                </span>
-              )}
-            </div>
-
-            <h1 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white drop-shadow-lg sm:text-4xl lg:text-5xl">
+            {!isCompact && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                {categoryBadge && Badge && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
+                    <Badge className="size-3" />
+                    {categoryBadge.label}
+                  </span>
+                )}
+                {isVedette && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
+                    <Crown className="size-3" />
+                    Prestige
+                  </span>
+                )}
+              </div>
+            )}
+ 
+            <h1 className={cn(
+              "font-serif font-bold leading-[1.1] tracking-tight text-white drop-shadow-lg transition-all duration-300",
+              isCompact ? "text-xl sm:text-2xl md:text-3xl" : "text-3xl sm:text-4xl lg:text-5xl"
+            )}>
               {name}
             </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/75">
-              {(address || city) && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="size-4 shrink-0 text-amber-400" />
-                  <span>{[address, city].filter(Boolean).join(', ')}</span>
-                </div>
-              )}
-              {typeof stars === 'number' && stars > 0 && (
-                <>
-                  <span className="hidden h-3.5 w-px bg-white/20 sm:block" />
-                  <StarRow count={stars} />
-                </>
-              )}
-              {hasVirtualTour && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
-                  <Video className="size-3" /> Visite 360°
-                </span>
-              )}
-            </div>
+ 
+            {!isCompact && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/75">
+                {(address || city) && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="size-4 shrink-0 text-amber-400" />
+                    <span>{[address, city].filter(Boolean).join(', ')}</span>
+                  </div>
+                )}
+                {typeof stars === 'number' && stars > 0 && (
+                  <>
+                    <span className="hidden h-3.5 w-px bg-white/20 sm:block" />
+                    <StarRow count={stars} />
+                  </>
+                )}
+                {hasVirtualTour && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
+                    <Video className="size-3" /> Visite 360°
+                  </span>
+                )}
+              </div>
+            )}
           </motion.div>
-
+ 
           {/* Thumbnail rail */}
-          {thumbs.length > 0 && (
+          {thumbs.length > 0 && !isCompact && (
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
