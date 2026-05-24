@@ -117,12 +117,12 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-            {/* Top-left: Vedette or Luxe badge */}
+            {/* Top-left: Premium or Luxe badge */}
             {(venue.isVedette || isLuxury) && (
               <div className="absolute top-3 left-3">
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400 backdrop-blur-md">
                   <Crown className="size-2.5" />
-                  {venue.isVedette ? 'Vedette' : 'Luxe'}
+                  {venue.isVedette ? 'Premium' : 'Luxe'}
                 </span>
               </div>
             )}

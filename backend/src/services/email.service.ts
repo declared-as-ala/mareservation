@@ -416,95 +416,162 @@ export function createReservationConfirmationTemplate(
   venueName: string,
   date: string,
   time: string,
-  partySize: number
+  partySize: number,
+  tableLabel?: string,
+  tableNumber?: number,
+  guestPhone?: string,
+  address?: string,
+  venueType?: string
 ): { subject: string; html: string; text: string } {
-  const subject = `Confirmation de réservation - ${reservationCode}`;
-  
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Confirmation de réservation</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <tr>
-          <td style="text-align: center; padding-bottom: 30px;">
-            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Ma Reservation</h1>
-          </td>
-        </tr>
-        <tr>
-          <td style="background-color: #171717; border-radius: 16px; padding: 40px; border: 1px solid rgba(255,255,255,0.08);">
-            <h2 style="color: #ffffff; font-size: 22px; font-weight: 600; margin: 0 0 24px 0;">Réservation confirmée ✓</h2>
-            <p style="color: #a3a3a3; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
-              Bonjour ${userName},
-            </p>
-            <p style="color: #a3a3a3; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
-              Votre réservation a été confirmée avec succès. Voici les détails :
-            </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a; border-radius: 12px; padding: 20px;">
-              <tr>
-                <td style="padding: 8px 0;">
-                  <strong style="color: #fbbf24;">Code de réservation :</strong>
-                  <span style="color: #ffffff; margin-left: 8px;">${reservationCode}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;">
-                  <strong style="color: #fbbf24;">Lieu :</strong>
-                  <span style="color: #ffffff; margin-left: 8px;">${venueName}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;">
-                  <strong style="color: #fbbf24;">Date :</strong>
-                  <span style="color: #ffffff; margin-left: 8px;">${date}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;">
-                  <strong style="color: #fbbf24;">Heure :</strong>
-                  <span style="color: #ffffff; margin-left: 8px;">${time}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;">
-                  <strong style="color: #fbbf24;">Nombre de personnes :</strong>
-                  <span style="color: #ffffff; margin-left: 8px;">${partySize}</span>
-                </td>
-              </tr>
-            </table>
-            <p style="color: #a3a3a3; font-size: 15px; line-height: 1.6; margin: 24px 0 0 0;">
-              Présentez ce code ou votre QR code à l'entrée pour accéder à votre réservation.
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: center; padding-top: 30px;">
-            <p style="color: #525252; font-size: 12px; margin: 0;">
-              © ${new Date().getFullYear()} Ma Reservation. Tous droits réservés.
-            </p>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `;
+  const subject = `✅ Réservation confirmée — ${venueName} · ${reservationCode}`;
+
+  const tableRow = (tableLabel || tableNumber)
+    ? `<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;width:44%">Table</td>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right">${tableLabel ?? `Table ${tableNumber}`}</td>
+      </tr>` : '';
+
+  const addressRow = address
+    ? `<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500">Adresse</td>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right">${address}</td>
+      </tr>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réservation confirmée — Ma Reservation</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A0A0A;">
+    <tr>
+      <td align="center" style="padding:32px 16px 0;">
+
+        <!-- LOGO -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <span style="color:#D4AF37;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Ma</span><span style="color:#fbbf24;font-size:26px;font-weight:700;letter-spacing:-0.5px;"> Reservation</span>
+            </td>
+          </tr>
+        </table>
+
+        <!-- HERO SUCCESS BANNER -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#052e16 0%,#064e3b 50%,#065f46 100%);border-radius:20px 20px 0 0;padding:40px 32px;text-align:center;border:1px solid rgba(16,185,129,0.25);border-bottom:none;">
+              <div style="display:inline-block;width:64px;height:64px;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.4);border-radius:50%;text-align:center;line-height:60px;font-size:28px;margin-bottom:16px;">✓</div>
+              <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#34d399;letter-spacing:0.1em;text-transform:uppercase;">Réservation Confirmée</p>
+              <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Tout est prêt, ${userName} !</h1>
+              <p style="margin:0;font-size:14px;color:#6ee7b7;line-height:1.5;">Votre table vous attend chez <strong style="color:#a7f3d0;">${venueName}</strong></p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- MAIN CARD -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td style="background:#111111;border:1px solid rgba(255,255,255,0.08);border-top:none;border-radius:0 0 20px 20px;padding:32px;">
+
+              <!-- REFERENCE CODE -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(251,191,36,0.05));border:1px solid rgba(212,175,55,0.25);border-radius:12px;padding:16px 20px;text-align:center;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#92400e;letter-spacing:0.12em;text-transform:uppercase;">Votre code de réservation</p>
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:24px;font-weight:700;color:#D4AF37;letter-spacing:0.15em;">${reservationCode}</span>
+                    <p style="margin:8px 0 0;font-size:11px;color:#6b7280;">Présentez ce code en caisse à votre arrivée</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- DETAILS GRID -->
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#4b5563;letter-spacing:0.1em;text-transform:uppercase;">Détails de la réservation</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;width:44%;">Établissement</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${venueName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Date</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${date}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Heure</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#fbbf24;font-size:13px;font-weight:700;text-align:right;">${time}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Couverts</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${partySize} personne${partySize > 1 ? 's' : ''}</td>
+                </tr>
+                ${tableRow}
+                ${addressRow}
+              </table>
+
+              <!-- QR PLACEHOLDER -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="background:#0d0d0d;border:1px dashed rgba(212,175,55,0.2);border-radius:12px;padding:20px;text-align:center;">
+                    <div style="font-size:40px;margin-bottom:8px;">📱</div>
+                    <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#d1d5db;">Présentez le code en caisse</p>
+                    <p style="margin:0;font-size:11px;color:#4b5563;">Votre code <span style="font-family:monospace;color:#D4AF37;">${reservationCode}</span> sera scanné à l'accueil</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA BUTTON -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://mareservation.tn/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Voir ma réservation</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CANCELLATION POLICY -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:14px 16px;">
+                    <p style="margin:0;font-size:12px;color:#4b5563;line-height:1.6;">⚠️ <strong style="color:#6b7280;">Politique d'annulation :</strong> Vous pouvez annuler gratuitement jusqu'à 2h avant votre réservation depuis votre espace client.</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+
+        <!-- FOOTER -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td align="center" style="padding:28px 16px;">
+              <p style="margin:0 0 4px;font-size:12px;color:#374151;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Ma Reservation</span> · Plateforme de réservation premium en Tunisie</p>
+              <p style="margin:0;font-size:11px;color:#1f2937;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
   const text = `
 Bonjour ${userName},
 
-Votre réservation a été confirmée avec succès.
+Votre réservation est confirmée !
 
 Code de réservation : ${reservationCode}
-Lieu : ${venueName}
+Établissement : ${venueName}
 Date : ${date}
 Heure : ${time}
-Nombre de personnes : ${partySize}
+Couverts : ${partySize}${tableLabel ? `\nTable : ${tableLabel}` : tableNumber ? `\nTable : ${tableNumber}` : ''}${address ? `\nAdresse : ${address}` : ''}
 
-Présentez ce code ou votre QR code à l'entrée pour accéder à votre réservation.
+Présentez ce code en caisse à votre arrivée.
+
+Voir ma réservation : https://mareservation.tn/reservations
 
 © ${new Date().getFullYear()} Ma Reservation. Tous droits réservés.
   `;
@@ -765,24 +832,148 @@ export function createOwnerNewReservationTemplate(p: {
   guestName: string;
   guestPhone?: string;
 }): { subject: string; html: string; text: string } {
-  const subject = `Nouvelle réservation — ${p.venueName} · ${p.reservationCode}`;
-  const html = emailShell({
-    badge: 'Nouvelle réservation',
-    badgeColor: '#fbbf24',
-    heading: `Bonjour ${p.ownerName},`,
-    intro: `Vous avez une nouvelle réservation à <strong style="color:#fff;">${p.venueName}</strong>.`,
-    rows: [
-      ['Référence', `<span style="font-family:monospace;color:#fbbf24;">${p.reservationCode}</span>`],
-      ['Type', p.bookingTypeLabel],
-      ['Client', p.guestName],
-      ...(p.guestPhone ? [['Téléphone', p.guestPhone] as [string, string]] : []),
-      ['Date', p.date],
-      ['Heure', p.time],
-      ['Couverts', String(p.partySize)],
-    ],
-    footer: 'Connectez-vous à votre espace propriétaire pour gérer cette réservation.',
-  });
-  const text = `Nouvelle réservation ${p.reservationCode} à ${p.venueName}. Client: ${p.guestName}. ${p.date} ${p.time}, ${p.partySize} pers.`;
+  const subject = `⚡ Nouvelle réservation — ${p.venueName} · ${p.reservationCode}`;
+  const now = new Date();
+  const timestamp = now.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
+
+  const phoneRow = p.guestPhone
+    ? `<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;width:44%;">Téléphone</td>
+        <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;font-weight:600;text-align:right;"><a href="tel:${p.guestPhone}" style="color:#fbbf24;text-decoration:none;">${p.guestPhone}</a></td>
+      </tr>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouvelle réservation — ${p.venueName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A0A0A;">
+    <tr>
+      <td align="center" style="padding:32px 16px 0;">
+
+        <!-- LOGO -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <span style="color:#D4AF37;font-size:24px;font-weight:700;letter-spacing:-0.5px;">Ma</span><span style="color:#fbbf24;font-size:24px;font-weight:700;letter-spacing:-0.5px;"> Reservation</span>
+              <p style="margin:4px 0 0;font-size:11px;color:#374151;letter-spacing:0.08em;text-transform:uppercase;">Espace Propriétaire</p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- URGENCY HEADER -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1c1400 0%,#292400 60%,#1f1a00 100%);border:1px solid rgba(212,175,55,0.3);border-radius:20px 20px 0 0;padding:28px 32px;border-bottom:none;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);color:#fbbf24;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">⚡ Nouvelle réservation reçue</span>
+                    <h1 style="margin:14px 0 4px;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">${p.venueName}</h1>
+                    <p style="margin:0;font-size:14px;color:#a3a3a3;">Bonjour ${p.ownerName}, un client vient de réserver.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <!-- MAIN CARD -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td style="background:#111111;border:1px solid rgba(255,255,255,0.08);border-top:none;border-radius:0 0 20px 20px;padding:28px 32px;">
+
+              <!-- REFERENCE CODE -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;">
+                <tr>
+                  <td style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.2);border-radius:10px;padding:12px 18px;text-align:center;">
+                    <p style="margin:0 0 2px;font-size:11px;color:#78716c;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">Référence réservation</p>
+                    <span style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#D4AF37;letter-spacing:0.15em;">${p.reservationCode}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CUSTOMER INFO -->
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#4b5563;letter-spacing:0.1em;text-transform:uppercase;">Informations client</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:22px;">
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;width:44%;">Client</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:700;text-align:right;">${p.guestName}</td>
+                </tr>
+                ${phoneRow}
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Type</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${p.bookingTypeLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Date</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${p.date}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#6b7280;font-size:13px;font-weight:500;">Heure</td>
+                  <td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#fbbf24;font-size:13px;font-weight:700;text-align:right;">${p.time}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px;color:#6b7280;font-size:13px;font-weight:500;">Couverts</td>
+                  <td style="padding:10px 12px;color:#e5e7eb;font-size:13px;font-weight:600;text-align:right;">${p.partySize} personne${p.partySize > 1 ? 's' : ''}</td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://mareservation.tn/admin/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Gérer les réservations</a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- TIMESTAMP NOTE -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px 16px;text-align:center;">
+                    <p style="margin:0;font-size:11px;color:#374151;">🕐 Réservation reçue le <span style="color:#6b7280;">${timestamp}</span> · Répondez rapidement pour confirmer.</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+
+        <!-- FOOTER -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+          <tr>
+            <td align="center" style="padding:24px 16px;">
+              <p style="margin:0;font-size:11px;color:#1f2937;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Ma Reservation</span> · Panneau d'administration propriétaire</p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `⚡ Nouvelle réservation reçue — ${p.venueName}
+
+Bonjour ${p.ownerName},
+
+Référence : ${p.reservationCode}
+Client : ${p.guestName}${p.guestPhone ? `\nTéléphone : ${p.guestPhone}` : ''}
+Type : ${p.bookingTypeLabel}
+Date : ${p.date}
+Heure : ${p.time}
+Couverts : ${p.partySize}
+
+Gérer les réservations : https://mareservation.tn/admin/reservations
+
+Reçu le ${timestamp}
+© ${new Date().getFullYear()} Ma Reservation.`;
   return { subject, html, text };
 }
 

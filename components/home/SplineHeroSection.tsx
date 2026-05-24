@@ -146,8 +146,8 @@ export function SplineHeroSection() {
           </motion.div>
         </motion.div>
 
-        {/* ─── Right: immersive 360° reservation preview ─── */}
-        <div className="relative h-[340px] w-full sm:h-[420px] lg:h-[78vh] lg:max-h-[680px]">
+        {/* ─── Right: immersive 360° reservation preview (hidden on mobile/tablet) ─── */}
+        <div className="hidden lg:block relative h-[340px] w-full sm:h-[420px] lg:h-[78vh] lg:max-h-[680px]">
           <Immersive360Preview />
         </div>
       </div>

@@ -173,6 +173,43 @@ function ExplorerContent() {
         <div className="mx-auto max-w-7xl px-4">
           {/* Category pills (mirrors home page categories) */}
           <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
+            {/* "Filtres" button and "Effacer" link at the far left */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFilters((o) => !o)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold border transition-all duration-150',
+                  showFilters
+                    ? 'bg-amber-400 text-black border-amber-400 shadow-lg shadow-amber-400/20'
+                    : 'bg-zinc-900 text-zinc-300 border-zinc-850 hover:border-zinc-600 hover:text-zinc-100'
+                )}
+              >
+                <SlidersHorizontal className="size-3.5" />
+                Filtres
+                {activeFiltersCount > 0 && (
+                  <span className="size-4 rounded-full bg-[#171717] text-amber-400 text-[9px] font-black flex items-center justify-center border border-amber-400/30">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setLocalSearch(''); router.push(pathname, { scroll: false }); }}
+                  className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"
+                  title="Effacer tous les filtres"
+                >
+                  <X className="size-3" />
+                  <span className="hidden sm:inline">Effacer</span>
+                </button>
+              )}
+            </div>
+
+            {/* Elegant vertical divider */}
+            <div className="h-5 w-px bg-zinc-800 shrink-0 mx-1" />
+
+            {/* Scrollable Category pills */}
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCategory?.key === cat.key;
@@ -196,37 +233,6 @@ function ExplorerContent() {
                 </button>
               );
             })}
-
-            <div className="ml-auto flex items-center gap-2 shrink-0">
-              {activeFiltersCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => { setLocalSearch(''); router.push(pathname, { scroll: false }); }}
-                  className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition-colors"
-                >
-                  <X className="size-3" />
-                  Effacer
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowFilters((o) => !o)}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold border transition-all',
-                  showFilters
-                    ? 'bg-zinc-800 text-zinc-100 border-zinc-600'
-                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-zinc-100'
-                )}
-              >
-                <SlidersHorizontal className="size-3.5" />
-                Filtres
-                {activeFiltersCount > 0 && (
-                  <span className="size-4 rounded-full bg-amber-400 text-black text-[9px] font-black flex items-center justify-center">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
-            </div>
           </div>
 
           {/* Expanded filter panel */}

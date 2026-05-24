@@ -53,8 +53,8 @@ export function EventCard({ event, className }: EventCardProps) {
           <div className="absolute right-2.5 top-2.5 flex flex-wrap gap-1.5">
             <TypeBadge type={event.type} />
             {event.isVedette && (
-              <span className="rounded-full bg-[#D4AF37] px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm shadow-[#D4AF37]/30">
-                ⭐ Vedette
+              <span className="rounded-full bg-[#D4AF37]/25 border border-[#D4AF37]/40 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-100 backdrop-blur-sm shadow-sm shadow-[#D4AF37]/20">
+                ★ Premium
               </span>
             )}
             {has360 && (

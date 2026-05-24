@@ -49,9 +49,8 @@ export function VenueCard({ venue, className }: VenueCardProps) {
 
           <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
             {venue.isVedette && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/20 px-2.5 py-0.5 text-[10px] font-semibold text-amber-100 backdrop-blur-sm">
-                <Sparkles className="size-3" />
-                Vedette
+              <span className="inline-flex items-center justify-center rounded-full border border-amber-300/45 bg-amber-400/20 p-1.5 text-amber-300 backdrop-blur-sm" title="Lieu d'exception">
+                <Sparkles className="size-3.5" />
               </span>
             )}
             {venue.isFeatured && !venue.isVedette && (

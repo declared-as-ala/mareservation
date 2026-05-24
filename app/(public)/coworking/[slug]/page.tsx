@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -147,6 +147,19 @@ export default function CoworkingDetailPage() {
     enabled: !!venue?._id,
   });
 
+  const hasVirtualTour =
+    venue?.immersiveType &&
+    venue.immersiveType !== 'none' &&
+    ((venue.immersiveSourceType === 'url' && venue.immersiveUrl) ||
+      (venue.immersiveSourceType === 'upload' && venue.immersiveFile));
+
+  // Automatically default to the 360° view ('visite') tab when virtual tour data is loaded and available
+  useEffect(() => {
+    if (venue && hasVirtualTour) {
+      setActiveTab('visite');
+    }
+  }, [venue, hasVirtualTour]);
+
   const allImages = useMemo(() => (venue ? getAllImages(venue) : []), [venue]);
 
   const coworkingUnits = useMemo(
@@ -177,11 +190,7 @@ export default function CoworkingDetailPage() {
   );
   const addonsTotal = addonsSelected.reduce((s, a) => s + a.quantity * a.unitPrice, 0);
 
-  const hasVirtualTour =
-    venue?.immersiveType &&
-    venue.immersiveType !== 'none' &&
-    ((venue.immersiveSourceType === 'url' && venue.immersiveUrl) ||
-      (venue.immersiveSourceType === 'upload' && venue.immersiveFile));
+
 
   function handleAddToCart(unit: PublicReservableUnit) {
     if (!venue) return;

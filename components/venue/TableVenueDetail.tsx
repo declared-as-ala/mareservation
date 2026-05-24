@@ -106,7 +106,7 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
 
   const meta = CATEGORY_META[category];
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reserver' | 'infos'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reserver' | 'infos'>('reserver');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [time, setTime] = useState('20:00');
   const [party, setParty] = useState(2);
