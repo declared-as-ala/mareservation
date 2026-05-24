@@ -146,13 +146,16 @@ router.get('/availability/table/:tableId', async (req, res) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
       const parsed = new Date(normalized);
       if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-      return new Date().toISOString().slice(0, 10);
+      return null;
     };
-    const date = parseDateKey(dateRaw);
+    const date = parseDateKey(dateRaw) ?? new Date().toISOString().slice(0, 10);
 
     const [year, month, day] = date.split('-').map(Number);
     const dayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
     const dayEnd = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+    if (isNaN(dayStart.getTime()) || isNaN(dayEnd.getTime())) {
+      return res.status(400).json({ success: false, message: 'Date invalide.' });
+    }
     const now = new Date();
 
     const tableDoc = await Table.findById(tableId).select('venueId').lean();
@@ -190,52 +193,78 @@ router.get('/availability/table/:tableId', async (req, res) => {
     const safeIso = (v: unknown): string | null => {
       if (!v) return null;
       const d = new Date(v as string | number | Date);
-      return isNaN(d.getTime()) ? null : d.toISOString();
+      if (isNaN(d.getTime())) return null;
+      try {
+        return d.toISOString();
+      } catch {
+        return null;
+      }
     };
 
     const reservedRanges = [
       ...reservations
-        .filter((r) => safeIso(r.startAt) && safeIso(r.endAt))
         .map((r) => ({
-          startAt: safeIso(r.startAt)!,
-          endAt: safeIso(r.endAt)!,
+          startAt: safeIso(r.startAt),
+          endAt: safeIso(r.endAt),
           source: 'reservation',
           status: r.status,
-        })),
+        }))
+        .filter((r) => r.startAt && r.endAt),
       ...holds
-        .filter((h) => safeIso(h.startsAt) && safeIso(h.endsAt))
         .map((h) => ({
-          startAt: safeIso(h.startsAt)!,
-          endAt: safeIso(h.endsAt)!,
+          startAt: safeIso(h.startsAt),
+          endAt: safeIso(h.endsAt),
           source: 'hold',
           status: 'HELD',
-        })),
+        }))
+        .filter((h) => h.startAt && h.endAt),
       ...blocks
-        .filter((b) => safeIso((b as any).startsAt) && safeIso((b as any).endsAt))
         .map((b) => ({
-          startAt: safeIso((b as any).startsAt)!,
-          endAt: safeIso((b as any).endsAt)!,
+          startAt: safeIso((b as any).startsAt),
+          endAt: safeIso((b as any).endsAt),
           source: 'block',
           status: 'BLOCKED',
-        })),
-    ];
+        }))
+        .filter((b) => b.startAt && b.endAt),
+    ] as Array<{ startAt: string; endAt: string; source: string; status: string }>;
 
-    const slotMinutes = Number((policy as any)?.slotMinutes || 30);
-    const reservationDurationMinutes = Number((policy as any)?.reservationDurationMinutes || 120);
-    const openingHour = Number((policy as any)?.openingHour || 12);
-    const closingHour = Number((policy as any)?.closingHour || 23);
+    const slotMinutesRaw = Number((policy as any)?.slotMinutes);
+    const reservationDurationMinutesRaw = Number((policy as any)?.reservationDurationMinutes);
+    const openingHourRaw = Number((policy as any)?.openingHour);
+    const closingHourRaw = Number((policy as any)?.closingHour);
+
+    const slotMinutes = Number.isFinite(slotMinutesRaw) && slotMinutesRaw > 0 ? slotMinutesRaw : 30;
+    const reservationDurationMinutes = Number.isFinite(reservationDurationMinutesRaw) && reservationDurationMinutesRaw > 0 ? reservationDurationMinutesRaw : 120;
+    const openingHour = Number.isFinite(openingHourRaw) ? Math.max(0, Math.min(23, openingHourRaw)) : 12;
+    const closingHour = Number.isFinite(closingHourRaw) ? Math.max(0, Math.min(23, closingHourRaw)) : 23;
     const slots: Array<{ time: string; startAt: string; endAt: string; available: boolean }> = [];
 
-    const ranges = reservedRanges.map((r) => ({
-      start: new Date(r.startAt).getTime(),
-      end: new Date(r.endAt).getTime(),
-    }));
+    const ranges = reservedRanges
+      .map((r) => ({
+        start: new Date(r.startAt).getTime(),
+        end: new Date(r.endAt).getTime(),
+      }))
+      .filter((r) => !isNaN(r.start) && !isNaN(r.end));
+
+    if (slotMinutes <= 0 || openingHour > closingHour) {
+      console.error('Invalid reservation policy values', { slotMinutes, openingHour, closingHour, reservationDurationMinutes });
+    }
 
     for (let h = openingHour; h <= closingHour; h += 1) {
       for (let m = 0; m < 60; m += slotMinutes) {
-        const slotStart = new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`);
+        const slotStart = new Date(Date.UTC(year, month - 1, day, h, m, 0, 0));
+        if (isNaN(slotStart.getTime())) {
+          console.error('Invalid slot start for date', { date, year, month, day, h, m, slotStart });
+          continue;
+        }
+
         const slotEnd = new Date(slotStart.getTime() + reservationDurationMinutes * 60 * 1000);
-        if (slotEnd > dayEnd) continue;
+        if (isNaN(slotEnd.getTime()) || slotEnd > dayEnd) {
+          if (isNaN(slotEnd.getTime())) {
+            console.error('Invalid slot end time', { date, slotStart, reservationDurationMinutes });
+          }
+          continue;
+        }
 
         const slotStartMs = slotStart.getTime();
         const slotEndMs = slotEnd.getTime();

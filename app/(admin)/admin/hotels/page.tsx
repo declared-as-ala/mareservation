@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAdminHotels, type AdminHotel } from '@/lib/api/admin';
+import { fetchAdminHotels, deleteAdminVenue, type AdminHotel } from '@/lib/api/admin';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,7 +37,23 @@ function StatusBadge({ published }: { published: boolean }) {
   );
 }
 
-function HotelCard({ hotel }: { hotel: AdminHotel }) {
+function HotelCard({ hotel, onDeleted }: { hotel: AdminHotel; onDeleted: () => void }) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirm(`Supprimer l'hôtel "${hotel.name}" ? Cette action est irréversible.`)) return;
+    setDeleting(true);
+    try {
+      await deleteAdminVenue(hotel._id);
+      toast.success('Hôtel supprimé.');
+      onDeleted();
+    } catch {
+      toast.error('Erreur lors de la suppression.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <motion.div
       layout
@@ -143,6 +159,15 @@ function HotelCard({ hotel }: { hotel: AdminHotel }) {
               <Eye className="size-3.5" />
             </Button>
           </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="h-8 rounded-lg border-red-600 text-red-400 hover:border-red-500 hover:text-white"
+          >
+            <XCircle className="size-3.5" />
+          </Button>
         </div>
       </div>
     </motion.div>
@@ -254,7 +279,7 @@ export default function HotelsAdminPage() {
         <AnimatePresence mode="popLayout">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {hotels.map((hotel) => (
-              <HotelCard key={hotel._id} hotel={hotel} />
+              <HotelCard key={hotel._id} hotel={hotel} onDeleted={() => refetch()} />
             ))}
           </div>
         </AnimatePresence>

@@ -23,6 +23,7 @@ import { uploadImageFile } from '@/lib/api/client';
 import {
   fetchAdminHotelById,
   updateAdminVenue,
+  deleteAdminVenue,
   fetchAdminHotelRooms,
   createAdminHotelRoom,
   updateAdminHotelRoom,
@@ -603,6 +604,24 @@ export default function HotelDetailAdminPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const [deletingHotel, setDeletingHotel] = useState(false);
+
+  async function handleDeleteHotel() {
+    if (!id) return;
+    if (!confirm(`Supprimer l'hôtel "${hotel?.name ?? 'cet hôtel'}" ? Cette action est irréversible.`)) return;
+    setDeletingHotel(true);
+    try {
+      await deleteAdminVenue(id);
+      toast.success('Hôtel supprimé.');
+      router.push('/admin/hotels');
+    } catch (error) {
+      console.error('Hotel delete error:', error);
+      toast.error('Erreur lors de la suppression de l\'hôtel.');
+    } finally {
+      setDeletingHotel(false);
+    }
+  }
+
 
   const { data: hotel, isLoading: loadingHotel } = useQuery({
     queryKey: ['admin-hotel', id],
@@ -687,6 +706,15 @@ export default function HotelDetailAdminPage() {
                 <Eye className="size-3.5" /> Voir
               </Button>
             </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDeleteHotel}
+              disabled={deletingHotel}
+              className="h-8 rounded-xl border-red-600 text-red-400 hover:border-red-500 hover:text-white text-xs gap-1.5"
+            >
+              <XCircle className="size-3.5" /> Supprimer
+            </Button>
           </div>
         </div>
       </div>
