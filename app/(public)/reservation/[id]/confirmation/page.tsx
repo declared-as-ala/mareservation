@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { DetailPageSkeleton } from '@/components/shared/skeletons';
 import { ErrorState } from '@/components/shared/ErrorState';
 import {
+  Armchair,
   Calendar,
   CheckCircle2,
   Clock,
@@ -132,6 +133,8 @@ function EventTicketView({ reservation }: { reservation: Reservation }) {
   const total = reservation.priceBreakdown?.total ?? reservation.totalPrice;
   const shareTitle = `Ticket MaTable - ${eventName}`;
   const shareText = `${eventName} | ${formatDate(start)} | ${formatTimeRange(start, end)} | Ref: ${code}`;
+  const table = reservation.tableId as { tableNumber?: number; name?: string; locationLabel?: string } | undefined;
+  const tableName = table ? (table.name || `Table ${table.tableNumber ?? ''}`) : null;
 
   function currentShareUrl() {
     return typeof window !== 'undefined' ? window.location.href : '';
@@ -365,6 +368,7 @@ function EventTicketView({ reservation }: { reservation: Reservation }) {
                   <TicketDef label="Client" value={[reservation.customerFirstName, reservation.customerLastName].filter(Boolean).join(' ') || 'Client MaTable'} />
                   <TicketDef label="Date" value={formatDate(start)} />
                   <TicketDef label="Heure" value={formatTimeRange(start, end)} />
+                  {tableName && <TicketDef label="Table" value={tableName} />}
                   <TicketDef label="Quantite" value={`${quantity} billet${quantity > 1 ? 's' : ''}`} />
                   <TicketDef label="Total" value={formatMoney(total)} strong />
                 </dl>
@@ -481,6 +485,8 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
   const venue = asVenue(reservation.venueId);
   const code = reservation.confirmationCode ?? reservation.reservationCode ?? reservation._id.slice(-8).toUpperCase();
   const shareText = `${venueName} | ${formatDate(start)} | ${formatTimeRange(start, end)} | Ref: ${code}`;
+  const table = reservation.tableId as { tableNumber?: number; name?: string; locationLabel?: string } | undefined;
+  const tableName = table ? (table.name || `Table ${table.tableNumber ?? ''}`) : null;
 
   function currentShareUrl() {
     return typeof window !== 'undefined' ? window.location.href : '';
@@ -560,6 +566,7 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
         <div class="info-item"><div class="info-label">📅 Date</div><div class="info-value">${formatDate(start)}</div></div>
         <div class="info-item"><div class="info-label">🕐 Heure</div><div class="info-value">${formatTimeRange(start, end)}</div></div>
         ${reservation.partySize != null ? `<div class="info-item"><div class="info-label">👥 Couverts</div><div class="info-value">${reservation.partySize} personne${reservation.partySize > 1 ? 's' : ''}</div></div>` : ''}
+        ${tableName ? `<div class="info-item"><div class="info-label">🪑 Table</div><div class="info-value">${tableName}${table?.locationLabel ? ` (${table.locationLabel})` : ''}</div></div>` : ''}
         ${venue?.city ? `<div class="info-item"><div class="info-label">📍 Ville</div><div class="info-value">${venue.city}</div></div>` : ''}
         ${reservation.totalPrice != null && reservation.totalPrice > 0 ? `<div class="info-item"><div class="info-label">💰 Total</div><div class="info-value">${formatMoney(reservation.totalPrice)}</div></div>` : ''}
         <div class="info-item"><div class="info-label">📋 Référence</div><div class="info-value" style="font-family:monospace;color:#d97706">${code}</div></div>
@@ -618,7 +625,7 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
           {/* Body */}
           <div className="bg-zinc-950 px-8 py-7">
             <h2 className="mb-5 text-lg font-black text-white">{venueName}</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className={`grid gap-3 ${tableName ? 'grid-cols-2 sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
               <div className="flex flex-col gap-1 rounded-2xl border border-white/8 bg-zinc-900/80 p-4">
                 <Calendar className="size-4 text-amber-400/70" />
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Date</p>
@@ -634,6 +641,20 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
                   <Users className="size-4 text-amber-400/70" />
                   <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Couverts</p>
                   <p className="text-sm font-bold text-zinc-100">{reservation.partySize} personne{reservation.partySize > 1 ? 's' : ''}</p>
+                </div>
+              )}
+              {tableName && (
+                <div className="flex flex-col gap-1 rounded-2xl border border-white/8 bg-zinc-900/80 p-4">
+                  <Armchair className="size-4 text-amber-400/70" />
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Table</p>
+                  <p className="text-sm font-bold text-zinc-100">
+                    {tableName}
+                    {table?.locationLabel && (
+                      <span className="block text-[10px] font-medium text-zinc-500 mt-0.5 leading-tight">
+                        {table.locationLabel}
+                      </span>
+                    )}
+                  </p>
                 </div>
               )}
             </div>
