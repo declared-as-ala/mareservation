@@ -1,162 +1,125 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
-import { ArrowRight, Compass, ShieldCheck, Sparkles } from 'lucide-react';
-import { Spotlight } from '@/components/ui/spotlight';
-import { Immersive360Preview } from './Immersive360Preview';
+import { ArrowRight, Compass, ShieldCheck, Play } from 'lucide-react';
 
 const features = [
-  { icon: Compass, label: 'Visite virtuelle 360°' },
-  { icon: Sparkles, label: 'Choisissez votre table dans la vue' },
-  { icon: ShieldCheck, label: 'Réservation instantanée & sécurisée' },
-];
-
-const stats = [
-  { value: '500+', label: 'Lieux à explorer' },
-  { value: '360°', label: 'Immersion totale' },
-  { value: '4.9', label: 'Note moyenne', suffix: '★' },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-5 text-amber-400">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+        <path d="M2 12h20" />
+      </svg>
+    ),
+    label: 'Visite virtuelle 360°',
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-5 text-amber-400">
+        <path d="M12 22V12" />
+        <path d="m15 5-3-3-3 3" />
+        <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
+        <path d="M7 7a8 8 0 0 1 10 0" />
+      </svg>
+    ),
+    label: 'Choisissez votre table dans la vue',
+  },
+  {
+    icon: <ShieldCheck className="size-5 text-amber-400" strokeWidth={1.8} />,
+    label: 'Réservation instantanée & sécurisée',
+  },
 ];
 
 export function SplineHeroSection() {
-  const reduce = useReducedMotion();
-
-  const container: Variants = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.085, delayChildren: 0.12 } },
-  };
-
-  const item: Variants = {
-    hidden: reduce ? { opacity: 0 } : { opacity: 0, y: 24 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
-    },
-  };
-
   return (
-    <section className="relative isolate overflow-hidden bg-[#0B0B0C]">
-      {/* Faint grid, masked toward the top */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_75%_60%_at_50%_0%,black,transparent)]"
-      />
+    <section className="relative overflow-hidden bg-[#0f0f0f] mx-3 sm:mx-4 my-4 rounded-3xl border border-white/[0.06]">
+      {/* Subtle top-left amber glow */}
+      <div aria-hidden className="absolute -left-20 -top-20 h-60 w-60 rounded-full bg-amber-500/[0.08] blur-[90px] pointer-events-none" />
+      <div aria-hidden className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-amber-500/[0.05] blur-[70px] pointer-events-none" />
 
-      {/* Ambient gold glows */}
-      <div aria-hidden className="absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-amber-500/[0.06] blur-[150px]" />
-      <div aria-hidden className="absolute -bottom-48 right-0 -z-10 h-[460px] w-[460px] rounded-full bg-amber-600/[0.05] blur-[150px]" />
-
-      {/* Aceternity spotlight sweep */}
-      <Spotlight className="-top-40 left-0 md:-top-20 md:left-60" fill="rgba(212, 175, 55, 0.7)" />
-
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 gap-8 px-4 pb-16 pt-12 sm:px-6 md:px-10 lg:min-h-[calc(100vh-90px)] lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-6 lg:pb-20 lg:pt-14">
-        {/* ─── Left: copy ─── */}
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="flex flex-col items-center text-center lg:items-start lg:text-left"
-        >
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center gap-8 px-6 py-8 sm:px-8 sm:py-10">
+        {/* ── Left column ── */}
+        <div className="flex-1">
           {/* Eyebrow */}
-          <motion.div
-            variants={item}
-            className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/[0.05] px-3.5 py-1.5 backdrop-blur-sm"
-          >
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/[0.08] px-3.5 py-1.5">
             <span className="relative flex size-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
               <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/90">
-              Plateforme de réservation immersive
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">
+              Immersive
             </span>
-          </motion.div>
+          </div>
 
           {/* Headline */}
-          <motion.h1
-            variants={item}
-            className="mt-6 max-w-xl font-serif text-4xl font-bold leading-[1.06] tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-[68px]"
-          >
+          <h2 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white sm:text-4xl">
             Réservez ce que{' '}
-            <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
-              vous voyez
-            </span>
+            <span className="text-amber-400">vous voyez</span>
             , en 360°.
-          </motion.h1>
+          </h2>
 
-          {/* Sub */}
-          <motion.p
-            variants={item}
-            className="mt-5 max-w-md text-[15px] leading-relaxed text-white/55 sm:text-base"
-          >
+          {/* Sub-copy */}
+          <p className="mt-4 text-sm leading-relaxed text-white/50 max-w-sm">
             Explorez cafés, restaurants, hôtels et événements en visite virtuelle.
-            Choisissez votre table directement dans la vue — puis réservez en
-            quelques secondes.
-          </motion.p>
+            Choisissez votre table directement dans la vue —
+            puis réservez en quelques secondes.
+          </p>
 
           {/* CTAs */}
-          <motion.div
-            variants={item}
-            className="mt-8 flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center"
-          >
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/explorer"
-              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-7 text-sm font-semibold text-black shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-amber-500/40 active:translate-y-0"
+              className="group inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-amber-400 px-6 text-sm font-bold text-black transition-all duration-300 hover:bg-amber-300 active:scale-95"
             >
-              Explorez vos lieux en 360°
-              <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+              Explorer en 360°
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Link>
-            <a
-              href="#how-it-works"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/[0.03] px-7 text-sm font-semibold text-white/85 backdrop-blur-sm transition-all duration-200 hover:border-amber-400/30 hover:bg-amber-400/[0.05] hover:text-white"
+            <Link
+              href="/comment-ca-marche"
+              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-white/15 bg-transparent px-6 text-sm font-semibold text-white/80 transition-all hover:border-amber-400/40 hover:text-white"
             >
               Comment ça marche
-            </a>
-          </motion.div>
+              <span className="flex size-5 items-center justify-center rounded-full border border-white/20">
+                <Play className="size-2.5 fill-current" />
+              </span>
+            </Link>
+          </div>
 
           {/* Feature pills */}
-          <motion.ul
-            variants={item}
-            className="mt-9 flex flex-wrap justify-center gap-x-5 gap-y-2.5 lg:justify-start"
-          >
-            {features.map(({ icon: Icon, label }) => (
-              <li key={label} className="flex items-center gap-2 text-[13px] text-white/45">
-                <Icon className="size-4 text-amber-400/70" strokeWidth={1.5} />
+          <ul className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-5">
+            {features.map(({ icon, label }) => (
+              <li key={label} className="flex items-center gap-2 text-[12px] text-white/45">
+                {icon}
                 {label}
               </li>
             ))}
-          </motion.ul>
+          </ul>
+        </div>
 
-          {/* Stats */}
-          <motion.div
-            variants={item}
-            className="mt-9 grid w-full max-w-md grid-cols-3 gap-4 border-t border-white/[0.06] pt-7"
-          >
-            {stats.map(({ value, label, suffix }) => (
-              <div key={label} className="text-center lg:text-left">
-                <div className="font-serif text-2xl font-bold text-white md:text-3xl">
-                  {value}
-                  {suffix && <span className="text-amber-400">{suffix}</span>}
-                </div>
-                <div className="mt-1 text-[11px] uppercase tracking-wide text-white/35">
-                  {label}
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </motion.div>
-
-        {/* ─── Right: immersive 360° reservation preview (hidden on mobile/tablet) ─── */}
-        <div className="hidden lg:block relative h-[340px] w-full sm:h-[420px] lg:h-[78vh] lg:max-h-[680px]">
-          <Immersive360Preview />
+        {/* ── Right: 360° globe ── */}
+        <div className="flex shrink-0 items-center justify-center lg:w-[200px]">
+          <div className="relative flex items-center justify-center">
+            {/* Outer glow rings */}
+            <div className="absolute h-40 w-40 rounded-full border border-amber-400/10 animate-[spin_20s_linear_infinite]" />
+            <div className="absolute h-52 w-52 rounded-full border border-amber-400/5 animate-[spin_30s_linear_infinite_reverse]" />
+            {/* Main glowing circle */}
+            <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-transparent border border-amber-400/30 shadow-[0_0_40px_rgba(245,158,11,0.25)]">
+              {/* Latitude/longitude lines */}
+              <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full opacity-30">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#fbbf24" strokeWidth="0.8" />
+                <ellipse cx="50" cy="50" rx="28" ry="45" fill="none" stroke="#fbbf24" strokeWidth="0.6" />
+                <ellipse cx="50" cy="50" rx="45" ry="18" fill="none" stroke="#fbbf24" strokeWidth="0.6" />
+                <line x1="5" y1="50" x2="95" y2="50" stroke="#fbbf24" strokeWidth="0.6" />
+                <line x1="50" y1="5" x2="50" y2="95" stroke="#fbbf24" strokeWidth="0.6" />
+              </svg>
+              <span className="relative font-serif text-3xl font-black text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
+                360°
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Bottom fade into next section */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0B0B0C] to-transparent"
-      />
     </section>
   );
 }
