@@ -2,244 +2,412 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin, ArrowUpRight, Heart } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Mail, Phone, MapPin, Facebook, Instagram, Twitter,
+  Linkedin, ArrowUpRight, Heart, Send, Globe, Shield,
+  ChevronDown, ChevronUp,
+} from 'lucide-react';
 
-const categories = [
+/* ─────────────────── Data ─────────────────── */
+const explore = [
   { label: 'Explorer en 360°', href: '/explorer' },
-  { label: 'Cafés', href: '/cafes' },
-  { label: 'Restaurants', href: '/restaurants' },
-  { label: 'Hôtels', href: '/hotels' },
-  { label: 'Cinéma', href: '/cinema' },
-  { label: 'Événements', href: '/evenements' },
+  { label: 'Cafés & Salons',   href: '/cafes' },
+  { label: 'Restaurants',      href: '/restaurants' },
+  { label: 'Hôtels & Resorts', href: '/hotels' },
+  { label: 'Cinéma',           href: '/cinema' },
+  { label: 'Événements',       href: '/evenements' },
+  { label: 'Coworking',        href: '/coworking' },
 ];
 
 const company = [
-  { label: 'À propos', href: '/a-propos' },
+  { label: 'À propos',          href: '/a-propos' },
   { label: 'Comment ça marche', href: '/comment-ca-marche' },
-  { label: 'Contact', href: '/contact' },
-  { label: 'FAQ', href: '/faq' },
-  { label: 'SOS Conseil', href: '/sos-conseil' },
+  { label: 'Devenir partenaire',href: '/owner' },
+  { label: 'SOS Conseil',       href: '/sos-conseil' },
+  { label: 'Contact',           href: '/contact' },
+  { label: 'FAQ',               href: '/faq' },
 ];
 
 const legal = [
-  { label: 'Mentions légales', href: '/mentions-legales' },
-  { label: 'Conditions générales', href: '/cgv' },
-  { label: 'Politique de confidentialité', href: '/privacy' },
-  { label: 'Cookies', href: '/cookies' },
+  { label: 'Mentions légales',          href: '/mentions-legales' },
+  { label: 'Conditions générales',      href: '/cgv' },
+  { label: 'Politique de confidentialité', href: '/mentions-legales' },
 ];
 
-const socialLinks = [
-  { icon: Facebook, href: 'https://facebook.com/mareservation', label: 'Facebook' },
-  { icon: Instagram, href: 'https://instagram.com/mareservation', label: 'Instagram' },
-  { icon: Twitter, href: 'https://twitter.com/mareservation', label: 'Twitter' },
-  { icon: Linkedin, href: 'https://linkedin.com/company/mareservation', label: 'LinkedIn' },
+const social = [
+  { Icon: Facebook,  href: 'https://facebook.com/mareservation',  label: 'Facebook' },
+  { Icon: Instagram, href: 'https://instagram.com/mareservation', label: 'Instagram' },
+  { Icon: Twitter,   href: 'https://twitter.com/mareservation',   label: 'Twitter / X' },
+  { Icon: Linkedin,  href: 'https://linkedin.com/company/mareservation', label: 'LinkedIn' },
 ];
 
+const stats = [
+  { value: '500+', label: 'Établissements' },
+  { value: '12k+', label: 'Réservations' },
+  { value: '4.9★', label: 'Note moyenne' },
+  { value: '360°', label: 'Immersion totale' },
+];
+
+/* ─────────────────── Accordion (mobile) ─────────────────── */
+function MobileAccordion({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-white/[0.06]">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold text-white/80"
+      >
+        {title}
+        {open ? (
+          <ChevronUp className="size-4 text-amber-400/70 shrink-0" />
+        ) : (
+          <ChevronDown className="size-4 text-zinc-600 shrink-0" />
+        )}
+      </button>
+      {open && <div className="pb-4">{children}</div>}
+    </div>
+  );
+}
+
+/* ─────────────────── Footer ─────────────────── */
 export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
-  const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+  const year = new Date().getFullYear();
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) { setSubscribed(true); setEmail(''); }
+  };
 
   return (
-    <footer className="relative bg-black/95 border-t border-white/[0.06]">
-      {/* Gold top accent line */}
-      <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+    <footer className="relative bg-[#080808]">
+      {/* ── Amber gradient line at top ── */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
 
-      {/* ===== Newsletter (optional) ===== */}
+      {/* ══════════════════════════════════════
+          TOP BAND — stats + newsletter
+          ══════════════════════════════════════ */}
       {!hideNewsletter && (
-        <section className="border-b border-white/[0.06]">
-          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
-            <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
-              <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-amber-400/10">
-                <div className="size-2 rounded-full bg-amber-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-neutral-100 sm:text-2xl">
-                Restez informé de nos dernières offres
-              </h3>
-              <p className="mt-3 max-w-md text-sm leading-relaxed text-neutral-500">
-                Inscrivez-vous à notre newsletter pour recevoir nos meilleures offres et nouveautés.
-              </p>
-              <form className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:gap-0">
-                <input
-                  type="email"
-                  placeholder="Votre adresse email"
-                  autoComplete="email"
-                  className="flex-1 min-w-0 rounded-l-xl rounded-r-xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-sm text-neutral-100 placeholder:text-neutral-600 focus:z-10 focus:outline-none focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 sm:rounded-r-none transition-all duration-200"
-                />
-                <button
-                  type="submit"
-                  className="h-[46px] rounded-xl bg-amber-400 px-6 text-sm font-semibold text-black hover:bg-amber-300 active:bg-amber-500 transition-all duration-200 shadow-sm hover:shadow-amber-500/25 sm:rounded-l-none sm:rounded-r-xl shrink-0"
-                >
-                  S&apos;inscrire
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
-      )}
+        <div className="border-b border-white/[0.05] bg-[#0a0a0a]">
+          <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-12">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
 
-      {/* ===== Main Footer ===== */}
-      <section>
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
-          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-8 lg:grid-cols-12 lg:gap-6">
-
-            {/* ── Brand ── */}
-            <div className="sm:col-span-2 lg:col-span-4">
-              <Link href="/" className="inline-block mb-5 transition-transform duration-300 hover:scale-[1.02]">
-                <Image
-                  src="/logo.png"
-                  alt="Ma Table"
-                  width={200}
-                  height={55}
-                  className="h-16 sm:h-20 w-auto object-contain"
-                  priority
-                />
-              </Link>
-              <p className="text-[15px] leading-relaxed text-neutral-500 mb-6 max-w-sm">
-                Réservez vos tables, chambres et places en quelques clics. Une expérience premium pour vos moments spéciaux.
-              </p>
-
-              {/* Social */}
-              <div className="flex items-center gap-2.5">
-                {socialLinks.map((social) => {
-                  const Icon = social.icon;
-                  return (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.label}
-                      className="flex size-11 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-neutral-500 transition-all duration-200 hover:border-amber-400/30 hover:text-amber-400 hover:bg-amber-400/[0.06]"
-                    >
-                      <Icon className="size-[18px]" />
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ── Explorer ── */}
-            <div className="sm:col-span-1 lg:col-span-2 lg:col-start-6">
-              <h4 className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-100 mb-5">
-                Explorer
-              </h4>
-              <ul className="flex flex-col gap-1">
-                {categories.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="group flex items-center justify-between py-2.5 text-[14px] text-neutral-500 transition-colors duration-200 hover:text-amber-400"
-                    >
-                      <span className="truncate">{link.label}</span>
-                      <ArrowUpRight className="size-3.5 shrink-0 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-60 group-hover:translate-x-0" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* ── Entreprise ── */}
-            <div className="sm:col-span-1 lg:col-span-2">
-              <h4 className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-100 mb-5">
-                Entreprise
-              </h4>
-              <ul className="flex flex-col gap-1">
-                {company.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="group flex items-center justify-between py-2.5 text-[14px] text-neutral-500 transition-colors duration-200 hover:text-amber-400"
-                    >
-                      <span className="truncate">{link.label}</span>
-                      <ArrowUpRight className="size-3.5 shrink-0 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-60 group-hover:translate-x-0" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* ── Contact ── */}
-            <div className="sm:col-span-2 lg:col-span-2">
-              <h4 className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-100 mb-5">
-                Contact
-              </h4>
-              <ul className="flex flex-col gap-3">
-                <li>
-                  <a
-                    href="mailto:contact@mareservation.com"
-                    className="group flex items-start gap-3 py-1 text-[14px] text-neutral-500 transition-colors duration-200 hover:text-amber-400"
-                  >
-                    <Mail className="size-[18px] shrink-0 mt-0.5 text-neutral-600 group-hover:text-amber-400 transition-colors" />
-                    <span className="leading-snug break-all">contact@mareservation.com</span>
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="tel:+21612345678"
-                    className="group flex items-start gap-3 py-1 text-[14px] text-neutral-500 transition-colors duration-200 hover:text-amber-400"
-                  >
-                    <Phone className="size-[18px] shrink-0 mt-0.5 text-neutral-600 group-hover:text-amber-400 transition-colors" />
-                    <span className="leading-snug whitespace-nowrap">+216 12 345 678</span>
-                  </a>
-                </li>
-                <li>
-                  <div className="flex items-start gap-3 py-1 text-[14px] text-neutral-500">
-                    <MapPin className="size-[18px] shrink-0 mt-0.5 text-neutral-600" />
-                    <span className="leading-snug">Tunis, Tunisie</span>
+              {/* Stats row */}
+              <div className="grid grid-cols-2 gap-x-10 gap-y-5 sm:flex sm:items-center sm:gap-12">
+                {stats.map(({ value, label }) => (
+                  <div key={label} className="text-center sm:text-left">
+                    <p className="font-serif text-2xl font-black text-amber-400">{value}</p>
+                    <p className="mt-0.5 text-[11px] uppercase tracking-widest text-zinc-600">{label}</p>
                   </div>
-                </li>
-              </ul>
+                ))}
+              </div>
 
-              {/* Legal */}
-              <div className="mt-6 pt-5 border-t border-white/[0.06]">
-                <h4 className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-100 mb-4">
-                  Légal
-                </h4>
-                <ul className="flex flex-col gap-1">
-                  {legal.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className="block py-2 text-[14px] text-neutral-500 transition-colors duration-200 hover:text-amber-400"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+              {/* Newsletter */}
+              <div className="w-full max-w-md">
+                <p className="mb-1 text-sm font-bold text-white">
+                  Restez informé de nos offres
+                </p>
+                <p className="mb-3 text-xs text-zinc-600">
+                  Recevez les meilleures adresses et offres exclusives directement dans votre boîte.
+                </p>
+                {subscribed ? (
+                  <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3">
+                    <span className="text-lg">✦</span>
+                    <span className="text-sm font-semibold text-amber-300">
+                      Merci ! Vous êtes maintenant abonné.
+                    </span>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubscribe} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-zinc-600" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="votre@email.com"
+                        required
+                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-10 pr-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-4 py-3 text-sm font-bold text-black transition-all hover:bg-amber-300 active:scale-95 shrink-0"
+                    >
+                      <Send className="size-3.5" />
+                      <span className="hidden sm:inline">S&apos;inscrire</span>
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
-
           </div>
         </div>
-      </section>
+      )}
 
-      {/* ===== Bottom Bar ===== */}
-      <section className="border-t border-white/[0.06]">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-neutral-600 text-center sm:text-left order-2 sm:order-1">
-              © {currentYear} Ma Table. Tous droits réservés.
+      {/* ══════════════════════════════════════
+          MAIN FOOTER GRID — desktop
+          ══════════════════════════════════════ */}
+      <div className="mx-auto max-w-7xl px-5 pt-14 pb-10 sm:px-8 lg:px-12">
+
+        {/* ── Desktop grid ── */}
+        <div className="hidden md:grid md:grid-cols-12 md:gap-8 lg:gap-12">
+
+          {/* Brand — 4 cols */}
+          <div className="md:col-span-4">
+            <Link href="/" className="inline-block mb-5 transition-opacity hover:opacity-80">
+              <Image
+                src="/logo.png"
+                alt="Ma Réservation"
+                width={180}
+                height={50}
+                className="h-14 w-auto object-contain"
+                priority
+              />
+            </Link>
+            <p className="text-sm leading-relaxed text-zinc-500 mb-6 max-w-xs">
+              Réservez vos tables, chambres et places en quelques clics —
+              une expérience premium pour vos moments d&apos;exception.
             </p>
 
-            {/* Quick legal links — desktop */}
-            <div className="hidden md:flex items-center gap-5 order-1 sm:order-2">
-              {legal.slice(0, 2).map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-xs text-neutral-600 transition-colors duration-200 hover:text-amber-400"
+            {/* Social icons */}
+            <div className="flex items-center gap-2.5 mb-8">
+              {social.map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="group flex size-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-zinc-600 transition-all duration-200 hover:border-amber-400/40 hover:bg-amber-400/[0.08] hover:text-amber-400 hover:-translate-y-0.5"
                 >
-                  {link.label}
+                  <Icon className="size-4 transition-transform group-hover:scale-110" />
+                </a>
+              ))}
+            </div>
+
+            {/* Trust badges */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-2 text-[12px] text-zinc-700">
+                <Shield className="size-3.5 text-amber-400/50" />
+                Paiement 100% sécurisé
+              </div>
+              <div className="flex items-center gap-2 text-[12px] text-zinc-700">
+                <Globe className="size-3.5 text-amber-400/50" />
+                Disponible partout en Tunisie
+              </div>
+            </div>
+          </div>
+
+          {/* Explorer — 2 cols */}
+          <div className="md:col-span-2">
+            <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/80">
+              Explorer
+            </h4>
+            <ul className="space-y-0.5">
+              {explore.map(({ label, href }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="group flex items-center justify-between py-2 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
+                  >
+                    <span>{label}</span>
+                    <ArrowUpRight className="size-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-60 group-hover:translate-x-0" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Entreprise — 2 cols */}
+          <div className="md:col-span-2">
+            <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/80">
+              Entreprise
+            </h4>
+            <ul className="space-y-0.5">
+              {company.map(({ label, href }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="group flex items-center justify-between py-2 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
+                  >
+                    <span>{label}</span>
+                    <ArrowUpRight className="size-3 opacity-0 -translate-x-1 transition-all group-hover:opacity-60 group-hover:translate-x-0" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact + Legal — 4 cols */}
+          <div className="md:col-span-4">
+            <h4 className="mb-5 text-[11px] font-bold uppercase tracking-[0.18em] text-amber-400/80">
+              Contact
+            </h4>
+            <ul className="space-y-3 mb-7">
+              <li>
+                <a
+                  href="mailto:contact@mareservation.com"
+                  className="group flex items-start gap-3 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
+                >
+                  <Mail className="size-4 shrink-0 mt-0.5 text-zinc-700 group-hover:text-amber-400 transition-colors" />
+                  <span className="break-all">contact@mareservation.com</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="tel:+21612345678"
+                  className="group flex items-center gap-3 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
+                >
+                  <Phone className="size-4 shrink-0 text-zinc-700 group-hover:text-amber-400 transition-colors" />
+                  +216 12 345 678
+                </a>
+              </li>
+              <li>
+                <div className="flex items-center gap-3 text-[13px] text-zinc-500">
+                  <MapPin className="size-4 shrink-0 text-zinc-700" />
+                  Tunis, Tunisie
+                </div>
+              </li>
+            </ul>
+
+            {/* Legal links */}
+            <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+              <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700">
+                Légal
+              </h4>
+              <ul className="space-y-1.5">
+                {legal.map(({ label, href }) => (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className="text-[12px] text-zinc-600 transition-colors hover:text-amber-400"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Mobile accordion ── */}
+        <div className="md:hidden">
+          {/* Brand */}
+          <div className="mb-6 text-center">
+            <Link href="/" className="inline-block mb-4">
+              <Image src="/logo.png" alt="Ma Réservation" width={140} height={40} className="h-12 w-auto object-contain mx-auto" priority />
+            </Link>
+            <p className="text-sm leading-relaxed text-zinc-500 mb-5 max-w-xs mx-auto">
+              Réservez vos tables, chambres et places en quelques clics — une expérience premium pour vos moments d&apos;exception.
+            </p>
+            {/* Social */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {social.map(({ Icon, href, label }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                  className="flex size-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-zinc-600 transition-all hover:border-amber-400/40 hover:text-amber-400">
+                  <Icon className="size-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Accordions */}
+          <MobileAccordion title="Explorer">
+            <ul className="space-y-1">
+              {explore.map(({ label, href }) => (
+                <li key={href}>
+                  <Link href={href} className="block py-2 text-sm text-zinc-500 hover:text-amber-400 transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </MobileAccordion>
+
+          <MobileAccordion title="Entreprise">
+            <ul className="space-y-1">
+              {company.map(({ label, href }) => (
+                <li key={href}>
+                  <Link href={href} className="block py-2 text-sm text-zinc-500 hover:text-amber-400 transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </MobileAccordion>
+
+          <MobileAccordion title="Contact">
+            <ul className="space-y-3 pt-1">
+              <li>
+                <a href="mailto:contact@mareservation.com" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
+                  <Mail className="size-4 text-zinc-700 shrink-0" /> contact@mareservation.com
+                </a>
+              </li>
+              <li>
+                <a href="tel:+21612345678" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
+                  <Phone className="size-4 text-zinc-700 shrink-0" /> +216 12 345 678
+                </a>
+              </li>
+              <li>
+                <div className="flex items-center gap-3 text-sm text-zinc-500">
+                  <MapPin className="size-4 text-zinc-700 shrink-0" /> Tunis, Tunisie
+                </div>
+              </li>
+            </ul>
+          </MobileAccordion>
+
+          <MobileAccordion title="Légal">
+            <ul className="space-y-1">
+              {legal.map(({ label, href }) => (
+                <li key={href}>
+                  <Link href={href} className="block py-2 text-sm text-zinc-500 hover:text-amber-400 transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </MobileAccordion>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════
+          BOTTOM BAR
+          ══════════════════════════════════════ */}
+      <div className="border-t border-white/[0.05]">
+        <div className="mx-auto max-w-7xl px-5 py-5 sm:px-8 lg:px-12">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            {/* Copyright */}
+            <p className="text-center text-xs text-zinc-700 sm:text-left order-2 sm:order-1">
+              © {year} Ma Réservation. Tous droits réservés.
+            </p>
+
+            {/* Legal quick links — desktop only */}
+            <div className="hidden sm:flex items-center gap-5 order-1 sm:order-2">
+              {legal.map(({ label, href }) => (
+                <Link key={href} href={href} className="text-xs text-zinc-700 transition-colors hover:text-amber-400">
+                  {label}
                 </Link>
               ))}
             </div>
 
-            <p className="flex items-center gap-1.5 text-xs text-neutral-600 order-3">
-              Fait avec <Heart className="size-3.5 text-amber-400 fill-amber-400" /> en Tunisie
+            {/* Made with love */}
+            <p className="flex items-center gap-1.5 text-xs text-zinc-700 order-3">
+              Fait avec <Heart className="size-3.5 fill-amber-400 text-amber-400" /> en Tunisie
             </p>
           </div>
         </div>
-      </section>
+      </div>
     </footer>
   );
 }
