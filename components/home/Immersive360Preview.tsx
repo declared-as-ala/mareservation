@@ -15,10 +15,10 @@ interface TableMarker {
 }
 
 const MARKERS: TableMarker[] = [
-  { id: '1', name: 'Table 1', capacity: 4, price: 120, status: 'available', position: { x: '24%', y: '38%' } },
-  { id: '2', name: 'Table 4', capacity: 2, price: 80, status: 'available', position: { x: '66%', y: '48%' } },
+  { id: '1', name: 'Table 1', capacity: 4, price: 120, status: 'available', position: { x: '28%', y: '58%' } },
+  { id: '2', name: 'Table 4', capacity: 2, price: 80, status: 'available', position: { x: '66%', y: '60%' } },
   { id: '3', name: 'Table 7', capacity: 6, price: 150, status: 'reserved', position: { x: '46%', y: '64%' } },
-  { id: '4', name: 'Table 9', capacity: 2, price: 75, status: 'available', position: { x: '78%', y: '28%' } },
+  { id: '4', name: 'Table 9', capacity: 2, price: 75, status: 'available', position: { x: '86%', y: '62%' } },
 ];
 
 function TableTooltip({ marker, visible }: { marker: TableMarker; visible: boolean }) {

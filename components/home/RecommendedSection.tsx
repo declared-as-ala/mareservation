@@ -7,6 +7,7 @@ import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { MapPin, Utensils, Coffee, Bed, Sparkles, Wine, Compass } from 'lucide-react';
 import { Reveal } from './Reveal';
+import { getVenueHref } from '@/lib/venueHref';
 
 // High-quality premium fallback mock data matching the screenshot perfectly
 const MOCK_REC_VENUES = [
@@ -108,7 +109,7 @@ export function RecommendedSection() {
           >
             {displayVenues.map((venue, idx) => {
               const { label: catLabel, icon: CatIcon } = getCategoryInfo(venue.type, venue.name);
-              const href = `/lieu/${venue.slug || venue._id}`;
+              const href = getVenueHref(venue as any);
               return (
                 <div 
                   key={venue._id}
@@ -164,7 +165,7 @@ export function RecommendedSection() {
           <div className="hidden md:grid grid-cols-3 gap-6 lg:gap-8">
             {displayVenues.slice(0, 3).map((venue, idx) => {
               const { label: catLabel, icon: CatIcon } = getCategoryInfo(venue.type, venue.name);
-              const href = `/lieu/${venue.slug || venue._id}`;
+              const href = getVenueHref(venue as any);
               return (
                 <Reveal key={venue._id} delay={idx * 0.08} y={20}>
                   <Link href={href} className="group block relative aspect-[4/3] w-full overflow-hidden rounded-[28px] border border-amber-500/10 bg-zinc-950/40 shadow-2xl shadow-black/40 transition-all duration-500 hover:-translate-y-1.5 hover:border-amber-400/40 hover:shadow-[0_15px_40px_rgba(0,0,0,0.8)]">
