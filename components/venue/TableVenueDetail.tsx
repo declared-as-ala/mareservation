@@ -65,7 +65,7 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
 
   const meta = CATEGORY_META[category];
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reserver' | 'infos'>('reserver');
+  const [activeTab, setActiveTab] = useState<'overview' | 'menu' | 'reserver' | 'infos'>('overview');
 
   const { data: venue, isLoading, error } = useQuery({
     queryKey: ['table-venue', slug],
