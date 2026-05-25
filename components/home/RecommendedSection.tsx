@@ -132,6 +132,43 @@ export function RecommendedSection() {
               <ChevronRight className="size-4" />
             </button>
           </div>
+
+          {/* Mobile nav arrows */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <span className="mr-1 text-[10px] text-zinc-600">
+              {mobileIdx + 1} / {displayVenues.length}
+            </span>
+            <button
+              onClick={() => {
+                const el = mobileRef.current;
+                if (!el) return;
+                const nextIdx = Math.max(0, mobileIdx - 1);
+                const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
+                el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
+                setMobileIdx(nextIdx);
+              }}
+              disabled={mobileIdx === 0}
+              aria-label="Précédent"
+              className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 active:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              onClick={() => {
+                const el = mobileRef.current;
+                if (!el) return;
+                const nextIdx = Math.min(displayVenues.length - 1, mobileIdx + 1);
+                const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
+                el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
+                setMobileIdx(nextIdx);
+              }}
+              disabled={mobileIdx >= displayVenues.length - 1}
+              aria-label="Suivant"
+              className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 active:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
         </div>
 
         {/* ── Mobile: horizontal scroll ── */}
