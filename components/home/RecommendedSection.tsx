@@ -109,105 +109,102 @@ export function RecommendedSection() {
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500">Découvrez nos meilleures adresses</p>
           </div>
-
-          {/* Desktop nav arrows */}
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="mr-2 text-xs text-zinc-600">
-              {page + 1} / {totalPages}
-            </span>
-            <button
-              onClick={prev}
-              disabled={page === 0}
-              aria-label="Précédent"
-              className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 hover:border-amber-400/50 hover:bg-zinc-800 hover:text-amber-400 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              onClick={next}
-              disabled={page >= totalPages - 1}
-              aria-label="Suivant"
-              className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 hover:border-amber-400/50 hover:bg-zinc-800 hover:text-amber-400 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-
-          {/* Mobile nav arrows */}
-          <div className="flex items-center gap-1.5 md:hidden">
-            <span className="mr-1 text-[10px] text-zinc-600">
-              {mobileIdx + 1} / {displayVenues.length}
-            </span>
-            <button
-              onClick={() => {
-                const el = mobileRef.current;
-                if (!el) return;
-                const nextIdx = Math.max(0, mobileIdx - 1);
-                const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-                el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
-                setMobileIdx(nextIdx);
-              }}
-              disabled={mobileIdx === 0}
-              aria-label="Précédent"
-              className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 active:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              onClick={() => {
-                const el = mobileRef.current;
-                if (!el) return;
-                const nextIdx = Math.min(displayVenues.length - 1, mobileIdx + 1);
-                const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-                el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
-                setMobileIdx(nextIdx);
-              }}
-              disabled={mobileIdx >= displayVenues.length - 1}
-              aria-label="Suivant"
-              className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-white transition-all duration-200 active:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
         </div>
 
-        {/* ── Mobile: horizontal scroll ── */}
-        <div
-          ref={mobileRef}
-          onScroll={handleMobileScroll}
-          className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-3 md:hidden"
-        >
-          {displayVenues.map((venue) => {
-            const { label, Icon } = getCategoryInfo(venue.type, venue.name);
-            return (
-              <div key={venue._id} data-item className="w-[62vw] max-w-[230px] shrink-0 snap-center">
-                <VenueCard venue={venue as any} label={label} Icon={Icon} href={getVenueHref(venue as any)} />
-              </div>
-            );
-          })}
-        </div>
+        {/* ── Mobile View Wrapper ── */}
+        <div className="relative md:hidden group/mobile-carousel">
+          {/* Mobile Prev Arrow */}
+          <button
+            onClick={() => {
+              const el = mobileRef.current;
+              if (!el) return;
+              const nextIdx = Math.max(0, mobileIdx - 1);
+              const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
+              el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
+              setMobileIdx(nextIdx);
+            }}
+            disabled={mobileIdx === 0}
+            aria-label="Précédent"
+            className="absolute left-1 top-[40%] -translate-y-1/2 z-20 flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 active:scale-90 hover:bg-amber-400 hover:text-black hover:border-amber-400/40 disabled:opacity-0 disabled:pointer-events-none shadow-lg shadow-black/80"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
 
-        {/* Dot indicators — mobile only */}
-        <div className="mt-3 flex items-center justify-center gap-1.5 md:hidden">
-          {displayVenues.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                const el = mobileRef.current;
-                if (!el) return;
-                const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-                el.scrollTo({ left: i * (w + 12), behavior: 'smooth' });
-                setMobileIdx(i);
-              }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                mobileIdx === i ? 'w-4 bg-amber-400' : 'w-1.5 bg-zinc-700'
-              }`}
-            />
-          ))}
+          {/* Mobile Next Arrow */}
+          <button
+            onClick={() => {
+              const el = mobileRef.current;
+              if (!el) return;
+              const nextIdx = Math.min(displayVenues.length - 1, mobileIdx + 1);
+              const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
+              el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
+              setMobileIdx(nextIdx);
+            }}
+            disabled={mobileIdx >= displayVenues.length - 1}
+            aria-label="Suivant"
+            className="absolute right-1 top-[40%] -translate-y-1/2 z-20 flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 active:scale-90 hover:bg-amber-400 hover:text-black hover:border-amber-400/40 disabled:opacity-0 disabled:pointer-events-none shadow-lg shadow-black/80"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+
+          {/* Mobile: horizontal scroll */}
+          <div
+            ref={mobileRef}
+            onScroll={handleMobileScroll}
+            className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-3 px-1"
+          >
+            {displayVenues.map((venue) => {
+              const { label, Icon } = getCategoryInfo(venue.type, venue.name);
+              return (
+                <div key={venue._id} data-item className="w-[62vw] max-w-[230px] shrink-0 snap-center">
+                  <VenueCard venue={venue as any} label={label} Icon={Icon} href={getVenueHref(venue as any)} />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Dot indicators — mobile only */}
+          <div className="mt-3 flex items-center justify-center gap-1.5">
+            {displayVenues.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  const el = mobileRef.current;
+                  if (!el) return;
+                  const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
+                  el.scrollTo({ left: i * (w + 12), behavior: 'smooth' });
+                  setMobileIdx(i);
+                }}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  mobileIdx === i ? 'w-4 bg-amber-400' : 'w-1.5 bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* ── Desktop: 3-col carousel ── */}
-        <div className="hidden md:block">
+        <div className="hidden md:block relative group/desktop-carousel">
+          {/* Desktop Prev Arrow */}
+          <button
+            onClick={prev}
+            disabled={page === 0}
+            aria-label="Précédent"
+            className="absolute -left-6 lg:-left-8 top-[40%] -translate-y-1/2 z-20 flex size-12 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 hover:scale-110 active:scale-95 hover:border-amber-400/50 hover:bg-amber-400 hover:text-black disabled:opacity-0 disabled:pointer-events-none shadow-[0_8px_32px_rgba(0,0,0,0.6)] opacity-0 group-hover/desktop-carousel:opacity-100"
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+
+          {/* Desktop Next Arrow */}
+          <button
+            onClick={next}
+            disabled={page >= totalPages - 1}
+            aria-label="Suivant"
+            className="absolute -right-6 lg:-right-8 top-[40%] -translate-y-1/2 z-20 flex size-12 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 hover:scale-110 active:scale-95 hover:border-amber-400/50 hover:bg-amber-400 hover:text-black disabled:opacity-0 disabled:pointer-events-none shadow-[0_8px_32px_rgba(0,0,0,0.6)] opacity-0 group-hover/desktop-carousel:opacity-100"
+          >
+            <ChevronRight className="size-6" />
+          </button>
+
           <div className="grid grid-cols-3 gap-5 lg:gap-6">
             {pageVenues.map((venue) => {
               const { label, Icon } = getCategoryInfo(venue.type, venue.name);
@@ -225,7 +222,7 @@ export function RecommendedSection() {
 
           {/* Page dots */}
           {totalPages > 1 && (
-            <div className="mt-5 flex items-center justify-center gap-2">
+            <div className="mt-6 flex items-center justify-center gap-2">
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
