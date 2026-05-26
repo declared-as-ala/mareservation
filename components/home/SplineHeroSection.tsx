@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Play, Globe, Star, Users } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Play, Globe, Star, Users, Building2 } from 'lucide-react';
 
 /* ─── Feature list ─── */
 const features = [
@@ -26,7 +26,7 @@ const features = [
 
 /* ─── Stats ─── */
 const stats = [
-  { value: '500+', label: 'Établissements', Icon: () => <span className="text-amber-400">🏛</span> },
+  { value: '500+', label: 'Établissements', Icon: () => <Building2 className="size-3 text-amber-400" /> },
   { value: '4.9', label: 'Note moyenne', Icon: () => <Star className="size-3 fill-amber-400 text-amber-400" /> },
   { value: '12k+', label: 'Réservations', Icon: () => <Users className="size-3 text-amber-400" /> },
 ];
@@ -48,7 +48,7 @@ export function SplineHeroSection() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
               <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-300">Immersive</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-300">Immersive</span>
           </div>
 
           <div className="flex items-start gap-4">
@@ -83,15 +83,17 @@ export function SplineHeroSection() {
             </Link>
           </div>
 
-          {/* Feature pills */}
-          <ul className="flex flex-col gap-2.5">
+          {/* Feature Row — 3 columns aligned horizontally */}
+          <div className="mt-2 pt-4 border-t border-white/[0.08] grid grid-cols-3 gap-2">
             {features.map(({ Icon, label }) => (
-              <li key={label} className="flex items-center gap-2 text-[12px] text-white/45">
-                <Icon className="size-4 text-amber-400" strokeWidth={1.8} />
-                {label}
-              </li>
+              <div key={label} className="flex flex-col items-center gap-1.5 px-0.5 text-center">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/[0.06]">
+                  <Icon className="size-3.5 text-amber-400" />
+                </div>
+                <span className="text-[8px] leading-tight text-white/45 font-medium">{label}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </section>
 
@@ -155,16 +157,14 @@ export function SplineHeroSection() {
             <div className="mt-9 flex items-center gap-4">
               <Link
                 href="/explorer"
-                className="group inline-flex h-13 items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-8 text-sm font-bold text-black shadow-[0_8px_30px_rgba(245,158,11,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(245,158,11,0.50)] active:translate-y-0"
-                style={{ height: '52px' }}
+                className="group inline-flex h-[52px] items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-8 text-sm font-bold text-black shadow-[0_8px_30px_rgba(245,158,11,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_40px_rgba(245,158,11,0.50)] active:translate-y-0"
               >
                 Explorer en 360°
                 <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1.5" />
               </Link>
               <Link
                 href="/comment-ca-marche"
-                className="group inline-flex h-13 items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.03] px-7 text-sm font-semibold text-white/75 backdrop-blur-sm transition-all duration-300 hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
-                style={{ height: '52px' }}
+                className="group inline-flex h-[52px] items-center gap-2.5 rounded-full border border-white/12 bg-white/[0.03] px-7 text-sm font-semibold text-white/75 backdrop-blur-sm transition-all duration-300 hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
               >
                 Comment ça marche
                 <span className="flex size-6 items-center justify-center rounded-full border border-white/20 bg-white/5 transition-all group-hover:border-amber-400/40 group-hover:bg-amber-400/10">
@@ -195,7 +195,7 @@ export function SplineHeroSection() {
                       <Icon />
                       <span className="font-serif text-xl font-black text-white">{value}</span>
                     </div>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-wider text-zinc-600">{label}</p>
+                    <p className="mt-0.5 text-xs uppercase tracking-wider text-zinc-500">{label}</p>
                   </div>
                 </div>
               ))}
@@ -225,11 +225,11 @@ export function SplineHeroSection() {
               <div className="absolute -bottom-6 left-2 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/90 px-3.5 py-2 backdrop-blur-md shadow-xl">
                 <Star className="size-3.5 fill-amber-400 text-amber-400" />
                 <span className="text-[11px] font-bold text-white">4.9</span>
-                <span className="text-[10px] text-zinc-500">· 12k réservations</span>
+                <span className="text-[11px] text-zinc-500">· 12k réservations</span>
               </div>
 
               <div className="absolute -left-4 top-1/4 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/90 px-3 py-2 backdrop-blur-md shadow-xl">
-                <span className="text-base">🏛</span>
+                <Building2 className="size-3.5 shrink-0 text-amber-400" />
                 <span className="text-[11px] font-semibold text-white/80">500+ lieux</span>
               </div>
             </div>

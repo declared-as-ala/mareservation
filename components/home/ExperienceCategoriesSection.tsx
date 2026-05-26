@@ -96,20 +96,28 @@ const categories = [
             <stop offset="100%" stopColor="#d97706" />
           </linearGradient>
         </defs>
-        {/* Calendar */}
-        <rect x="18" y="30" width="64" height="52" rx="4" fill="none" stroke="url(#g4)" strokeWidth="3" />
-        <line x1="18" y1="46" x2="82" y2="46" stroke="url(#g4)" strokeWidth="2.5" />
-        <line x1="34" y1="20" x2="34" y2="36" stroke="url(#g4)" strokeWidth="3" strokeLinecap="round" />
-        <line x1="66" y1="20" x2="66" y2="36" stroke="url(#g4)" strokeWidth="3" strokeLinecap="round" />
-        {/* Star */}
-        <path d="M50,52 L52,58 L58,58 L53,62 L55,68 L50,64 L45,68 L47,62 L42,58 L48,58 Z" fill="url(#g4)" />
+        {/* Comedy Mask */}
+        <path d="M22,38 C22,26 42,26 42,38 C42,50 22,50 22,38 Z" fill="none" stroke="url(#g4)" strokeWidth="2.5" />
+        <circle cx="28" cy="35" r="2" fill="url(#g4)" />
+        <circle cx="36" cy="35" r="2" fill="url(#g4)" />
+        <path d="M28,42 Q32,45 36,42" fill="none" stroke="url(#g4)" strokeWidth="2" strokeLinecap="round" />
+        
+        {/* Tragedy Mask */}
+        <path d="M40,50 C40,38 60,38 60,50 C60,62 40,62 40,50 Z" fill="none" stroke="url(#g4)" strokeWidth="2.5" />
+        <circle cx="46" cy="47" r="2" fill="url(#g4)" />
+        <circle cx="54" cy="47" r="2" fill="url(#g4)" />
+        <path d="M46,55 Q50,52 54,55" fill="none" stroke="url(#g4)" strokeWidth="2" strokeLinecap="round" />
+
+        {/* Sparkles */}
+        <path d="M72,25 L74,31 L80,31 L75,35 L77,41 L72,37 L67,41 L69,35 L64,31 L70,31 Z" fill="url(#g4)" />
+        <path d="M82,45 L83,48 L86,48 L84,50 L85,53 L82,51 L79,53 L80,50 L78,48 L81,48 Z" fill="url(#g4)" opacity="0.8" />
       </svg>
     ),
   },
   {
-    title: 'Cinéma',
-    subtitle: 'Films • Séances • Salles',
-    href: '/cinema',
+    title: 'Bien-être',
+    subtitle: 'Spas • Piscines',
+    href: '/explorer?q=Spa',
     icon: (
       <svg viewBox="0 0 100 100" className="size-14">
         <defs>
@@ -119,15 +127,12 @@ const categories = [
             <stop offset="100%" stopColor="#d97706" />
           </linearGradient>
         </defs>
-        {/* Clapperboard */}
-        <rect x="20" y="38" width="60" height="42" rx="4" fill="none" stroke="url(#g4)" strokeWidth="3" />
-        <rect x="20" y="26" width="60" height="12" rx="3" fill="url(#g4)" opacity="0.7" />
-        <line x1="34" y1="26" x2="30" y2="38" stroke="url(#g4)" strokeWidth="2.5" />
-        <line x1="46" y1="26" x2="42" y2="38" stroke="url(#g4)" strokeWidth="2.5" />
-        <line x1="58" y1="26" x2="54" y2="38" stroke="url(#g4)" strokeWidth="2.5" />
-        <line x1="70" y1="26" x2="66" y2="38" stroke="url(#g4)" strokeWidth="2.5" />
-        {/* Play button */}
-        <path d="M43,53 L43,68 L60,60.5 Z" fill="url(#g4)" />
+        {/* Lotus Petals */}
+        <path d="M50,30 C45,45 35,55 50,80 C65,55 55,45 50,30 Z" fill="url(#g5)" />
+        <path d="M50,45 C35,55 25,65 40,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
+        <path d="M50,45 C65,55 75,65 60,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
+        <path d="M50,60 C25,65 15,75 30,80 C40,80 45,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
+        <path d="M50,60 C75,65 85,75 70,80 C60,80 55,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
       </svg>
     ),
   },
@@ -162,7 +167,7 @@ export function ExperienceCategoriesSection() {
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <Reveal className="mb-6">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">
             Accès rapide
           </p>
           <h2 className="font-sans text-2xl font-bold text-white sm:text-3xl">
@@ -173,23 +178,23 @@ export function ExperienceCategoriesSection() {
         </Reveal>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-3 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 md:grid-cols-6">
           {categories.map(({ title, subtitle, href, icon }, i) => (
             <Reveal key={title} delay={i * 0.04} y={16}>
               <Link
                 href={href}
-                className="group flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-[#111111] px-2 py-5 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95"
+                className="group flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#111111] px-1 py-4 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95 sm:rounded-2xl sm:px-2 sm:py-5"
               >
                 {/* Icon */}
-                <div className="mb-3 transition-transform duration-300 group-hover:scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">
+                <div className="mb-2 transition-transform duration-300 group-hover:scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] [&_svg]:size-9 sm:[&_svg]:size-14 sm:mb-3">
                   {icon}
                 </div>
                 {/* Title */}
-                <p className="text-[13px] font-bold text-white group-hover:text-amber-200 transition-colors">
+                <p className="text-[11px] font-bold text-white group-hover:text-amber-200 transition-colors sm:text-[13px]">
                   {title}
                 </p>
                 {/* Subtitle */}
-                <p className="mt-0.5 text-[10px] text-zinc-500 leading-tight">
+                <p className="mt-0.5 text-[8.5px] text-zinc-500 leading-tight sm:text-xs">
                   {subtitle}
                 </p>
               </Link>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { fetchVenues } from '@/lib/api/venues';
@@ -105,7 +106,7 @@ export function RecommendedSection() {
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-white md:text-2xl">
               Recommandé pour vous
-              <span className="text-amber-400">✦</span>
+              <span className="text-amber-400" aria-hidden="true">✦</span>
             </h2>
             <p className="mt-0.5 text-xs text-zinc-500">Découvrez nos meilleures adresses</p>
           </div>
@@ -113,50 +114,16 @@ export function RecommendedSection() {
 
         {/* ── Mobile View Wrapper ── */}
         <div className="relative md:hidden group/mobile-carousel">
-          {/* Mobile Prev Arrow */}
-          <button
-            onClick={() => {
-              const el = mobileRef.current;
-              if (!el) return;
-              const nextIdx = Math.max(0, mobileIdx - 1);
-              const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-              el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
-              setMobileIdx(nextIdx);
-            }}
-            disabled={mobileIdx === 0}
-            aria-label="Précédent"
-            className="absolute left-1 top-[40%] -translate-y-1/2 z-20 flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 active:scale-90 hover:bg-amber-400 hover:text-black hover:border-amber-400/40 disabled:opacity-0 disabled:pointer-events-none shadow-lg shadow-black/80"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-
-          {/* Mobile Next Arrow */}
-          <button
-            onClick={() => {
-              const el = mobileRef.current;
-              if (!el) return;
-              const nextIdx = Math.min(displayVenues.length - 1, mobileIdx + 1);
-              const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-              el.scrollTo({ left: nextIdx * (w + 12), behavior: 'smooth' });
-              setMobileIdx(nextIdx);
-            }}
-            disabled={mobileIdx >= displayVenues.length - 1}
-            aria-label="Suivant"
-            className="absolute right-1 top-[40%] -translate-y-1/2 z-20 flex size-9 items-center justify-center rounded-full border border-white/10 bg-zinc-950/85 backdrop-blur-md text-white transition-all duration-300 active:scale-90 hover:bg-amber-400 hover:text-black hover:border-amber-400/40 disabled:opacity-0 disabled:pointer-events-none shadow-lg shadow-black/80"
-          >
-            <ChevronRight className="size-4" />
-          </button>
-
           {/* Mobile: horizontal scroll */}
           <div
             ref={mobileRef}
             onScroll={handleMobileScroll}
-            className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-3 px-1"
+            className="flex gap-2 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-none pb-3 px-1"
           >
             {displayVenues.map((venue) => {
               const { label, Icon } = getCategoryInfo(venue.type, venue.name);
               return (
-                <div key={venue._id} data-item className="w-[62vw] max-w-[230px] shrink-0 snap-center">
+                <div key={venue._id} data-item className="w-[30.2vw] min-w-[104px] max-w-[120px] shrink-0 snap-center">
                   <VenueCard venue={venue as any} label={label} Icon={Icon} href={getVenueHref(venue as any)} />
                 </div>
               );
@@ -164,19 +131,20 @@ export function RecommendedSection() {
           </div>
 
           {/* Dot indicators — mobile only */}
-          <div className="mt-3 flex items-center justify-center gap-1.5">
+          <div className="mt-2 flex items-center justify-center gap-1.5">
             {displayVenues.map((_, i) => (
               <button
                 key={i}
+                aria-label={`Aller au lieu ${i + 1}`}
                 onClick={() => {
                   const el = mobileRef.current;
                   if (!el) return;
-                  const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 230;
-                  el.scrollTo({ left: i * (w + 12), behavior: 'smooth' });
+                  const w = (el.querySelector('[data-item]') as HTMLElement)?.offsetWidth ?? 110;
+                  el.scrollTo({ left: i * (w + 8), behavior: 'smooth' });
                   setMobileIdx(i);
                 }}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  mobileIdx === i ? 'w-4 bg-amber-400' : 'w-1.5 bg-zinc-700'
+                className={`size-1.5 rounded-full transition-all duration-300 ${
+                  mobileIdx === i ? 'bg-amber-400' : 'bg-zinc-700'
                 }`}
               />
             ))}
@@ -226,6 +194,7 @@ export function RecommendedSection() {
               {Array.from({ length: totalPages }).map((_, i) => (
                 <button
                   key={i}
+                  aria-label={`Page ${i + 1}`}
                   onClick={() => setPage(i)}
                   className={`rounded-full transition-all duration-300 ${
                     page === i ? 'h-1.5 w-6 bg-amber-400' : 'size-1.5 bg-zinc-700 hover:bg-zinc-500'
@@ -250,30 +219,48 @@ interface CardProps {
 
 function VenueCard({ venue, label, Icon, href }: CardProps) {
   return (
-    <Link href={href} className="group block overflow-hidden rounded-2xl bg-zinc-900 border border-white/[0.06] transition-all duration-300 hover:border-amber-400/30 active:scale-95">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
+    <Link
+      href={href}
+      className="group block overflow-hidden rounded-xl bg-[#0f0f10] border border-amber-400/[0.08] transition-all duration-300 hover:border-amber-400/30 active:scale-95"
+    >
+      <div className="relative aspect-[1.1] w-full overflow-hidden bg-zinc-950">
         {venue.coverImage ? (
-          <img src={venue.coverImage} alt={venue.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <Image
+            src={venue.coverImage}
+            alt={venue.name}
+            fill
+            sizes="(max-width: 640px) 31vw, 120px"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
         ) : (
-          <div className="flex h-full w-full items-center justify-center"><Icon className="size-8 text-zinc-700" /></div>
+          <div className="flex h-full w-full items-center justify-center">
+            <Icon className="size-6 text-zinc-700" />
+          </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        <div className="absolute left-2.5 top-2.5 flex items-center gap-1.5 rounded-full bg-black/65 px-2.5 py-1 border border-white/10 backdrop-blur-sm">
-          <Icon className="size-3 text-amber-400" />
-          <span className="text-[9px] font-bold uppercase tracking-wide text-white">{label}</span>
+        
+        {/* Category badge */}
+        <div className="absolute left-1.5 top-1.5 flex items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5 border border-white/10 backdrop-blur-sm">
+          <Icon className="size-2.5 text-amber-400" />
+          <span className="text-[7px] font-bold uppercase tracking-wider text-white">{label}</span>
         </div>
+
+        {/* 360° Tour Badge */}
         {venue.hasVirtualTour && (
-          <div className="absolute right-2.5 top-2.5 rounded-full bg-black/65 px-2.5 py-1 border border-white/10 backdrop-blur-sm text-[9px] font-black text-amber-300 tracking-wider">
+          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 border border-white/10 backdrop-blur-sm text-[7px] font-black text-amber-300 tracking-wider">
             360°
           </div>
         )}
       </div>
-      <div className="px-3 py-3">
-        <p className="text-sm font-bold text-white group-hover:text-amber-200 transition-colors leading-snug">{venue.name}</p>
+      
+      <div className="px-2 py-1.5">
+        <p className="text-[10px] sm:text-[11px] font-bold text-white group-hover:text-amber-200 transition-colors leading-tight truncate">
+          {venue.name}
+        </p>
         {venue.city && (
-          <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-400">
-            <MapPin className="size-2.5 shrink-0" />
-            <span>{venue.city}</span>
+          <div className="mt-0.5 flex items-center gap-0.5 text-[8.5px] text-amber-400/90 truncate">
+            <MapPin className="size-2 shrink-0" />
+            <span className="truncate">{venue.city}</span>
           </div>
         )}
       </div>
@@ -291,13 +278,12 @@ function DesktopVenueCard({ venue, label, Icon, href }: CardProps) {
       {/* Image */}
       <div className="relative aspect-[3/2] w-full overflow-hidden">
         {venue.coverImage ? (
-          <img
+          <Image
             src={venue.coverImage}
             alt={venue.name}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-108"
-            style={{ transform: 'scale(1.01)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.08)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1.01)')}
+            fill
+            sizes="(max-width: 1024px) 33vw, 380px"
+            className="object-cover transition-transform duration-700 group-hover:scale-[1.08]"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-zinc-900">
@@ -318,26 +304,26 @@ function DesktopVenueCard({ venue, label, Icon, href }: CardProps) {
         {/* Category badge */}
         <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 border border-white/10 backdrop-blur-md">
           <Icon className="size-3 text-amber-400" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-white">{label}</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-white">{label}</span>
         </div>
 
         {/* 360° badge */}
         {venue.hasVirtualTour && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1.5 border border-amber-400/30 backdrop-blur-md text-[10px] font-black text-amber-300 tracking-wider">
+          <div className="absolute right-3 top-3 rounded-full bg-black/70 px-2.5 py-1.5 border border-amber-400/30 backdrop-blur-md text-xs font-black text-amber-300 tracking-wider">
             360°
           </div>
         )}
       </div>
 
       {/* Info footer */}
-      <div className="px-4 py-4">
+      <div className="px-5 py-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="truncate text-sm font-bold text-white transition-colors group-hover:text-amber-200">
               {venue.name}
             </h3>
             {venue.city && (
-              <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-400/80">
+              <div className="mt-1 flex items-center gap-1 text-xs text-amber-400/80">
                 <MapPin className="size-2.5 shrink-0" />
                 <span className="truncate">{venue.city}</span>
               </div>
@@ -345,16 +331,16 @@ function DesktopVenueCard({ venue, label, Icon, href }: CardProps) {
           </div>
           {/* Rating */}
           {(venue as any).rating && (
-            <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-400/10 px-2 py-0.5 border border-amber-400/20">
-              <Star className="size-2.5 fill-amber-400 text-amber-400" />
-              <span className="text-[11px] font-bold text-amber-300">{(venue as any).rating}</span>
+            <div className="flex shrink-0 items-center gap-1 rounded-full bg-amber-400/10 px-2 py-1 border border-amber-400/20">
+              <Star className="size-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-bold text-amber-300">{(venue as any).rating}</span>
             </div>
           )}
         </div>
 
         {/* Separator + reviews */}
         {(venue as any).reviews && (
-          <p className="mt-2.5 border-t border-white/[0.05] pt-2.5 text-[10px] text-zinc-600">
+          <p className="mt-2.5 border-t border-white/[0.05] pt-2.5 text-xs text-zinc-500">
             {(venue as any).reviews} avis vérifiés
           </p>
         )}

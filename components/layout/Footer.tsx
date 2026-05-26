@@ -32,7 +32,7 @@ const company = [
 const legal = [
   { label: 'Mentions légales',          href: '/mentions-legales' },
   { label: 'Conditions générales',      href: '/cgv' },
-  { label: 'Politique de confidentialité', href: '/mentions-legales' },
+  { label: 'Politique de confidentialité', href: '/politique-de-confidentialite' },
 ];
 
 const social = [

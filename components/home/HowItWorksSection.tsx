@@ -73,6 +73,7 @@ export function HowItWorksSection() {
                     <Image
                       src={step.image}
                       alt=""
+                      role="presentation"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-110"
                       sizes="(max-width: 768px) 100vw, 33vw"
@@ -87,10 +88,10 @@ export function HowItWorksSection() {
 
                   {/* Content */}
                   <div className="px-5 pb-6 pt-4">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-300/85">
+                    <h3 className="text-sm font-bold text-amber-300">
                       {step.title}
                     </h3>
-                    <p className="mt-2 text-[13px] leading-relaxed text-white/50">{step.text}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/50">{step.text}</p>
                   </div>
                 </article>
               </Reveal>

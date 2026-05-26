@@ -162,14 +162,14 @@ export function HomeNavbar() {
               />
             </form>
 
-            {/* Cart — Premium luxury button */}
+            {/* Cart — Premium luxury circular button */}
             <button
               type="button"
               onClick={() => setCartOpen(true)}
-              className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all duration-300 hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:h-12 sm:w-12"
+              className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all duration-300 hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70"
               aria-label="Panier"
             >
-              <ShoppingBag className="size-4 sm:size-5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.5} />
+              <ShoppingBag className="size-4 sm:size-5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.8} />
               {/* Premium badge */}
               {!authLoading && totalQuantity > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex min-w-[18px] h-4.5 sm:h-5 px-1 sm:px-1.5 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[9px] sm:text-[10px] font-bold text-black shadow-lg shadow-amber-500/30">
@@ -179,16 +179,6 @@ export function HomeNavbar() {
             </button>
 
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
-
-            {/* Mobile: Se connecter — in header bar (guests only) */}
-            {!authLoading && !user && (
-              <Link
-                href="/login"
-                className="min-h-11 shrink-0 rounded-xl border border-white/[0.14] bg-white/[0.04] px-3 py-2 text-[11px] font-semibold text-neutral-100 outline-none transition-all duration-200 hover:border-amber-400/45 hover:bg-amber-400/10 hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:text-xs xl:hidden"
-              >
-                Se connecter
-              </Link>
-            )}
 
             {/* Auth — desktop only (xl+) */}
             <div className="ml-1 hidden min-h-12 items-center gap-2 border-l border-white/[0.09] pl-3 xl:flex">
@@ -214,12 +204,12 @@ export function HomeNavbar() {
               )}
             </div>
 
-            {/* Mobile hamburger — visible below xl */}
+            {/* Mobile hamburger — fully circular, visible below xl */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:hidden"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:hidden"
                   aria-label="Menu"
                   suppressHydrationWarning
                 >
