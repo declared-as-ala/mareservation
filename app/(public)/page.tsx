@@ -10,9 +10,12 @@ export default function HomePage() {
       {/* Recommended featured venues */}
       <RecommendedSection />
 
+      {/* Categories / Accès rapide */}
+      <ExperienceCategoriesSection />
+
       {/* Immersive 360° reservation hero */}
       <SplineHeroSection />
-      <ExperienceCategoriesSection />
+
       <HowItWorksSection />
       <WorldPresenceSection />
     </div>
