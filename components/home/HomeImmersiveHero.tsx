@@ -117,7 +117,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
   };
 
   return (
-    <section className="relative flex h-[100svh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[68px] md:hidden">
+    <section className="relative flex h-[100svh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[88px] sm:pt-[96px] md:hidden">
       {/* Atmosphere */}
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-amber-500/[0.07] blur-[80px]" />
       <div aria-hidden className="pointer-events-none absolute -left-16 bottom-1/3 h-48 w-48 rounded-full bg-amber-600/[0.05] blur-[70px]" />
@@ -186,10 +186,20 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
             <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">vous voyez</span>, en 360°.
           </h2>
 
-          <BookingSearch variant="mobile" />
+          <p className="mt-1.5 max-w-[88%] text-[11px] leading-snug text-white/55">
+            Choisissez votre table directement dans la vue — réservez en quelques secondes.
+          </p>
+
+          <Link
+            href="/explorer"
+            className="group mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
+          >
+            Réserver maintenant
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </Link>
 
           {/* features */}
-          <div className="mt-2 flex items-stretch gap-1.5">
+          <div className="mt-3 flex items-stretch gap-1.5">
             {FEATURES.map(({ Icon, label }) => (
               <div key={label} className="flex flex-1 items-center gap-1 rounded-lg border border-white/[0.06] bg-black/30 px-1.5 py-1">
                 <Icon className="size-3 shrink-0 text-amber-400" strokeWidth={1.8} />
