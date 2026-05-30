@@ -115,28 +115,6 @@ const categories = [
     ),
   },
   {
-    title: 'Bien-être',
-    subtitle: 'Spas • Piscines',
-    href: '/explorer?q=Spa',
-    icon: (
-      <svg viewBox="0 0 100 100" className="size-14">
-        <defs>
-          <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fef08a" />
-            <stop offset="50%" stopColor="#fbbf24" />
-            <stop offset="100%" stopColor="#d97706" />
-          </linearGradient>
-        </defs>
-        {/* Lotus Petals */}
-        <path d="M50,30 C45,45 35,55 50,80 C65,55 55,45 50,30 Z" fill="url(#g5)" />
-        <path d="M50,45 C35,55 25,65 40,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
-        <path d="M50,45 C65,55 75,65 60,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
-        <path d="M50,60 C25,65 15,75 30,80 C40,80 45,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
-        <path d="M50,60 C75,65 85,75 70,80 C60,80 55,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
-      </svg>
-    ),
-  },
-  {
     title: 'Business',
     subtitle: 'Réunions • Coworking',
     href: '/coworking',
@@ -159,15 +137,37 @@ const categories = [
       </svg>
     ),
   },
+  {
+    title: 'Bien-être',
+    subtitle: 'Spas • Piscines',
+    href: '/explorer?q=Spa',
+    icon: (
+      <svg viewBox="0 0 100 100" className="size-14">
+        <defs>
+          <linearGradient id="g5" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="50%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+        </defs>
+        {/* Lotus Petals */}
+        <path d="M50,30 C45,45 35,55 50,80 C65,55 55,45 50,30 Z" fill="url(#g5)" />
+        <path d="M50,45 C35,55 25,65 40,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
+        <path d="M50,45 C65,55 75,65 60,80 C50,75 50,65 50,45 Z" fill="url(#g5)" opacity="0.85" />
+        <path d="M50,60 C25,65 15,75 30,80 C40,80 45,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
+        <path d="M50,60 C75,65 85,75 70,80 C60,80 55,75 50,60 Z" fill="url(#g5)" opacity="0.7" />
+      </svg>
+    ),
+  },
 ];
 
 export function ExperienceCategoriesSection() {
   return (
-    <section className="bg-[#0B0B0C] px-4 pb-10 pt-8 sm:px-6">
-      <div className="mx-auto max-w-7xl">
+    <section className="bg-[#0B0B0C] px-4 pb-6 pt-6 sm:px-6 sm:pb-10 sm:pt-8 md:py-4">
+      <div className="mx-auto max-w-7xl md:rounded-3xl md:border md:border-white/[0.06] md:bg-[#0f0f10] md:px-8 md:py-7 lg:px-10">
         {/* Header */}
-        <Reveal className="mb-6">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">
+        <Reveal className="mb-4 sm:mb-6">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400 sm:text-[11px]">
             Accès rapide
           </p>
           <h2 className="font-sans text-2xl font-bold text-white sm:text-3xl">
@@ -178,19 +178,19 @@ export function ExperienceCategoriesSection() {
         </Reveal>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 md:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-6">
           {categories.map(({ title, subtitle, href, icon }, i) => (
             <Reveal key={title} delay={i * 0.04} y={16}>
               <Link
                 href={href}
-                className="group flex flex-col items-center justify-center rounded-xl border border-white/[0.06] bg-[#111111] px-1 py-4 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95 sm:rounded-2xl sm:px-2 sm:py-5"
+                className="group flex aspect-square flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-[#111111] px-1.5 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95 sm:aspect-auto sm:px-2 sm:py-7"
               >
                 {/* Icon */}
-                <div className="mb-2 transition-transform duration-300 group-hover:scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] [&_svg]:size-9 sm:[&_svg]:size-14 sm:mb-3">
+                <div className="mb-2 transition-transform duration-300 group-hover:scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)] [&_svg]:size-11 sm:[&_svg]:size-14 sm:mb-3">
                   {icon}
                 </div>
                 {/* Title */}
-                <p className="text-[11px] font-bold text-white group-hover:text-amber-200 transition-colors sm:text-[13px]">
+                <p className="text-[12px] font-bold text-white group-hover:text-amber-200 transition-colors sm:text-[13px]">
                   {title}
                 </p>
                 {/* Subtitle */}
@@ -201,19 +201,6 @@ export function ExperienceCategoriesSection() {
             </Reveal>
           ))}
         </div>
-
-        {/* Explore CTA */}
-        <Reveal className="mt-8 text-center" delay={0.3}>
-          <Link
-            href="/explorer"
-            className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 px-6 py-2.5 text-sm font-semibold text-amber-300 transition-all hover:bg-amber-400/10 hover:border-amber-400/60"
-          >
-            Explorer toutes les catégories
-            <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </Reveal>
       </div>
     </section>
   );
