@@ -292,7 +292,7 @@ function ExplorerContent() {
       {/* ════════════════════════════════════════
           CATEGORY TABS
           ════════════════════════════════════════ */}
-      <div className="sticky top-[64px] z-30 border-b border-white/[0.05] bg-[#0d0d0d]/95 backdrop-blur-xl">
+      <div className="sticky top-[76px] sm:top-[84px] lg:top-[88px] z-30 border-b border-white/[0.05] bg-[#0d0d0d]/95 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
           <div className="flex items-center gap-2.5 py-3.5 overflow-x-auto scrollbar-none">
             {CATEGORIES.map((cat) => {
@@ -444,23 +444,21 @@ function ExplorerContent() {
       {/* ════════════════════════════════════════
           VENUE LIST
           ════════════════════════════════════════ */}
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 space-y-4">
+      <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
 
         {isLoading ? (
-          /* Skeleton */
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex gap-4 rounded-2xl border border-white/[0.05] bg-white/[0.03] p-3 animate-pulse">
-              <div className="h-32 w-36 shrink-0 rounded-xl bg-white/[0.06]" />
-              <div className="flex-1 space-y-3 py-1">
-                <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
-                <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
-                <div className="flex gap-2">
-                  {[1,2,3,4].map((j) => <div key={j} className="h-6 w-12 rounded bg-white/[0.04]" />)}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
+                <div className="aspect-[4/3] w-full bg-white/[0.06]" />
+                <div className="space-y-3 p-4">
+                  <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
+                  <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
+                  <div className="h-7 w-full rounded bg-white/[0.04]" />
                 </div>
-                <div className="h-3 w-1/4 rounded bg-white/[0.05]" />
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
             <p className="text-zinc-500 text-sm">Une erreur est survenue.</p>
@@ -490,9 +488,11 @@ function ExplorerContent() {
             </button>
           </div>
         ) : (
-          venues.map((venue: any) => (
-            <ExplorerVenueCard key={venue._id} venue={venue} />
-          ))
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {venues.map((venue: any) => (
+              <ExplorerVenueCard key={venue._id} venue={venue} />
+            ))}
+          </div>
         )}
       </div>
 
@@ -533,103 +533,122 @@ function ExplorerContent() {
 }
 
 /* ─────────────────────────────────────────────
-   Horizontal venue card  (matches the design)
+   Venue type → badge label + icon
+───────────────────────────────────────────── */
+function getTypeMeta(venue: any): { label: string; Icon: React.ComponentType<{ className?: string }> } {
+  const t = String(venue.type || '').toUpperCase();
+  const n = String(venue.name || '').toLowerCase();
+  if (n.includes('beach')) return { label: 'Beach Club', Icon: Waves };
+  if (n.includes('rooftop') || n.includes('bar')) return { label: 'Bar', Icon: Wine };
+  if (t === 'HOTEL') return { label: 'Hôtel', Icon: Hotel };
+  if (t === 'RESTAURANT') return { label: 'Restaurant', Icon: Utensils };
+  if (t === 'CAFE' || t === 'CAFE_LOUNGE') return { label: 'Café', Icon: Coffee };
+  if (t === 'COWORKING') return { label: 'Coworking', Icon: BriefcaseBusiness };
+  if (t === 'EVENT_SPACE') return { label: 'Événements', Icon: PartyPopper };
+  if (n.includes('spa') || n.includes('bien')) return { label: 'Bien-être', Icon: Flower2 };
+  return { label: 'Lieu', Icon: MapPin };
+}
+
+/* ─────────────────────────────────────────────
+   Premium vertical venue card (responsive grid)
 ───────────────────────────────────────────── */
 function ExplorerVenueCard({ venue }: { venue: any }) {
-  const href     = getVenueHref(venue);
-  const img      = venue.coverImage ?? venue.media?.find((m: any) => m.kind === 'HERO_IMAGE')?.url ?? null;
+  const href      = getVenueHref(venue);
+  const img       = venue.coverImage ?? venue.media?.find((m: any) => m.kind === 'HERO_IMAGE')?.url ?? null;
+  const { label, Icon } = getTypeMeta(venue);
   const amenities = getAmenities(venue);
-
-  // Simulated rating/price (will use real data when API provides it)
-  const rating   = (venue.rating as number)   ?? parseFloat((4.5 + Math.random() * 0.5).toFixed(1));
-  const reviews  = (venue.reviews as number)  ?? Math.floor(100 + Math.random() * 300);
-  const price    = (venue.priceFrom as number) ?? Math.floor(80 + Math.random() * 300);
+  // Real data only — no fabricated ratings/prices.
+  const price = (venue.startingPrice as number) ?? (venue.priceRangeMin as number) ?? null;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] transition-all duration-300 hover:border-amber-400/25 hover:shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
-      <div className="flex gap-0">
-        {/* ── Image ── */}
-        <div className="relative h-[145px] w-[145px] shrink-0 sm:h-[160px] sm:w-[160px]">
-          {img ? (
-            <img
-              src={img}
-              alt={venue.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-zinc-900">
-              <MapPin className="size-8 text-zinc-700" />
-            </div>
-          )}
-          {/* Dark overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0f0f0f]/60" />
+    <a
+      href={href}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/30 hover:shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+    >
+      {/* Image */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+        {img ? (
+          <img
+            src={img}
+            alt={venue.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <Icon className="size-9 text-zinc-700" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-          {/* 360° badge */}
-          {venue.hasVirtualTour && (
-            <div className="absolute left-2 top-2 rounded-full bg-black/75 px-2 py-1 border border-amber-400/30 backdrop-blur-sm text-[10px] font-black text-amber-300">
-              360°
-            </div>
-          )}
+        {/* Category chip */}
+        <div className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/65 px-2.5 py-1 backdrop-blur-sm">
+          <Icon className="size-3 text-amber-400" />
+          <span className="text-[10px] font-bold uppercase tracking-wide text-white">{label}</span>
         </div>
 
-        {/* ── Info ── */}
-        <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4 min-w-0">
-          {/* Top row: name + heart */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate font-bold text-white group-hover:text-amber-100 transition-colors sm:text-lg">
-                {venue.name}
-              </h3>
-              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-400">
-                <MapPin className="size-2.5 shrink-0" />
-                <span className="truncate">{venue.city ?? 'Tunisie'}</span>
-              </div>
-            </div>
+        {/* 360 + favorite */}
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
+          {venue.hasVirtualTour && (
+            <span className="rounded-full border border-amber-400/30 bg-black/65 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur-sm">
+              360°
+            </span>
+          )}
+          <span className="rounded-full bg-black/55 backdrop-blur-sm">
             <FavoriteButton venueId={venue._id} size="sm" />
-          </div>
+          </span>
+        </div>
 
-          {/* Amenities row */}
-          <div className="my-2.5 flex flex-wrap gap-2 sm:gap-3">
-            {amenities.map(({ label, Icon }) => (
-              <div key={label} className="flex flex-col items-center gap-0.5 text-center">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
-                  <Icon className="size-3.5 text-amber-400/70" />
-                </div>
-                <span className="text-[9px] text-zinc-600 leading-none">{label}</span>
-              </div>
+        {venue.isVedette && (
+          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-black">
+            ✦ Vedette
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="truncate text-base font-bold text-white transition-colors group-hover:text-amber-100">
+          {venue.name}
+        </h3>
+        <div className="mt-1 flex items-center gap-1 text-xs text-amber-400/85">
+          <MapPin className="size-3 shrink-0" />
+          <span className="truncate">{venue.city ?? 'Tunisie'}</span>
+        </div>
+
+        {/* Amenity chips */}
+        {amenities.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {amenities.slice(0, 3).map(({ label: aLabel, Icon: AIcon }) => (
+              <span
+                key={aLabel}
+                className="inline-flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400"
+              >
+                <AIcon className="size-3 text-amber-400/70" />
+                {aLabel}
+              </span>
             ))}
           </div>
+        )}
 
-          {/* Bottom row: rating + price + CTA */}
-          <div className="flex items-end justify-between gap-2">
-            {/* Rating */}
-            <div className="flex items-center gap-1.5 text-xs">
-              <Star className="size-3 fill-amber-400 text-amber-400" />
-              <span className="font-bold text-white">{rating}</span>
-              <span className="text-zinc-600">({reviews} avis)</span>
+        {/* Footer */}
+        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+          {price ? (
+            <div>
+              <p className="text-[10px] text-zinc-600">À partir de</p>
+              <p className="font-black leading-none text-amber-400">
+                <span className="text-lg">{price.toLocaleString('fr-TN')}</span>
+                <span className="text-xs font-bold"> TND</span>
+              </p>
             </div>
-
-            {/* Price + CTA */}
-            <div className="flex flex-col items-end gap-1.5">
-              <div className="text-right">
-                <p className="text-[10px] text-zinc-600">À partir de</p>
-                <p className="font-black text-amber-400 leading-none">
-                  <span className="text-lg">{price}</span>
-                  <span className="text-xs font-bold"> TND</span>
-                </p>
-                <p className="text-[9px] text-zinc-600">/ nuit</p>
-              </div>
-              <a
-                href={href}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] font-bold text-amber-300 transition-all hover:bg-amber-400 hover:text-black hover:border-amber-400 whitespace-nowrap"
-              >
-                Voir les détails <ArrowRight className="size-3" />
-              </a>
-            </div>
-          </div>
+          ) : (
+            <span className="text-xs text-zinc-600">Réservation immédiate</span>
+          )}
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black">
+            Voir <ArrowRight className="size-3" />
+          </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 
@@ -642,16 +661,18 @@ export default function ExplorerPage() {
       fallback={
         <div className="min-h-screen bg-[#090909]">
           <div className="h-[380px] animate-pulse bg-white/[0.03]" />
-          <div className="mx-auto max-w-3xl px-4 py-6 space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex gap-4 rounded-2xl border border-white/[0.05] bg-white/[0.03] p-3 animate-pulse">
-                <div className="h-36 w-36 shrink-0 rounded-xl bg-white/[0.06]" />
-                <div className="flex-1 space-y-3 py-2">
-                  <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
-                  <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
+          <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
+                  <div className="aspect-[4/3] w-full bg-white/[0.06]" />
+                  <div className="space-y-3 p-4">
+                    <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
+                    <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       }
