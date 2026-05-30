@@ -3,14 +3,13 @@
 import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchVenues } from '@/lib/api/venues';
 import { getVenueHref } from '@/lib/venueHref';
 import type { Venue } from '@/lib/api/types';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
-  Star, ArrowRight, Search, CalendarDays, Users, Globe, ShieldCheck, Armchair,
+  Star, ArrowRight, Globe, ShieldCheck, Armchair,
   UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2,
 } from 'lucide-react';
 
@@ -242,8 +241,20 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
             Choisissez votre table directement dans la vue — puis réservez en quelques secondes.
           </p>
 
-          <div className="mt-7 max-w-2xl">
-            <BookingSearch variant="desktop" />
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link
+              href="/explorer"
+              className="group inline-flex h-[52px] items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-8 text-base font-bold text-black shadow-[0_10px_30px_rgba(245,158,11,0.32)] transition-all hover:-translate-y-0.5"
+            >
+              Réserver maintenant
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              href="/comment-ca-marche"
+              className="inline-flex h-[52px] items-center rounded-2xl border border-white/12 bg-white/[0.04] px-6 text-sm font-semibold text-white/75 transition-all hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
+            >
+              Comment ça marche
+            </Link>
           </div>
 
           {/* feature chips */}
@@ -330,118 +341,8 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 /* ═══════════════════════════════════════════════════════════════
    Shared pieces
    ═══════════════════════════════════════════════════════════════ */
-function BookingSearch({ variant }: { variant: 'mobile' | 'desktop' }) {
-  const router = useRouter();
-  const [dest, setDest] = useState('');
-  const [date, setDate] = useState('');
-  const [guests, setGuests] = useState('2');
-  const today = new Date().toISOString().split('T')[0];
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const p = new URLSearchParams();
-    if (dest.trim()) p.set('q', dest.trim());
-    if (date) p.set('date', date);
-    if (guests) p.set('guests', guests);
-    const qs = p.toString();
-    router.push(`/explorer${qs ? `?${qs}` : ''}`);
-  };
-
-  const guestOptions = ['1', '2', '3', '4', '5', '6', '8'];
-
-  if (variant === 'mobile') {
-    return (
-      <form onSubmit={submit} className="mt-2 space-y-1.5">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-          <input
-            value={dest}
-            onChange={(e) => setDest(e.target.value)}
-            placeholder="Où souhaitez-vous aller ?"
-            className="h-10 w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 text-[13px] text-white placeholder:text-white/40 outline-none transition-colors focus:border-amber-400/50"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <div className="relative">
-            <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-            <input
-              type="date"
-              value={date}
-              min={today}
-              onChange={(e) => setDate(e.target.value)}
-              className="h-10 w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors [color-scheme:dark] focus:border-amber-400/50"
-            />
-          </div>
-          <div className="relative">
-            <Users className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-            <select
-              value={guests}
-              onChange={(e) => setGuests(e.target.value)}
-              className="h-10 w-full appearance-none rounded-xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors focus:border-amber-400/50"
-            >
-              {guestOptions.map((g) => (
-                <option key={g} value={g} className="bg-zinc-900">{g} {g === '1' ? 'invité' : 'invités'}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
-        >
-          Réserver maintenant
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-        </button>
-      </form>
-    );
-  }
-
-  /* desktop — horizontal pill */
-  return (
-    <form onSubmit={submit} className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-black/40 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.4)] backdrop-blur-md">
-      <div className="relative flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-        <input
-          value={dest}
-          onChange={(e) => setDest(e.target.value)}
-          placeholder="Où souhaitez-vous aller ?"
-          className="h-11 w-full rounded-xl bg-transparent pl-9 pr-3 text-sm text-white placeholder:text-white/40 outline-none"
-        />
-      </div>
-      <div className="h-7 w-px bg-white/10" />
-      <div className="relative">
-        <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-        <input
-          type="date"
-          value={date}
-          min={today}
-          onChange={(e) => setDate(e.target.value)}
-          className="h-11 w-[150px] rounded-xl bg-transparent pl-9 pr-2 text-sm text-white outline-none [color-scheme:dark]"
-        />
-      </div>
-      <div className="h-7 w-px bg-white/10" />
-      <div className="relative">
-        <Users className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
-        <select
-          value={guests}
-          onChange={(e) => setGuests(e.target.value)}
-          className="h-11 w-[120px] appearance-none rounded-xl bg-transparent pl-9 pr-2 text-sm text-white outline-none"
-        >
-          {guestOptions.map((g) => (
-            <option key={g} value={g} className="bg-zinc-900">{g} {g === '1' ? 'invité' : 'invités'}</option>
-          ))}
-        </select>
-      </div>
-      <button
-        type="submit"
-        className="group ml-1 inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.30)] transition-all hover:-translate-y-0.5"
-      >
-        Réserver maintenant
-        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-      </button>
-    </form>
-  );
-}
+/* (Booking search removed — home now uses a single "Réserver maintenant" CTA on
+   both mobile and desktop, routing into the immersive /explorer experience.) */
 
 /* ─── Mobile venue card (compact landscape) ─── */
 function MobileVenueCard({ venue }: { venue: CardVenue }) {
