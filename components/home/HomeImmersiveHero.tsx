@@ -117,7 +117,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
   };
 
   return (
-    <section className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[72px] md:hidden">
+    <section className="relative flex h-[100svh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[68px] md:hidden">
       {/* Atmosphere */}
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-amber-500/[0.07] blur-[80px]" />
       <div aria-hidden className="pointer-events-none absolute -left-16 bottom-1/3 h-48 w-48 rounded-full bg-amber-600/[0.05] blur-[70px]" />
@@ -125,14 +125,13 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
       {/* ── Zone 1 · Recommandé ── */}
       <div className="relative z-10 shrink-0">
         <SectionHead
-          eyebrow="Sélection"
           title={<>Recommandé pour vous <Spark /></>}
           sub="Découvrez nos meilleures adresses"
         />
         <div
           ref={railRef}
           onScroll={onScroll}
-          className="no-scrollbar -mx-4 mt-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth px-4"
+          className="no-scrollbar -mx-4 mt-2 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth px-4"
         >
           {venues.map((v) => (
             <div key={v._id} data-card className="w-[31%] shrink-0 snap-start">
@@ -140,7 +139,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
             </div>
           ))}
         </div>
-        <div className="mt-2 flex items-center justify-center gap-1.5">
+        <div className="mt-1.5 flex items-center justify-center gap-1.5">
           {venues.slice(0, 6).map((_, i) => (
             <button
               key={i}
@@ -153,36 +152,36 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
       </div>
 
       {/* ── Zone 2 · Catégories (flex-1 fills the slack) ── */}
-      <div className="relative z-10 mt-3 flex min-h-0 flex-1 flex-col">
+      <div className="relative z-10 mt-2 flex min-h-0 flex-1 flex-col">
         <SectionHead
           eyebrow="Accès rapide"
           title={<>Établissements <span className="text-amber-400">disponibles</span> <Spark /></>}
         />
-        <div className="mt-2.5 grid min-h-0 flex-1 grid-cols-3 grid-rows-2 gap-2">
+        <div className="mt-2 grid min-h-0 flex-1 grid-cols-3 grid-rows-2 gap-2">
           {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
             <Link
               key={title}
               href={href}
-              className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-white/[0.06] bg-[#101011] p-1.5 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95"
+              className="group flex flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#101011] p-1 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95"
             >
-              <Icon className="size-7 text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.45)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.6} />
+              <Icon className="size-6 shrink-0 text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.45)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.6} />
               <span className="text-[11px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
-              <span className="text-[8px] leading-tight text-zinc-500">{subtitle}</span>
+              <span className="max-w-full truncate text-[8px] leading-tight text-zinc-500">{subtitle}</span>
             </Link>
           ))}
         </div>
       </div>
 
       {/* ── Zone 3 · Immersive 360 + booking search ── */}
-      <div className="relative z-10 mt-3 shrink-0 overflow-hidden rounded-3xl border border-amber-400/[0.14] bg-gradient-to-br from-[#17120a] via-[#0f0f10] to-[#0a0a0b] p-4">
+      <div className="relative z-10 mt-2 shrink-0 overflow-hidden rounded-3xl border border-amber-400/[0.14] bg-gradient-to-br from-[#17120a] via-[#0f0f10] to-[#0a0a0b] p-3.5">
         {/* orb top-right */}
-        <div aria-hidden className="pointer-events-none absolute -right-6 -top-4">
-          <Orb size={92} />
+        <div aria-hidden className="pointer-events-none absolute -right-5 -top-3">
+          <Orb size={74} />
         </div>
 
         <div className="relative">
           <Eyebrow>Immersive</Eyebrow>
-          <h2 className="mt-2 max-w-[78%] font-serif text-[21px] font-black leading-[1.08] tracking-tight text-white">
+          <h2 className="mt-1.5 max-w-[80%] font-serif text-[18px] font-black leading-[1.12] tracking-tight text-white">
             Réservez ce que{' '}
             <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">vous voyez</span>, en 360°.
           </h2>
@@ -190,11 +189,11 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
           <BookingSearch variant="mobile" />
 
           {/* features */}
-          <div className="mt-3 flex items-stretch gap-1.5">
+          <div className="mt-2 flex items-stretch gap-1.5">
             {FEATURES.map(({ Icon, label }) => (
-              <div key={label} className="flex flex-1 items-center gap-1.5 rounded-xl border border-white/[0.06] bg-black/30 px-2 py-1.5">
+              <div key={label} className="flex flex-1 items-center gap-1 rounded-lg border border-white/[0.06] bg-black/30 px-1.5 py-1">
                 <Icon className="size-3 shrink-0 text-amber-400" strokeWidth={1.8} />
-                <span className="text-[8px] font-medium leading-[1.1] text-white/60">{label}</span>
+                <span className="text-[8px] font-medium leading-[1.05] text-white/60">{label}</span>
               </div>
             ))}
           </div>
@@ -342,17 +341,17 @@ function BookingSearch({ variant }: { variant: 'mobile' | 'desktop' }) {
 
   if (variant === 'mobile') {
     return (
-      <form onSubmit={submit} className="mt-3 space-y-2">
+      <form onSubmit={submit} className="mt-2 space-y-1.5">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
           <input
             value={dest}
             onChange={(e) => setDest(e.target.value)}
             placeholder="Où souhaitez-vous aller ?"
-            className="h-11 w-full rounded-2xl border border-white/10 bg-black/40 pl-9 pr-3 text-[13px] text-white placeholder:text-white/40 outline-none transition-colors focus:border-amber-400/50"
+            className="h-10 w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 text-[13px] text-white placeholder:text-white/40 outline-none transition-colors focus:border-amber-400/50"
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           <div className="relative">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-400/80" />
             <input
@@ -360,7 +359,7 @@ function BookingSearch({ variant }: { variant: 'mobile' | 'desktop' }) {
               value={date}
               min={today}
               onChange={(e) => setDate(e.target.value)}
-              className="h-11 w-full rounded-2xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors [color-scheme:dark] focus:border-amber-400/50"
+              className="h-10 w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors [color-scheme:dark] focus:border-amber-400/50"
             />
           </div>
           <div className="relative">
@@ -368,7 +367,7 @@ function BookingSearch({ variant }: { variant: 'mobile' | 'desktop' }) {
             <select
               value={guests}
               onChange={(e) => setGuests(e.target.value)}
-              className="h-11 w-full appearance-none rounded-2xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors focus:border-amber-400/50"
+              className="h-10 w-full appearance-none rounded-xl border border-white/10 bg-black/40 pl-9 pr-2 text-[12px] text-white outline-none transition-colors focus:border-amber-400/50"
             >
               {guestOptions.map((g) => (
                 <option key={g} value={g} className="bg-zinc-900">{g} {g === '1' ? 'invité' : 'invités'}</option>
@@ -378,7 +377,7 @@ function BookingSearch({ variant }: { variant: 'mobile' | 'desktop' }) {
         </div>
         <button
           type="submit"
-          className="group inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
+          className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
         >
           Réserver maintenant
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -457,7 +456,7 @@ function MobileVenueCard({ venue }: { venue: CardVenue }) {
           <span className="absolute right-1.5 top-1.5 rounded-full border border-amber-400/25 bg-black/65 px-1.5 py-0.5 text-[8px] font-black tracking-wide text-amber-300 backdrop-blur-sm">360°</span>
         )}
       </div>
-      <div className="px-2 py-2">
+      <div className="px-2 py-1.5">
         <p className="truncate text-[12px] font-bold leading-tight text-white group-hover:text-amber-200">{venue.name}</p>
         {venue.city && (
           <div className="mt-0.5 flex items-center gap-0.5 text-[9px] text-amber-400/90">
@@ -558,12 +557,12 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 function SectionHead({
   eyebrow, title, sub,
-}: { eyebrow: string; title: React.ReactNode; sub?: string }) {
+}: { eyebrow?: string; title: React.ReactNode; sub?: string }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">{eyebrow}</p>
-      <h2 className="mt-0.5 flex items-center gap-1.5 text-[18px] font-bold leading-tight text-white">{title}</h2>
-      {sub && <p className="mt-0.5 text-[11px] text-zinc-500">{sub}</p>}
+      {eyebrow && <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-400">{eyebrow}</p>}
+      <h2 className="flex items-center gap-1.5 text-[17px] font-bold leading-tight text-white">{title}</h2>
+      {sub && <p className="mt-0.5 text-[10px] leading-tight text-zinc-500">{sub}</p>}
     </div>
   );
 }
