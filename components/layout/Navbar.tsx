@@ -38,16 +38,19 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800/60 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/90">
       <div className="container flex h-[80px] sm:h-[90px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center shrink-0 rounded-xl bg-white/[0.06] px-2.5 py-1.5 ring-1 ring-white/[0.12]">
+        <Link href="/" className="flex flex-col items-start shrink-0 rounded-xl bg-white/[0.06] px-3 py-1.5 ring-1 ring-white/[0.12]">
           <Image
             src="/logo.png"
             alt="Before you go"
             width={520}
             height={150}
-            className="h-[60px] w-auto object-contain sm:h-[70px] lg:h-[76px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
+            className="h-[46px] w-auto object-contain sm:h-[50px] lg:h-[54px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
             style={{ width: 'auto' }}
             priority
           />
+          <span className="text-[9px] font-medium tracking-wide text-zinc-400 -mt-1 pl-1 select-none leading-none">
+            Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
+          </span>
         </Link>
 
         {/* Desktop nav — visible on xl+ */}

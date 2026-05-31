@@ -91,17 +91,20 @@ export function HomeNavbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="group flex min-h-12 shrink-0 items-center rounded-xl px-1 py-1 outline-none transition-all duration-300 hover:scale-[1.015] focus-visible:ring-2 focus-visible:ring-amber-300/70"
+            className="group flex flex-col items-start shrink-0 outline-none transition-all duration-300 hover:scale-[1.015] focus-visible:ring-2 focus-visible:ring-amber-300/70 py-1"
           >
             <Image
               src="/logo-transparent.png"
               alt="Before you go"
               width={540}
               height={152}
-              className="h-[60px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[70px] lg:h-[76px]"
+              className="h-[46px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[50px] lg:h-[54px]"
               style={{ width: 'auto' }}
               priority
             />
+            <span className="text-[9px] font-medium tracking-wide text-zinc-400 -mt-1 pl-1 select-none leading-none">
+              Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
+            </span>
           </Link>
 
           {/* Desktop nav */}
