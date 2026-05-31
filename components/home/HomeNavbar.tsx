@@ -98,7 +98,7 @@ export function HomeNavbar() {
               alt="Before you go"
               width={540}
               height={152}
-              className="h-[42px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[48px] lg:h-[52px]"
+              className="h-[60px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[70px] lg:h-[76px]"
               style={{ width: 'auto' }}
               priority
             />
@@ -225,7 +225,8 @@ export function HomeNavbar() {
                       alt="Before you go"
                       width={420}
                       height={120}
-                      className="h-[40px] w-auto object-contain sm:h-[45px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)]"
+                      className="h-[52px] w-auto object-contain sm:h-[58px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)]"
+                      style={{ width: 'auto' }}
                     />
                   </Link>
                 </SheetHeader>

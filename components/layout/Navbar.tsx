@@ -41,10 +41,10 @@ export function Navbar() {
         <Link href="/" className="flex items-center shrink-0 rounded-xl bg-white/[0.06] px-2.5 py-1.5 ring-1 ring-white/[0.12]">
           <Image
             src="/logo.png"
-            alt="Ma Table"
+            alt="Before you go"
             width={520}
             height={150}
-            className="h-[42px] w-auto object-contain sm:h-[50px] lg:h-[56px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
+            className="h-[60px] w-auto object-contain sm:h-[70px] lg:h-[76px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
             style={{ width: 'auto' }}
             priority
           />
@@ -158,10 +158,11 @@ export function Navbar() {
                 <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl bg-white/[0.04] px-2 py-1 ring-1 ring-white/[0.08]">
                   <Image
                     src="/logo.png"
-                    alt="Ma Table"
+                    alt="Before you go"
                     width={420}
                     height={120}
-                    className="h-[42px] w-auto object-contain sm:h-[46px] drop-shadow-[0_6px_18px_rgba(212,175,55,0.3)]"
+                    className="h-[52px] w-auto object-contain sm:h-[58px] drop-shadow-[0_6px_18px_rgba(212,175,55,0.3)]"
+                    style={{ width: 'auto' }}
                   />
                 </Link>
               </SheetHeader>
