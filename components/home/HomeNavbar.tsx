@@ -98,7 +98,7 @@ export function HomeNavbar() {
               alt="Before you go"
               width={540}
               height={152}
-              className="h-[46px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[50px] lg:h-[54px]"
+              className="h-[60px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[68px] lg:h-[76px]"
               style={{ width: 'auto' }}
               priority
             />

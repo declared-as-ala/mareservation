@@ -221,18 +221,6 @@ function ExplorerContent() {
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/55">
               {heroCopy.sub}
             </p>
-
-            {/* CTA + Search bar */}
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                onClick={() => updateParams({ type: 'HOTEL', q: '' })}
-                className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-black transition-all hover:bg-amber-300 active:scale-95"
-              >
-                <span>✦</span>
-                Visite immersive 360°
-                <ArrowRight className="size-4" />
-              </button>
-            </div>
           </div>
 
           {/* 360° orb — visible on all devices, scaled on mobile */}
@@ -542,12 +530,6 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
             360°
           </span>
         )}
-
-        {venue.isVedette && (
-          <span className="absolute bottom-2 left-2 inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
-            ✦ Vedette
-          </span>
-        )}
       </div>
 
       {/* Body */}
@@ -583,14 +565,8 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
           </div>
         )}
 
-        {/* Bottom Block: Rating on the left, Price & CTA on the right */}
-        <div className="flex items-end justify-between gap-3 pt-1.5 border-t border-white/[0.03] mt-auto">
-          {/* Rating */}
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-zinc-300">
-            <Star className="size-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-amber-400">{venue.rating?.toFixed(1) ?? '4.8'}</span>
-            <span className="text-zinc-500 font-normal">({venue.reviewsCount ?? '325'} avis)</span>
-          </div>
+        {/* Bottom Block: Price & CTA on the right */}
+        <div className="flex items-end justify-end gap-3 pt-1.5 border-t border-white/[0.03] mt-auto">
 
           {/* Price + CTA */}
           <div className="flex items-center gap-3 shrink-0">

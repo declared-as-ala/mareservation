@@ -44,7 +44,7 @@ export function Navbar() {
             alt="Before you go"
             width={520}
             height={150}
-            className="h-[46px] w-auto object-contain sm:h-[50px] lg:h-[54px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
+            className="h-[60px] w-auto object-contain sm:h-[68px] lg:h-[76px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
             style={{ width: 'auto' }}
             priority
           />

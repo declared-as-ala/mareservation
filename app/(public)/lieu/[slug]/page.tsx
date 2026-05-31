@@ -1675,7 +1675,7 @@ export default function VenueDetailPage() {
                           room={room}
                           availableSameType={stats?.available}
                           totalSameType={stats?.total}
-                          onClick={() => { setSelectedRoom(room); setRoomSceneIdx(0); }}
+                          onClick={() => router.push(`/lieu/${venue.slug ?? slug}/chambre/${room._id}`)}
                         />
                       );
                     })}
