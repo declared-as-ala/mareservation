@@ -188,7 +188,7 @@ function ExplorerContent() {
       {/* ════════════════════════════════════════
           HERO  — cinematic full-bleed with image
           ════════════════════════════════════════ */}
-      <div className="relative h-[320px] overflow-hidden sm:h-[380px] md:h-[420px]">
+      <div className="relative h-[340px] overflow-hidden xs:h-[360px] sm:h-[380px] md:h-[420px]">
         {/* Background image */}
         <img
           src={heroBg}
@@ -262,26 +262,28 @@ function ExplorerContent() {
           ════════════════════════════════════════ */}
       <div className="border-b border-white/[0.06] bg-[#0d0d0d] px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-3xl">
-          <form onSubmit={handleSearch} className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
-            <input
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder="Rechercher un lieu, café, restaurant, ville..."
-              className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-28 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all"
-            />
-            {localSearch && (
-              <button
-                type="button"
-                onClick={() => { setLocalSearch(''); updateParams({ q: '' }); }}
-                className="absolute right-24 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
+          <form onSubmit={handleSearch} className="flex gap-2 items-center w-full sm:relative sm:block">
+            <div className="relative flex-1 sm:w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
+              <input
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                placeholder="Rechercher un lieu, ville..."
+                className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-10 sm:pr-28 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all"
+              />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={() => { setLocalSearch(''); updateParams({ q: '' }); }}
+                  className="absolute right-3 sm:right-24 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold px-4 py-2 transition-colors"
+              className="rounded-2xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold px-5 py-3.5 transition-colors shrink-0 sm:absolute sm:right-2 sm:top-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:py-2"
             >
               Chercher
             </button>
@@ -294,7 +296,7 @@ function ExplorerContent() {
           ════════════════════════════════════════ */}
       <div className="sticky top-[76px] sm:top-[84px] lg:top-[88px] z-30 border-b border-white/[0.05] bg-[#0d0d0d]/95 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
-          <div className="flex items-center gap-2.5 py-3.5 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 py-3 overflow-x-auto no-scrollbar touch-pan-x snap-x snap-mandatory px-1">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCat?.key === cat.key;
@@ -307,7 +309,7 @@ function ExplorerContent() {
                     updateParams({ type: cat.type ?? '', q: cat.q ?? '' });
                   }}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap border transition-all duration-200',
+                    'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap border transition-all duration-200 snap-center',
                     isActive
                       ? 'bg-amber-400 text-black border-amber-400 shadow-lg shadow-amber-400/20'
                       : 'bg-white/[0.04] text-zinc-400 border-white/[0.06] hover:border-white/20 hover:text-zinc-200 hover:bg-white/[0.07]'
@@ -327,14 +329,14 @@ function ExplorerContent() {
           ════════════════════════════════════════ */}
       <div className="border-b border-white/[0.04] bg-[#090909] px-4 sm:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between gap-3 py-3">
-            {/* Left: filter + count */}
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left: filter & sort on mobile */}
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowFilters((o) => !o)}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all',
+                  'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all shrink-0',
                   showFilters
                     ? 'bg-amber-400 text-black border-amber-400'
                     : 'bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:border-amber-400/40'
@@ -349,8 +351,27 @@ function ExplorerContent() {
                 )}
               </button>
 
+              {/* Sort selector on mobile */}
+              <div className="relative flex items-center gap-2 sm:hidden">
+                <div className="relative">
+                  <select
+                    value={sort}
+                    onChange={(e) => updateParams({ sort: e.target.value })}
+                    className="appearance-none rounded-full border border-white/[0.08] bg-white/[0.04] py-2 pl-3 pr-8 text-xs text-zinc-300 focus:outline-none focus:border-amber-400/40 cursor-pointer"
+                  >
+                    {SORT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-500" />
+                </div>
+              </div>
+            </div>
+
+            {/* Middle: count & clear */}
+            <div className="flex items-center gap-3 text-zinc-500 text-xs w-full sm:w-auto">
               {!isLoading && (
-                <span className="text-xs text-zinc-600">
+                <span className="text-zinc-500">
                   {venues.length} établissement{venues.length !== 1 ? 's' : ''} trouvé{venues.length !== 1 ? 's' : ''}
                 </span>
               )}
@@ -359,16 +380,16 @@ function ExplorerContent() {
                 <button
                   type="button"
                   onClick={() => { setLocalSearch(''); router.push(pathname, { scroll: false }); }}
-                  className="flex items-center gap-1 text-xs text-zinc-600 hover:text-red-400 transition-colors"
+                  className="flex items-center gap-1 text-zinc-500 hover:text-red-400 transition-colors font-semibold"
                 >
                   <X className="size-3" /> Effacer
                 </button>
               )}
             </div>
 
-            {/* Right: sort */}
-            <div className="relative flex items-center gap-2">
-              <span className="text-xs text-zinc-600 hidden sm:inline">Trier par</span>
+            {/* Right: sort on desktop */}
+            <div className="relative hidden sm:flex items-center gap-2">
+              <span className="text-xs text-zinc-600">Trier par</span>
               <div className="relative">
                 <select
                   value={sort}
@@ -447,11 +468,11 @@ function ExplorerContent() {
       <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
                 <div className="aspect-[4/3] w-full bg-white/[0.06]" />
-                <div className="space-y-3 p-4">
+                <div className="space-y-3 p-3 sm:p-4">
                   <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
                   <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
                   <div className="h-7 w-full rounded bg-white/[0.04]" />
@@ -488,7 +509,7 @@ function ExplorerContent() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {venues.map((venue: any) => (
               <ExplorerVenueCard key={venue._id} venue={venue} />
             ))}
@@ -575,24 +596,24 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="truncate text-base font-bold text-white transition-colors group-hover:text-amber-100">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <h3 className="truncate text-sm font-bold text-white transition-colors group-hover:text-amber-100 sm:text-base leading-tight">
           {venue.name}
         </h3>
-        <div className="mt-1 flex items-center gap-1 text-xs text-amber-400/85">
-          <MapPin className="size-3 shrink-0" />
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-400/85 sm:text-xs">
+          <MapPin className="size-2.5 sm:size-3 shrink-0" />
           <span className="truncate">{venue.city ?? 'Tunisie'}</span>
         </div>
 
-        {/* Amenity chips */}
+        {/* Amenity chips — hidden on mobile to keep layout clean */}
         {amenities.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {amenities.slice(0, 3).map(({ label: aLabel, Icon: AIcon }) => (
+          <div className="mt-2.5 hidden flex-wrap gap-1 sm:flex">
+            {amenities.slice(0, 2).map(({ label: aLabel, Icon: AIcon }) => (
               <span
                 key={aLabel}
-                className="inline-flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400"
+                className="inline-flex items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-[9px] text-zinc-400"
               >
-                <AIcon className="size-3 text-amber-400/70" />
+                <AIcon className="size-2.5 text-amber-400/70" />
                 {aLabel}
               </span>
             ))}
@@ -600,20 +621,20 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
         )}
 
         {/* Footer */}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+        <div className="mt-auto flex items-end justify-between gap-1.5 pt-3.5 sm:pt-4">
           {price ? (
             <div>
-              <p className="text-[10px] text-zinc-600">À partir de</p>
-              <p className="font-black leading-none text-amber-400">
-                <span className="text-lg">{price.toLocaleString('fr-TN')}</span>
-                <span className="text-xs font-bold"> TND</span>
+              <p className="text-[9px] text-zinc-600 leading-none">À partir de</p>
+              <p className="font-black leading-none text-amber-400 mt-0.5">
+                <span className="text-sm sm:text-lg">{price.toLocaleString('fr-TN')}</span>
+                <span className="text-[10px] font-bold"> TND</span>
               </p>
             </div>
           ) : (
-            <span className="text-xs text-zinc-600">Réservation immédiate</span>
+            <span className="text-[9px] font-medium text-zinc-500 sm:text-xs leading-none shrink-0">Réservation immédiate</span>
           )}
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[11px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black">
-            Voir <ArrowRight className="size-3" />
+          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black sm:px-3 sm:py-1.5 sm:text-[11px] shrink-0">
+            Voir <ArrowRight className="size-2.5" />
           </span>
         </div>
       </div>
@@ -631,13 +652,14 @@ export default function ExplorerPage() {
         <div className="min-h-screen bg-[#090909]">
           <div className="h-[380px] animate-pulse bg-white/[0.03]" />
           <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
                   <div className="aspect-[4/3] w-full bg-white/[0.06]" />
-                  <div className="space-y-3 p-4">
+                  <div className="space-y-3 p-3 sm:p-4">
                     <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
                     <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
+                    <div className="h-7 w-full rounded bg-white/[0.04]" />
                   </div>
                 </div>
               ))}
