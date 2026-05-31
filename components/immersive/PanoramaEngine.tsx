@@ -6,6 +6,26 @@ import '@photo-sphere-viewer/markers-plugin/index.css';
 import type { AdminTablePlacement, AdminTableRow } from '@/lib/api/admin';
 import { cn } from '@/lib/utils';
 
+/**
+ * WebGL availability check. In-app webviews and browsers with hardware
+ * acceleration disabled report no WebGL — Photo Sphere Viewer (Three.js)
+ * cannot run without it, so we detect it up front to show a graceful fallback.
+ */
+function isWebGLAvailable(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl') ||
+      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    if (!gl) return false;
+    // Release the probe context so it doesn't count against the context budget.
+    gl.getExtension('WEBGL_lose_context')?.loseContext?.();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export interface TableMarker {
   placement: AdminTablePlacement;
   table?: AdminTableRow;
@@ -165,6 +185,7 @@ export default function PanoramaEngine({
   const viewerRef = useRef<unknown>(null);
   const markersPluginRef = useRef<unknown>(null);
   const [loaded, setLoaded] = useState(false);
+  const [webglError, setWebglError] = useState(false);
 
   const callbackRefs = useRef({ onPositionClick, onMarkerClick, onMarkerMoved, onNavHotspotClick });
   callbackRefs.current = { onPositionClick, onMarkerClick, onMarkerMoved, onNavHotspotClick };
@@ -178,8 +199,16 @@ export default function PanoramaEngine({
     const el = containerRef.current;
     if (!el) return;
 
+    // Graceful fallback when WebGL is unavailable (e.g. in-app webview with
+    // hardware acceleration off) — avoids the raw Three.js "no WebGL" crash.
+    if (!isWebGLAvailable()) {
+      setWebglError(true);
+      return;
+    }
+
     let cancelled = false;
     setLoaded(false);
+    setWebglError(false);
 
     // Destroy previous viewer if it exists
     if (viewerRef.current) {
@@ -191,50 +220,55 @@ export default function PanoramaEngine({
     }
 
     (async () => {
-      const [{ Viewer }, { MarkersPlugin }] = await Promise.all([
-        import('@photo-sphere-viewer/core'),
-        import('@photo-sphere-viewer/markers-plugin'),
-      ]);
+      try {
+        const [{ Viewer }, { MarkersPlugin }] = await Promise.all([
+          import('@photo-sphere-viewer/core'),
+          import('@photo-sphere-viewer/markers-plugin'),
+        ]);
 
-      if (cancelled || !containerRef.current) return;
+        if (cancelled || !containerRef.current) return;
 
-      const viewer = new Viewer({
-        container: containerRef.current,
-        panorama: imageUrl,
-        navbar: false,
-        defaultYaw: 0,
-        defaultPitch: 0,
-        defaultZoomLvl: 0,
-        maxFov: 95,
-        minFov: 35,
-        fisheye: false,
-        touchmoveTwoFingers: false,
-        mousewheelCtrlKey: false,
-        plugins: [[MarkersPlugin, {}]],
-      });
+        const viewer = new Viewer({
+          container: containerRef.current,
+          panorama: imageUrl,
+          navbar: false,
+          defaultYaw: 0,
+          defaultPitch: 0,
+          defaultZoomLvl: 0,
+          maxFov: 95,
+          minFov: 35,
+          fisheye: false,
+          touchmoveTwoFingers: false,
+          mousewheelCtrlKey: false,
+          plugins: [[MarkersPlugin, {}]],
+        });
 
-      viewerRef.current = viewer;
+        viewerRef.current = viewer;
 
-      viewer.addEventListener('ready', () => {
-        if (cancelled) return;
-        markersPluginRef.current = viewer.getPlugin(MarkersPlugin);
-        setLoaded(true);
-      });
+        viewer.addEventListener('ready', () => {
+          if (cancelled) return;
+          markersPluginRef.current = viewer.getPlugin(MarkersPlugin);
+          setLoaded(true);
+        });
 
-      viewer.addEventListener('click', (e: unknown) => {
-        const data = (e as { data?: { yaw?: unknown; pitch?: unknown } }).data;
-        if (!data) return;
-        const { yaw, pitch } = data;
-        const currentMode = modeRef.current;
+        viewer.addEventListener('click', (e: unknown) => {
+          const data = (e as { data?: { yaw?: unknown; pitch?: unknown } }).data;
+          if (!data) return;
+          const { yaw, pitch } = data;
+          const currentMode = modeRef.current;
 
-        if (typeof yaw !== 'number' || typeof pitch !== 'number') return;
+          if (typeof yaw !== 'number' || typeof pitch !== 'number') return;
 
-        if (currentMode === 'place') {
-          callbackRefs.current.onPositionClick?.(yaw, pitch);
-        } else if (currentMode === 'move' && selectedRef.current) {
-          callbackRefs.current.onMarkerMoved?.(selectedRef.current, yaw, pitch);
-        }
-      });
+          if (currentMode === 'place') {
+            callbackRefs.current.onPositionClick?.(yaw, pitch);
+          } else if (currentMode === 'move' && selectedRef.current) {
+            callbackRefs.current.onMarkerMoved?.(selectedRef.current, yaw, pitch);
+          }
+        });
+      } catch {
+        // Most commonly a WebGL/context-creation failure — fall back gracefully.
+        if (!cancelled) setWebglError(true);
+      }
     })();
 
     return () => {
@@ -342,7 +376,35 @@ export default function PanoramaEngine({
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-      {!loaded && (
+
+      {/* WebGL unavailable (e.g. in-app webview) — graceful fallback */}
+      {webglError && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden bg-zinc-950">
+          {imageUrl && (
+            <div
+              className="absolute inset-0 opacity-30 blur-sm"
+              style={{ backgroundImage: `url(${imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+            />
+          )}
+          <div className="relative mx-4 max-w-sm rounded-2xl border border-white/10 bg-black/75 p-5 text-center backdrop-blur-md">
+            <div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-400">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20" />
+                <path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold text-white">Vue 360° indisponible</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-neutral-400">
+              Votre navigateur ou application ne prend pas en charge WebGL. Activez
+              l&apos;accélération matérielle puis rechargez — ou utilisez la « Vue liste »
+              pour choisir votre table.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!loaded && !webglError && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 z-10">
           <div className="flex flex-col items-center gap-2 text-zinc-400">
             <div className="size-8 border-2 border-zinc-700 border-t-amber-400 rounded-full animate-spin" />
