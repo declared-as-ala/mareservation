@@ -59,10 +59,10 @@ export function DashboardShell({
         className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-4"
       >
         <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-300 to-amber-500 text-sm font-black text-black">
-          M
+          B
         </span>
         <div className="leading-tight">
-          <div className="text-sm font-bold text-white">Ma Reservation</div>
+          <div className="text-sm font-bold text-white">Before you go</div>
           <div className="text-[10px] uppercase tracking-wider text-amber-400/80">{brand}</div>
         </div>
       </Link>

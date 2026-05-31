@@ -150,7 +150,7 @@ function FallbackHero() {
         <div className="max-w-xl">
           <div className="mb-6 h-px w-16 bg-gradient-to-r from-amber-400/80 via-amber-400 to-amber-500/60" />
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/80">
-            Ma Reservation
+            Before you go
           </p>
           <h2 className="font-serif text-[30px] font-bold leading-[1.12] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
             Réservez votre expérience avant d&apos;y aller

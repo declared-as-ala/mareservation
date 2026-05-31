@@ -95,7 +95,7 @@ export function HomeNavbar() {
           >
             <Image
               src="/logo-transparent.png"
-              alt="Ma Reservation"
+              alt="Before you go"
               width={540}
               height={152}
               className="h-[42px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[48px] lg:h-[52px]"
@@ -222,7 +222,7 @@ export function HomeNavbar() {
                   <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
                     <Image
                       src="/logo-transparent.png"
-                      alt="Ma Reservation"
+                      alt="Before you go"
                       width={420}
                       height={120}
                       className="h-[40px] w-auto object-contain sm:h-[45px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)]"

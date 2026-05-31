@@ -167,7 +167,7 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
             <Link href="/" className="inline-block mb-5 transition-opacity hover:opacity-80">
               <Image
                 src="/logo.png"
-                alt="Ma Réservation"
+                alt="Before you go"
                 width={180}
                 height={50}
                 className="h-14 w-auto object-contain"

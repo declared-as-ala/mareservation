@@ -147,8 +147,8 @@ export function RecommendedSection() {
                   el.scrollTo({ left: i * (w + 10), behavior: 'smooth' });
                   setMobileIdx(i);
                 }}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  mobileIdx === i ? 'w-4 bg-amber-400' : 'w-1.5 bg-zinc-700'
+                className={`size-1.5 rounded-full transition-all duration-300 ${
+                  mobileIdx === i ? 'bg-amber-400' : 'bg-zinc-700'
                 }`}
               />
             ))}
@@ -222,47 +222,52 @@ interface CardProps {
 }
 
 function VenueCard({ venue, label, Icon, href }: CardProps) {
+  // Beautiful dynamic Unsplash fallbacks for venues without coverImage so cards never look empty
+  const getFallbackImage = (type?: string) => {
+    const t = String(type).toUpperCase();
+    if (t === 'HOTEL') return 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=600&auto=format&fit=crop';
+    if (t === 'RESTAURANT') return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=600&auto=format&fit=crop';
+    if (t === 'CAFE' || t === 'CAFE_LOUNGE') return 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop';
+    return 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600&auto=format&fit=crop';
+  };
+
+  const imageSrc = venue.coverImage || getFallbackImage((venue as any).type);
+
   return (
     <Link
       href={href}
-      className="group block overflow-hidden rounded-2xl bg-[#111112] border border-white/[0.06] transition-all duration-300 hover:border-amber-400/30 active:scale-95 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+      className="group block overflow-hidden rounded-xl bg-[#0f0f10] border border-white/[0.04] transition-all duration-300 hover:border-amber-400/30 active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.5)]"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
-        {venue.coverImage ? (
-          <Image
-            src={venue.coverImage}
-            alt={venue.name}
-            fill
-            sizes="(max-width: 640px) 33vw, 170px"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Icon className="size-7 text-zinc-700" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <Image
+          src={imageSrc}
+          alt={venue.name}
+          fill
+          sizes="(max-width: 640px) 33vw, 170px"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
 
         {/* Category badge */}
-        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 border border-white/10 backdrop-blur-sm">
+        <div className="absolute left-1.5 top-1.5 flex items-center gap-0.5 rounded-full bg-black/60 px-1.5 py-0.5 border border-white/10 backdrop-blur-sm">
           <Icon className="size-2.5 text-amber-400" />
-          <span className="text-[9px] font-bold uppercase tracking-wider text-white">{label}</span>
+          <span className="text-[7.5px] font-bold uppercase tracking-wider text-white">{label}</span>
         </div>
 
         {/* 360° Tour Badge */}
         {venue.hasVirtualTour && (
-          <div className="absolute right-2 top-2 rounded-full bg-black/70 px-1.5 py-0.5 border border-amber-400/25 backdrop-blur-sm text-[9px] font-black text-amber-300 tracking-wider">
+          <div className="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-1.5 py-0.5 border border-amber-400/20 backdrop-blur-sm text-[7.5px] font-black text-amber-300 tracking-wider">
             360°
           </div>
         )}
       </div>
 
-      <div className="px-2.5 py-2.5">
-        <p className="text-[13px] font-bold text-white group-hover:text-amber-200 transition-colors leading-tight truncate">
+      <div className="px-2 py-2">
+        <p className="text-[10.5px] font-bold text-white group-hover:text-amber-200 transition-colors leading-tight truncate">
           {venue.name}
         </p>
         {venue.city && (
-          <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-400/90 truncate">
+          <div className="mt-0.5 flex items-center gap-0.5 text-[8.5px] text-amber-400/90 truncate">
             <MapPin className="size-2.5 shrink-0" />
             <span className="truncate">{venue.city}</span>
           </div>

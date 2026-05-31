@@ -39,7 +39,7 @@ export function HomeHero() {
       <div className="container relative z-10 px-4">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md md:text-5xl lg:text-6xl">
-            Bienvenue sur Ma Reservation
+            Bienvenue sur Before you go
           </h1>
           <p className="mt-4 text-lg text-white/90 drop-shadow md:text-xl">
             Réservez votre table, chambre ou place en quelques clics. Découvrez les meilleurs
