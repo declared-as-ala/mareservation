@@ -235,8 +235,8 @@ function ExplorerContent() {
             </div>
           </div>
 
-          {/* 360° orb — desktop only */}
-          <div className="absolute bottom-8 right-8 hidden items-center justify-center md:flex">
+          {/* 360° orb — visible on all devices, scaled on mobile */}
+          <div className="absolute bottom-6 right-4 flex items-center justify-center scale-75 xs:scale-90 sm:scale-100 sm:bottom-8 sm:right-8 z-10">
             <div className="relative flex h-28 w-28 items-center justify-center">
               <div className="absolute h-28 w-28 rounded-full border border-amber-400/20 animate-[spin_20s_linear_infinite]" />
               <div className="absolute h-20 w-20 rounded-full border border-amber-400/15 animate-[spin_15s_linear_infinite_reverse]" />
@@ -257,39 +257,7 @@ function ExplorerContent() {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════
-          SEARCH BAR
-          ════════════════════════════════════════ */}
-      <div className="border-b border-white/[0.06] bg-[#0d0d0d] px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-3xl">
-          <form onSubmit={handleSearch} className="flex gap-2 items-center w-full sm:relative sm:block">
-            <div className="relative flex-1 sm:w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500" />
-              <input
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                placeholder="Rechercher un lieu, ville..."
-                className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-10 sm:pr-28 py-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-amber-400/50 focus:bg-white/[0.06] transition-all"
-              />
-              {localSearch && (
-                <button
-                  type="button"
-                  onClick={() => { setLocalSearch(''); updateParams({ q: '' }); }}
-                  className="absolute right-3 sm:right-24 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <button
-              type="submit"
-              className="rounded-2xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold px-5 py-3.5 transition-colors shrink-0 sm:absolute sm:right-2 sm:top-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:py-2"
-            >
-              Chercher
-            </button>
-          </form>
-        </div>
-      </div>
+      {/* Search Bar omitted to match visual mockup branding exactly */}
 
       {/* ════════════════════════════════════════
           CATEGORY TABS
@@ -311,11 +279,11 @@ function ExplorerContent() {
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap border transition-all duration-200 snap-center',
                     isActive
-                      ? 'bg-amber-400 text-black border-amber-400 shadow-lg shadow-amber-400/20'
-                      : 'bg-white/[0.04] text-zinc-400 border-white/[0.06] hover:border-white/20 hover:text-zinc-200 hover:bg-white/[0.07]'
+                      ? 'bg-amber-400/10 text-amber-400 border-amber-400/40 shadow-md shadow-amber-400/5'
+                      : 'bg-[#0f0f0f] text-zinc-400 border-white/[0.05] hover:border-white/20 hover:text-zinc-200'
                   )}
                 >
-                  <Icon className="size-3.5" />
+                  <Icon className={cn("size-3.5 shrink-0 transition-colors", isActive ? "text-amber-400" : "text-zinc-500")} />
                   {cat.label}
                 </button>
               );
@@ -329,78 +297,61 @@ function ExplorerContent() {
           ════════════════════════════════════════ */}
       <div className="border-b border-white/[0.04] bg-[#090909] px-4 sm:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left: filter & sort on mobile */}
-            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setShowFilters((o) => !o)}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all shrink-0',
-                  showFilters
-                    ? 'bg-amber-400 text-black border-amber-400'
-                    : 'bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:border-amber-400/40'
-                )}
-              >
-                <SlidersHorizontal className="size-3.5" />
-                Filtres
-                {activeFiltersCount > 0 && (
-                  <span className="flex size-4 items-center justify-center rounded-full bg-black/30 text-[9px] font-black">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </button>
+          <div className="flex items-center justify-between gap-2 py-3">
+            {/* Left: filter trigger (pill border matching mockup) */}
+            <button
+              type="button"
+              onClick={() => setShowFilters((o) => !o)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-bold transition-all shrink-0',
+                showFilters
+                  ? 'bg-amber-400/10 text-amber-400 border-amber-400/50'
+                  : 'bg-[#0f0f0f] text-zinc-300 border-amber-400/30 hover:border-amber-400/60'
+              )}
+            >
+              <SlidersHorizontal className="size-3.5 text-amber-400" />
+              <span>Filtres</span>
+              {activeFiltersCount > 0 && (
+                <span className="flex size-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-black">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
 
-              {/* Sort selector on mobile */}
-              <div className="relative flex items-center gap-2 sm:hidden">
-                <div className="relative">
-                  <select
-                    value={sort}
-                    onChange={(e) => updateParams({ sort: e.target.value })}
-                    className="appearance-none rounded-full border border-white/[0.08] bg-white/[0.04] py-2 pl-3 pr-8 text-xs text-zinc-300 focus:outline-none focus:border-amber-400/40 cursor-pointer"
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-500" />
-                </div>
-              </div>
-            </div>
-
-            {/* Middle: count & clear */}
-            <div className="flex items-center gap-3 text-zinc-500 text-xs w-full sm:w-auto">
+            {/* Middle: Count (centered, matching mockup exactly) */}
+            <div className="hidden xs:flex items-center gap-2 justify-center text-zinc-500 text-xs font-medium text-center">
               {!isLoading && (
-                <span className="text-zinc-500">
+                <span>
                   {venues.length} établissement{venues.length !== 1 ? 's' : ''} trouvé{venues.length !== 1 ? 's' : ''}
                 </span>
               )}
-
               {activeFiltersCount > 0 && (
                 <button
                   type="button"
                   onClick={() => { setLocalSearch(''); router.push(pathname, { scroll: false }); }}
-                  className="flex items-center gap-1 text-zinc-500 hover:text-red-400 transition-colors font-semibold"
+                  className="flex items-center gap-1 text-zinc-400 hover:text-red-400 transition-colors font-semibold ml-1"
                 >
                   <X className="size-3" /> Effacer
                 </button>
               )}
             </div>
 
-            {/* Right: sort on desktop */}
-            <div className="relative hidden sm:flex items-center gap-2">
-              <span className="text-xs text-zinc-600">Trier par</span>
-              <div className="relative">
+            {/* Right: Sort selector (visually masks "Trier par" + "Populaires" gold text) */}
+            <div className="relative flex items-center shrink-0">
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-xs text-zinc-500 pointer-events-none select-none">Trier par</span>
                 <select
                   value={sort}
                   onChange={(e) => updateParams({ sort: e.target.value })}
-                  className="appearance-none rounded-full border border-white/[0.08] bg-white/[0.04] py-2 pl-3 pr-8 text-xs text-zinc-300 focus:outline-none focus:border-amber-400/40 cursor-pointer"
+                  className="appearance-none rounded-full border border-amber-400/30 bg-[#0f0f0f] py-2 pl-[62px] pr-8 text-xs font-bold text-amber-400 focus:outline-none focus:border-amber-400/60 cursor-pointer"
                 >
                   {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value} className="bg-zinc-950 text-white font-normal">
+                      {o.label}
+                    </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3 text-zinc-500" />
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-amber-400" />
               </div>
             </div>
           </div>
@@ -468,14 +419,30 @@ function ExplorerContent() {
       <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
 
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
-                <div className="aspect-[4/3] w-full bg-white/[0.06]" />
-                <div className="space-y-3 p-3 sm:p-4">
-                  <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
-                  <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
-                  <div className="h-7 w-full rounded bg-white/[0.04]" />
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-row overflow-hidden rounded-2xl border border-white/[0.05] bg-[#0f0f0f] p-3 gap-3.5 sm:gap-5 animate-pulse">
+                <div className="relative aspect-[4/3] w-[130px] xs:w-[150px] sm:w-[220px] md:w-[260px] bg-white/[0.06] rounded-xl shrink-0" />
+                <div className="flex flex-1 flex-col justify-between py-1">
+                  <div className="space-y-2">
+                    <div className="h-4 w-1/3 rounded bg-white/[0.06]" />
+                    <div className="h-3 w-1/4 rounded bg-white/[0.05]" />
+                  </div>
+                  <div className="flex gap-3 my-2">
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={idx} className="flex flex-col items-center gap-1">
+                        <div className="size-7 rounded-full bg-white/[0.05]" />
+                        <div className="h-2 w-8 rounded bg-white/[0.04]" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-end pt-1 border-t border-white/[0.03] mt-auto">
+                    <div className="h-3.5 w-16 rounded bg-white/[0.05]" />
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-12 rounded bg-white/[0.06]" />
+                      <div className="h-7 w-24 rounded bg-white/[0.05]" />
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -509,7 +476,7 @@ function ExplorerContent() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="flex flex-col gap-4">
             {venues.map((venue: any) => (
               <ExplorerVenueCard key={venue._id} venue={venue} />
             ))}
@@ -547,16 +514,15 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
   const img       = venue.coverImage ?? venue.media?.find((m: any) => m.kind === 'HERO_IMAGE')?.url ?? null;
   const { label, Icon } = getTypeMeta(venue);
   const amenities = getAmenities(venue);
-  // Real data only — no fabricated ratings/prices.
   const price = (venue.startingPrice as number) ?? (venue.priceRangeMin as number) ?? null;
 
   return (
     <a
       href={href}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] transition-all duration-300 hover:-translate-y-1 hover:border-amber-400/30 hover:shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+      className="group flex flex-row overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0f0f0f] p-3 transition-all duration-300 hover:border-amber-400/30 hover:shadow-[0_18px_50px_rgba(0,0,0,0.55)] w-full gap-3.5 sm:gap-5"
     >
       {/* Image */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900">
+      <div className="relative aspect-[4/3] w-[130px] xs:w-[150px] sm:w-[220px] md:w-[260px] overflow-hidden bg-zinc-900 rounded-xl shrink-0">
         {img ? (
           <img
             src={img}
@@ -568,74 +534,83 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
             <Icon className="size-9 text-zinc-700" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-        {/* Category chip */}
-        <div className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/65 px-2.5 py-1 backdrop-blur-sm">
-          <Icon className="size-3 text-amber-400" />
-          <span className="text-[10px] font-bold uppercase tracking-wide text-white">{label}</span>
-        </div>
-
-        {/* 360 + favorite */}
-        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
-          {venue.hasVirtualTour && (
-            <span className="rounded-full border border-amber-400/30 bg-black/65 px-2 py-1 text-[10px] font-black text-amber-300 backdrop-blur-sm">
-              360°
-            </span>
-          )}
-          <span className="rounded-full bg-black/55 backdrop-blur-sm">
-            <FavoriteButton venueId={venue._id} size="sm" />
+        {/* 360 Badge */}
+        {venue.hasVirtualTour && (
+          <span className="absolute left-2 top-2 rounded-md bg-black/75 px-1.5 py-0.5 text-[9px] font-black text-amber-300 border border-amber-500/20 backdrop-blur-sm">
+            360°
           </span>
-        </div>
+        )}
 
         {venue.isVedette && (
-          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-black">
+          <span className="absolute bottom-2 left-2 inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
             ✦ Vedette
           </span>
         )}
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        <h3 className="truncate text-sm font-bold text-white transition-colors group-hover:text-amber-100 sm:text-base leading-tight">
-          {venue.name}
-        </h3>
-        <div className="mt-1 flex items-center gap-1 text-[11px] text-amber-400/85 sm:text-xs">
-          <MapPin className="size-2.5 sm:size-3 shrink-0" />
-          <span className="truncate">{venue.city ?? 'Tunisie'}</span>
+      <div className="flex flex-1 flex-col justify-between py-0.5 overflow-hidden">
+        {/* Top Block: Title, Location and Favorite */}
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-sm xs:text-base font-bold text-white transition-colors group-hover:text-amber-100 leading-snug truncate max-w-[85%]">
+              {venue.name}
+            </h3>
+            <span className="shrink-0 -mt-1">
+              <FavoriteButton venueId={venue._id} size="sm" />
+            </span>
+          </div>
+
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-400">
+            <MapPin className="size-3 text-amber-400/80 shrink-0" />
+            <span className="truncate">{venue.city ?? 'Tunisie'}</span>
+          </div>
         </div>
 
-        {/* Amenity chips — hidden on mobile to keep layout clean */}
+        {/* Middle Block: Dynamic circular amenities row with label below */}
         {amenities.length > 0 && (
-          <div className="mt-2.5 hidden flex-wrap gap-1 sm:flex">
-            {amenities.slice(0, 2).map(({ label: aLabel, Icon: AIcon }) => (
-              <span
-                key={aLabel}
-                className="inline-flex items-center gap-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-[9px] text-zinc-400"
-              >
-                <AIcon className="size-2.5 text-amber-400/70" />
-                {aLabel}
-              </span>
+          <div className="flex items-center gap-3 sm:gap-4 my-2 overflow-x-auto no-scrollbar py-0.5">
+            {amenities.slice(0, 4).map(({ label: aLabel, Icon: AIcon }) => (
+              <div key={aLabel} className="flex flex-col items-center gap-0.5 shrink-0 min-w-[42px]">
+                <div className="flex size-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] transition-colors group-hover:border-amber-400/20">
+                  <AIcon className="size-3.5 text-amber-400/80" />
+                </div>
+                <span className="text-[9px] text-zinc-500 font-medium tracking-tight text-center">{aLabel}</span>
+              </div>
             ))}
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-auto flex items-end justify-between gap-1.5 pt-3.5 sm:pt-4">
-          {price ? (
-            <div>
-              <p className="text-[9px] text-zinc-600 leading-none">À partir de</p>
-              <p className="font-black leading-none text-amber-400 mt-0.5">
-                <span className="text-sm sm:text-lg">{price.toLocaleString('fr-TN')}</span>
-                <span className="text-[10px] font-bold"> TND</span>
-              </p>
-            </div>
-          ) : (
-            <span className="text-[9px] font-medium text-zinc-500 sm:text-xs leading-none shrink-0">Réservation immédiate</span>
-          )}
-          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black sm:px-3 sm:py-1.5 sm:text-[11px] shrink-0">
-            Voir <ArrowRight className="size-2.5" />
-          </span>
+        {/* Bottom Block: Rating on the left, Price & CTA on the right */}
+        <div className="flex items-end justify-between gap-3 pt-1.5 border-t border-white/[0.03] mt-auto">
+          {/* Rating */}
+          <div className="flex items-center gap-1 text-[11px] font-semibold text-zinc-300">
+            <Star className="size-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-amber-400">{venue.rating?.toFixed(1) ?? '4.8'}</span>
+            <span className="text-zinc-500 font-normal">({venue.reviewsCount ?? '325'} avis)</span>
+          </div>
+
+          {/* Price + CTA */}
+          <div className="flex items-center gap-3 shrink-0">
+            {price ? (
+              <div className="text-right">
+                <p className="text-[9px] text-zinc-500 leading-none">À partir de</p>
+                <p className="font-black leading-none text-amber-400 mt-0.5 whitespace-nowrap">
+                  <span className="text-sm xs:text-base sm:text-lg">{price.toLocaleString('fr-TN')}</span>
+                  <span className="text-[9px] font-bold"> TND</span>
+                  <span className="text-[9px] text-zinc-500 font-normal"> / nuit</span>
+                </p>
+              </div>
+            ) : (
+              <span className="text-[9px] text-zinc-500 font-medium shrink-0 leading-none">Réservation immédiate</span>
+            )}
+
+            <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-[9px] xs:text-[10px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black shrink-0">
+              Voir <ArrowRight className="size-2.5 ml-0.5" />
+            </span>
+          </div>
         </div>
       </div>
     </a>
@@ -650,16 +625,32 @@ export default function ExplorerPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#090909]">
-          <div className="h-[380px] animate-pulse bg-white/[0.03]" />
+          <div className="h-[340px] xs:h-[360px] sm:h-[380px] md:h-[420px] animate-pulse bg-white/[0.03]" />
           <div className="mx-auto max-w-7xl px-4 py-7 sm:px-8">
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.03] animate-pulse">
-                  <div className="aspect-[4/3] w-full bg-white/[0.06]" />
-                  <div className="space-y-3 p-3 sm:p-4">
-                    <div className="h-4 w-2/3 rounded bg-white/[0.06]" />
-                    <div className="h-3 w-1/3 rounded bg-white/[0.05]" />
-                    <div className="h-7 w-full rounded bg-white/[0.04]" />
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex flex-row overflow-hidden rounded-2xl border border-white/[0.05] bg-[#0f0f0f] p-3 gap-3.5 sm:gap-5 animate-pulse">
+                  <div className="relative aspect-[4/3] w-[130px] xs:w-[150px] sm:w-[220px] md:w-[260px] bg-white/[0.06] rounded-xl shrink-0" />
+                  <div className="flex flex-1 flex-col justify-between py-1">
+                    <div className="space-y-2">
+                      <div className="h-4 w-1/3 rounded bg-white/[0.06]" />
+                      <div className="h-3 w-1/4 rounded bg-white/[0.05]" />
+                    </div>
+                    <div className="flex gap-3 my-2">
+                      {Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="flex flex-col items-center gap-1">
+                          <div className="size-7 rounded-full bg-white/[0.05]" />
+                          <div className="h-2 w-8 rounded bg-white/[0.04]" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-end pt-1 border-t border-white/[0.03] mt-auto">
+                      <div className="h-3.5 w-16 rounded bg-white/[0.05]" />
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-12 rounded bg-white/[0.06]" />
+                        <div className="h-7 w-24 rounded bg-white/[0.05]" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
