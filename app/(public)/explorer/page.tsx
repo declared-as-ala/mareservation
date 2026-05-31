@@ -496,38 +496,7 @@ function ExplorerContent() {
         )}
       </div>
 
-      {/* ════════════════════════════════════════
-          BOTTOM 360° CTA BANNER
-          ════════════════════════════════════════ */}
-      <div className="mx-4 mb-10 overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-r from-[#0f0f0f] via-[#111111] to-[#0f0f0f] sm:mx-8">
-        <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
-          {/* Left: orb + text */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10">
-              <div className="absolute h-14 w-14 rounded-full bg-amber-500/10 blur-[15px]" />
-              <span className="relative font-serif text-lg font-black text-amber-400">360°</span>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">
-                Explorez chaque lieu
-              </p>
-              <p className="text-sm font-bold text-amber-400">
-                en immersion totale.
-              </p>
-              <p className="mt-0.5 text-[10px] text-zinc-600">
-                Visites 360° haute définition, pour réserver en toute confiance.
-              </p>
-            </div>
-          </div>
-          {/* Right: CTA */}
-          <button
-            onClick={() => updateParams({ type: '', q: '' })}
-            className="shrink-0 rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-black transition-all hover:bg-amber-300 active:scale-95 whitespace-nowrap"
-          >
-            Découvrir en 360° →
-          </button>
-        </div>
-      </div>
+
     </div>
   );
 }
