@@ -154,7 +154,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
   };
 
   return (
-    <section className="relative flex h-[100svh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[88px] sm:pt-[96px] md:hidden">
+    <section className="relative flex h-[100svh] flex-col overflow-hidden bg-[#0B0B0C] px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[96px] sm:pt-[104px] md:hidden">
       {/* Atmosphere */}
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-10 h-56 w-56 rounded-full bg-amber-500/[0.07] blur-[80px]" />
       <div aria-hidden className="pointer-events-none absolute -left-16 bottom-1/3 h-48 w-48 rounded-full bg-amber-600/[0.05] blur-[70px]" />
@@ -206,26 +206,35 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
         </div>
       </div>
 
-      {/* ── Zone 2 · Catégories en 3 par ligne ── */}
-      <div className="relative z-10 mt-2 shrink-0">
+      {/* ── Zone 2 · Catégories — 4 par ligne (compact) ── */}
+      <div className="relative z-10 mt-1.5 shrink-0">
         <SectionHead
           eyebrow="Accès rapide"
           title={<>Explorer par <span className="text-amber-400">catégorie</span> <Spark /></>}
         />
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
+        <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+          {CATEGORIES.map(({ title, href, Icon }) => (
             <Link
               key={title}
               href={href}
-              className="group flex flex-col items-center justify-center gap-1 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#141414] to-[#0e0e0e] px-1 py-2.5 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/35 hover:from-[#1a1610] hover:to-[#121212] active:scale-95"
+              className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-white/[0.07] bg-gradient-to-b from-[#141414] to-[#0e0e0e] px-1 py-2 text-center transition-all duration-300 hover:border-amber-400/35 hover:from-[#1a1610] hover:to-[#121212] active:scale-95"
             >
-              <span className="flex size-7 items-center justify-center rounded-xl bg-amber-400/[0.10] text-amber-400 transition-all group-hover:bg-amber-400/[0.18] group-hover:shadow-[0_0_18px_rgba(245,158,11,0.30)]">
-                <Icon className="size-3.5" strokeWidth={1.7} />
+              <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.10] text-amber-400 transition-all group-hover:bg-amber-400/[0.18] group-hover:shadow-[0_0_14px_rgba(245,158,11,0.30)]">
+                <Icon className="size-3" strokeWidth={1.8} />
               </span>
-              <span className="text-[10.5px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
-              <span className="max-w-full truncate text-[8px] leading-tight text-zinc-500">{subtitle}</span>
+              <span className="text-[9.5px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
             </Link>
           ))}
+          {/* 8th slot — Tout voir */}
+          <Link
+            href="/explorer"
+            className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-1 py-2 text-center transition-all duration-300 hover:border-amber-400/55 hover:bg-amber-400/[0.10] active:scale-95"
+          >
+            <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.18] text-amber-300">
+              <ArrowRight className="size-3" strokeWidth={2} />
+            </span>
+            <span className="text-[9.5px] font-bold leading-none text-amber-300">Tout</span>
+          </Link>
         </div>
       </div>
 
@@ -239,75 +248,84 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
 function MobileImmersiveCTA() {
   return (
     <div className="relative z-10 mt-auto shrink-0 pt-2">
-      <div className="relative overflow-hidden rounded-3xl border border-amber-400/25 bg-[radial-gradient(circle_at_85%_15%,rgba(245,158,11,0.32),transparent_55%),linear-gradient(135deg,#1d1408_0%,#0f0f10_55%,#0a0a0b_100%)] shadow-[0_18px_44px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
-        {/* Animated dot grid */}
+      <div className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(245,158,11,0.45)_0%,rgba(180,83,9,0.15)_28%,#0d0d0e_55%,#080809_100%)] shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(245,158,11,0.22)]">
+        {/* Subtle diagonal mesh */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.10]"
+          className="pointer-events-none absolute inset-0 opacity-[0.08]"
           style={{
-            backgroundImage: 'radial-gradient(circle, #fbbf24 1px, transparent 1px)',
+            backgroundImage:
+              'linear-gradient(45deg, rgba(245,158,11,0.5) 25%, transparent 25%, transparent 75%, rgba(245,158,11,0.5) 75%, rgba(245,158,11,0.5)), linear-gradient(45deg, rgba(245,158,11,0.5) 25%, transparent 25%, transparent 75%, rgba(245,158,11,0.5) 75%, rgba(245,158,11,0.5))',
             backgroundSize: '14px 14px',
+            backgroundPosition: '0 0, 7px 7px',
           }}
         />
         {/* Glow blobs */}
-        <div aria-hidden className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-amber-400/[0.20] blur-[55px]" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-amber-600/[0.12] blur-[45px]" />
-
-        {/* Decorative 360° ring (background) */}
-        <div aria-hidden className="pointer-events-none absolute -right-3 top-1/2 -translate-y-1/2 opacity-90">
-          <div className="relative flex size-[96px] items-center justify-center">
-            <div className="absolute inset-0 rounded-full border border-amber-400/25 animate-[spin_18s_linear_infinite]" />
-            <div className="absolute inset-2 rounded-full border border-amber-400/15 animate-[spin_28s_linear_infinite_reverse]" />
-            <div className="absolute inset-0 rounded-full bg-amber-500/[0.22] blur-2xl" />
-            <span className="relative font-serif text-[18px] font-black text-amber-300 drop-shadow-[0_0_14px_rgba(245,158,11,0.85)]">
-              360°
-            </span>
-          </div>
-        </div>
+        <div aria-hidden className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-amber-400/[0.28] blur-[60px]" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-amber-600/[0.16] blur-[50px]" />
 
         <div className="relative p-3.5">
           {/* Pill row */}
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
-            </span>
-            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">
-              Plateforme immersive
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/[0.10] px-2 py-0.5 backdrop-blur-sm">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
+              </span>
+              <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">
+                Plateforme immersive
+              </span>
+            </div>
+            <div className="flex -space-x-1">
+              {['#fbbf24', '#f59e0b', '#d97706'].map((c, i) => (
+                <span
+                  key={i}
+                  className="size-4 rounded-full border-2 border-[#0d0d0e]"
+                  style={{ background: `linear-gradient(135deg, ${c}, #1a1106)` }}
+                  aria-hidden
+                />
+              ))}
+              <span className="ml-1.5 self-center text-[9px] font-bold text-amber-300/85">+12k</span>
+            </div>
           </div>
 
           {/* Heading */}
-          <h2 className="mt-1.5 max-w-[78%] font-serif text-[19px] font-black leading-[1.1] tracking-tight text-white">
-            Réservez ce que{' '}
+          <h2 className="mt-1.5 font-serif text-[20px] font-black leading-[1.08] tracking-tight text-white">
+            Visitez. Choisissez.{' '}
             <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
-              vous voyez
+              Réservez.
             </span>
-            .
           </h2>
+          <p className="mt-1 text-[10.5px] leading-snug text-white/55">
+            Explorez en immersion, choisissez votre table — réservez en quelques secondes.
+          </p>
 
           {/* Primary CTA — large, always visible */}
           <Link
             href="/explorer"
-            className="group mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-[15px] font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.42)] transition-all active:scale-[0.98]"
+            className="group relative mt-2.5 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-[15px] font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.45)] transition-all active:scale-[0.98]"
           >
-            Réserver maintenant
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            <span className="relative z-10">Réserver maintenant</span>
+            <ArrowRight className="relative z-10 size-4 transition-transform group-active:translate-x-1" />
+            <span
+              aria-hidden
+              className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+            />
           </Link>
 
           {/* Trust strip */}
-          <div className="mt-2.5 flex items-center justify-between text-[9px] font-medium text-white/55">
+          <div className="mt-2 flex items-center justify-between text-[8.5px] font-medium text-white/55">
             <span className="inline-flex items-center gap-1">
-              <Globe className="size-3 text-amber-400" strokeWidth={2} />
-              360° immersif
+              <Globe className="size-2.5 text-amber-400" strokeWidth={2} />
+              Immersif
             </span>
             <span className="inline-flex items-center gap-1">
-              <Armchair className="size-3 text-amber-400" strokeWidth={2} />
-              Choisir sa table
+              <Armchair className="size-2.5 text-amber-400" strokeWidth={2} />
+              Table choisie
             </span>
             <span className="inline-flex items-center gap-1">
-              <ShieldCheck className="size-3 text-amber-400" strokeWidth={2} />
-              Paiement sécurisé
+              <ShieldCheck className="size-2.5 text-amber-400" strokeWidth={2} />
+              Sécurisé
             </span>
           </div>
         </div>
@@ -321,7 +339,7 @@ function MobileImmersiveCTA() {
    ═══════════════════════════════════════════════════════════════ */
 function DesktopScreen({ venues }: { venues: CardVenue[] }) {
   return (
-    <section className="relative hidden min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] pt-[88px] md:flex">
+    <section className="relative hidden min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] pt-[96px] md:flex lg:pt-[108px]">
       {/* Atmosphere */}
       <div aria-hidden className="pointer-events-none absolute -left-40 top-1/3 h-[560px] w-[560px] -translate-y-1/2 rounded-full bg-amber-500/[0.06] blur-[150px]" />
       <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-[440px] w-[440px] rounded-full bg-amber-600/[0.045] blur-[130px]" />
@@ -412,17 +430,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
         {/* RIGHT — auto-rotating featured venue (real-time, 3s/slide) */}
         <div className="relative">
-          <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -z-0 -translate-x-1/2 -translate-y-1/2">
-            <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 animate-[spin_36s_linear_infinite] rounded-full border border-amber-400/[0.06]" />
-            <div className="absolute left-1/2 top-1/2 h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 animate-[spin_24s_linear_infinite_reverse] rounded-full border border-amber-400/[0.09]" />
-          </div>
-
           <DesktopAutoFeatured venues={venues.slice(0, 6)} />
-
-          {/* floating 360 orb badge */}
-          <div aria-hidden className="absolute -right-3 -top-3 z-20">
-            <Orb size={84} />
-          </div>
         </div>
       </div>
 
@@ -707,33 +715,6 @@ function DesktopVenueCard({ venue, featured = false }: { venue: CardVenue; featu
         </div>
       </div>
     </Link>
-  );
-}
-
-/* ─── Decorative 360° orb ─── */
-function Orb({ size }: { size: number }) {
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full bg-amber-500/[0.18] blur-2xl" />
-      <div
-        className="relative flex items-center justify-center rounded-full border border-amber-400/30 bg-gradient-to-br from-amber-400/15 via-amber-500/[0.08] to-transparent shadow-[0_0_40px_rgba(245,158,11,0.25)]"
-        style={{ width: size, height: size }}
-      >
-        <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full opacity-25">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="#fbbf24" strokeWidth="0.7" />
-          <ellipse cx="50" cy="50" rx="30" ry="46" fill="none" stroke="#fbbf24" strokeWidth="0.6" />
-          <ellipse cx="50" cy="50" rx="46" ry="20" fill="none" stroke="#fbbf24" strokeWidth="0.6" />
-          <line x1="4" y1="50" x2="96" y2="50" stroke="#fbbf24" strokeWidth="0.6" />
-          <line x1="50" y1="4" x2="50" y2="96" stroke="#fbbf24" strokeWidth="0.6" />
-        </svg>
-        <span
-          className="relative font-serif font-black text-amber-400 drop-shadow-[0_0_14px_rgba(245,158,11,0.9)]"
-          style={{ fontSize: size * 0.22 }}
-        >
-          360°
-        </span>
-      </div>
-    </div>
   );
 }
 
