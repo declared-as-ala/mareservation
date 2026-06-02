@@ -9,7 +9,7 @@ import { getVenueHref } from '@/lib/venueHref';
 import type { Venue } from '@/lib/api/types';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
-  Star, ArrowRight, Globe, ShieldCheck, Armchair,
+  ArrowRight, Globe, ShieldCheck, Armchair,
   UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Trophy, Play,
 } from 'lucide-react';
 
@@ -590,12 +590,6 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
                       <MapPin className="size-3.5" /> {v.city}
                     </span>
                   )}
-                  {typeof v.rating === 'number' && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/25 bg-black/55 px-2 py-0.5 backdrop-blur-sm">
-                      <Star className="size-3 fill-amber-400 text-amber-400" />
-                      <span className="text-[11px] font-bold text-amber-300">{v.rating}</span>
-                    </span>
-                  )}
                 </div>
                 <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)]">
                   Découvrir
@@ -693,12 +687,6 @@ function DesktopVenueCard({ venue, featured = false }: { venue: CardVenue; featu
               </div>
             )}
           </div>
-          {typeof venue.rating === 'number' && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-black/60 px-2 py-1 backdrop-blur-md">
-              <Star className="size-3 fill-amber-400 text-amber-400" />
-              <span className="text-[11px] font-bold text-amber-300">{venue.rating}</span>
-            </span>
-          )}
         </div>
       </div>
     </Link>
