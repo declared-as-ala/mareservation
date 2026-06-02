@@ -34,8 +34,9 @@ import { cn } from '@/lib/utils';
 import { fetchVenueByIdOrSlug } from '@/lib/api/venues';
 import { fetchVenueRooms, getRoomNights } from '@/lib/api/rooms';
 import type { Venue, HotelRoom } from '@/lib/api/types';
-import { RoomCard } from '@/components/hotel/RoomCard';
 import { RoomBookingModal } from '@/components/hotel/RoomBookingModal';
+import { RoomTypeCard, type RoomTypeGroup } from '@/components/hotel/RoomTypeCard';
+import { RoomTypeViewer } from '@/components/hotel/RoomTypeViewer';
 import { HotelAmenitiesGrid } from '@/components/hotel/HotelAmenities';
 import { FavoriteButton } from '@/components/shared/FavoriteButton';
 import { ShareButton } from '@/components/venue/ShareButton';
@@ -446,19 +447,6 @@ function BookingWidget({ startingPrice, onSearch }: BookingWidgetProps) {
   );
 }
 
-// ── Room type filter pills ──────────────────────────────────────────────────
-
-const ROOM_TYPE_FILTERS = [
-  { value: '', label: 'Tout afficher' },
-  { value: 'STANDARD', label: 'Standard' },
-  { value: 'DELUXE', label: 'Deluxe' },
-  { value: 'SUITE', label: 'Suite' },
-  { value: 'JUNIOR_SUITE', label: 'Junior Suite' },
-  { value: 'PRESIDENTIAL_SUITE', label: 'Suite Présidentielle' },
-  { value: 'VILLA', label: 'Villa' },
-  { value: 'APARTMENT', label: 'Appartement' },
-];
-
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function HotelDetailPage() {
@@ -470,7 +458,9 @@ export default function HotelDetailPage() {
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [guests, setGuests] = useState(2);
   const [roomTypeFilter, setRoomTypeFilter] = useState('');
+  const [roomSort, setRoomSort] = useState<'price' | 'capacity' | 'surface'>('price');
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
+  const [viewerGroup, setViewerGroup] = useState<RoomTypeGroup | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'rooms' | 'visite' | 'infos'>('overview');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
@@ -500,6 +490,72 @@ export default function HotelDetailPage() {
         : rooms,
     [rooms, roomTypeFilter]
   );
+
+  // ── Group rooms by roomType for premium type-level booking UX ──
+  const roomTypeGroups = useMemo<RoomTypeGroup[]>(() => {
+    const byType = new Map<string, HotelRoom[]>();
+    for (const r of filteredRooms) {
+      const key = (r.roomType ?? 'STANDARD').toUpperCase();
+      const list = byType.get(key) ?? [];
+      list.push(r);
+      byType.set(key, list);
+    }
+
+    const groups: RoomTypeGroup[] = [];
+    byType.forEach((roomsOfType, key) => {
+      const sorted = [...roomsOfType].sort((a, b) => a.pricePerNight - b.pricePerNight);
+      const availableRooms = sorted.filter(
+        (r) => r.isReservable && r.status !== 'reserved' && r.status !== 'blocked'
+      );
+      const representativeRoom = availableRooms[0] ?? sorted[0];
+
+      // Dedup gallery union
+      const gallerySet = new Set<string>();
+      for (const r of sorted) {
+        if (r.coverImage) gallerySet.add(r.coverImage);
+        (r.gallery ?? []).forEach((u) => u && gallerySet.add(u));
+      }
+
+      // Amenities intersection — keep only amenities present in ALL rooms of the type
+      let amenityIntersection: string[] | null = null;
+      for (const r of sorted) {
+        const s = new Set((r.amenities ?? []).map((a) => a.toLowerCase()));
+        amenityIntersection =
+          amenityIntersection === null
+            ? Array.from(s)
+            : amenityIntersection.filter((a) => s.has(a));
+      }
+
+      groups.push({
+        roomType: key,
+        rooms: sorted,
+        representativeRoom,
+        minPrice: sorted[0]?.pricePerNight ?? 0,
+        availableCount: availableRooms.length,
+        totalCount: sorted.length,
+        combinedGallery: Array.from(gallerySet),
+        hasVirtualTour: sorted.some(
+          (r) => !!r.hasVirtualTour || !!r.virtualTourUrl || (r.panoramicImages?.length ?? 0) > 0
+        ),
+        aggregatedAmenities: amenityIntersection ?? [],
+        hasBalcony: sorted.some((r) => !!r.hasBalcony),
+        isVip: sorted.some((r) => !!r.isVip),
+      });
+    });
+
+    // Sorting
+    groups.sort((a, b) => {
+      if (roomSort === 'capacity')
+        return (b.representativeRoom.capacity ?? 0) - (a.representativeRoom.capacity ?? 0);
+      if (roomSort === 'surface')
+        return (b.representativeRoom.surface ?? 0) - (a.representativeRoom.surface ?? 0);
+      return a.minPrice - b.minPrice;
+    });
+
+    return groups;
+  }, [filteredRooms, roomSort]);
+
+  const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 1;
 
   const hasRooms = rooms.length > 0;
   const hasVirtualTour =
@@ -737,40 +793,56 @@ export default function HotelDetailPage() {
                     </div>
                   )}
 
-                  {/* Room type filter pills */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {ROOM_TYPE_FILTERS.map((f) => (
-                      <button
-                        key={f.value}
-                        type="button"
-                        onClick={() => setRoomTypeFilter(f.value)}
-                        className={cn(
-                          'shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-all',
-                          roomTypeFilter === f.value
-                            ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
-                            : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
-                        )}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Header: type count + sort */}
+                  {!roomsLoading && roomTypeGroups.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h2 className="font-serif text-xl font-bold text-white">
+                          {roomTypeGroups.length} type{roomTypeGroups.length > 1 ? 's' : ''} de chambre
+                        </h2>
+                        <p className="text-[12px] text-neutral-500">
+                          Réservez le type qui vous convient — une chambre disponible vous sera attribuée.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] p-1">
+                        {([
+                          { value: 'price', label: 'Prix' },
+                          { value: 'capacity', label: 'Capacité' },
+                          { value: 'surface', label: 'Surface' },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setRoomSort(opt.value)}
+                            className={cn(
+                              'rounded-full px-3 py-1 text-[11px] font-semibold transition-all',
+                              roomSort === opt.value
+                                ? 'bg-amber-400/15 text-amber-300'
+                                : 'text-neutral-500 hover:text-neutral-300'
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {/* Rooms grid */}
+                  {/* Room TYPE groups */}
                   {roomsLoading ? (
-                    <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="grid gap-5 md:grid-cols-2">
                       {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="animate-pulse overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0C0C0C]">
-                          <div className="aspect-[4/3] bg-white/[0.04]" />
-                          <div className="space-y-3 p-4">
-                            <div className="h-4 w-2/3 rounded bg-white/[0.05]" />
+                        <div key={i} className="animate-pulse overflow-hidden rounded-3xl border border-white/[0.06] bg-[#0C0C0C]">
+                          <div className="aspect-[4/3] bg-white/[0.04] md:aspect-[16/10]" />
+                          <div className="space-y-3 p-5">
+                            <div className="h-5 w-2/3 rounded bg-white/[0.05]" />
                             <div className="h-3 w-1/2 rounded bg-white/[0.04]" />
-                            <div className="h-8 rounded bg-white/[0.04]" />
+                            <div className="h-10 rounded bg-white/[0.04]" />
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : filteredRooms.length === 0 ? (
+                  ) : roomTypeGroups.length === 0 ? (
                     <div className="flex flex-col items-center gap-4 py-14 text-center">
                       <BedDouble className="size-12 text-neutral-700" />
                       <h3 className="text-base font-semibold text-neutral-400">
@@ -789,20 +861,20 @@ export default function HotelDetailPage() {
                           onClick={() => setRoomTypeFilter('')}
                           className="text-sm text-amber-400 hover:underline"
                         >
-                          Voir toutes les chambres
+                          Voir tous les types
                         </button>
                       )}
                     </div>
                   ) : (
                     <AnimatePresence>
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        {filteredRooms.map((room) => (
-                          <RoomCard
-                            key={room._id}
-                            room={room}
-                            checkIn={checkIn?.toISOString()}
-                            checkOut={checkOut?.toISOString()}
-                            onBook={(r) => setSelectedRoom(r)}
+                      <div className="grid gap-5 md:grid-cols-2">
+                        {roomTypeGroups.map((g) => (
+                          <RoomTypeCard
+                            key={g.roomType}
+                            group={g}
+                            nights={nights}
+                            onView360={(grp) => setViewerGroup(grp)}
+                            onReserve={(grp) => setSelectedRoom(grp.representativeRoom)}
                           />
                         ))}
                       </div>
@@ -956,6 +1028,50 @@ export default function HotelDetailPage() {
           initialCheckIn={checkIn ?? undefined}
           initialCheckOut={checkOut ?? undefined}
         />
+      )}
+
+      {/* ── Multi-scene 360° viewer (per room type) ── */}
+      <RoomTypeViewer
+        group={viewerGroup}
+        open={!!viewerGroup}
+        onClose={() => setViewerGroup(null)}
+        onReserve={(g) => {
+          setViewerGroup(null);
+          setSelectedRoom(g.representativeRoom);
+        }}
+      />
+
+      {/* ── Sticky mobile booking bar ── */}
+      {roomTypeGroups.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-[#0B0B0B]/95 px-4 py-3 backdrop-blur-md md:hidden">
+          <div className="flex items-center justify-between gap-3 pb-[max(0px,env(safe-area-inset-bottom))]">
+            <div className="min-w-0">
+              <div className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                À partir de
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-serif text-lg font-black text-amber-400">
+                  {(roomTypeGroups[0]?.minPrice ?? 0).toLocaleString('fr-TN')} DT
+                </span>
+                <span className="text-[10px] text-neutral-500">/ nuit</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('rooms');
+                setTimeout(() => {
+                  document
+                    .getElementById('rooms-section')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }}
+              className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-95"
+            >
+              Voir les chambres
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

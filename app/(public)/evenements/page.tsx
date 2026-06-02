@@ -46,6 +46,7 @@ export default function EvenementsPage() {
   const [q, setQ] = useState('');
   const [type, setType] = useState('all');
   const [city, setCity] = useState('all');
+  const [dayKey, setDayKey] = useState<string | null>(null); // YYYY-MM-DD
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['public-events-marketplace'],
@@ -54,6 +55,37 @@ export default function EvenementsPage() {
 
   const cities = useMemo(() => {
     return Array.from(new Set(events.map(getVenueCity).filter(Boolean))).sort();
+  }, [events]);
+
+  // ── 14-day scrubber ───────────────────────────────────────────
+  const days = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Array.from({ length: 14 }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        key,
+        date: d,
+        dayName: d.toLocaleDateString('fr-TN', { weekday: 'short' }).replace('.', ''),
+        dayNum: d.getDate(),
+        monthName: d.toLocaleDateString('fr-TN', { month: 'short' }).replace('.', ''),
+        isToday: i === 0,
+        isWeekend: d.getDay() === 0 || d.getDay() === 6,
+      };
+    });
+  }, []);
+
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of events) {
+      if (!e.startAt) continue;
+      const d = new Date(e.startAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
   }, [events]);
 
   const filteredEvents = useMemo(() => {
@@ -65,9 +97,15 @@ export default function EvenementsPage() {
         .some((value) => String(value).toLowerCase().includes(query));
       const matchType = type === 'all' || event.type === type;
       const matchCity = city === 'all' || venue?.city === city;
-      return matchQuery && matchType && matchCity;
+      let matchDay = true;
+      if (dayKey && event.startAt) {
+        const d = new Date(event.startAt);
+        const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        matchDay = k === dayKey;
+      }
+      return matchQuery && matchType && matchCity && matchDay;
     });
-  }, [city, events, q, type]);
+  }, [city, events, q, type, dayKey]);
 
   const featured = filteredEvents[0] ?? events[0] ?? null;
   const heroImage = getEventCover(featured);
@@ -129,6 +167,75 @@ export default function EvenementsPage() {
       </section>
 
       <main className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+        {/* 14-day date scrubber */}
+        <div className="mb-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-serif text-base font-bold text-white sm:text-lg">Choisissez votre date</h2>
+            {dayKey && (
+              <button
+                type="button"
+                onClick={() => setDayKey(null)}
+                className="text-[11px] font-semibold text-amber-400 hover:underline"
+              >
+                Toutes les dates
+              </button>
+            )}
+          </div>
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 md:-mx-6 md:px-6">
+            {days.map((d) => {
+              const count = eventsByDay.get(d.key) ?? 0;
+              const active = dayKey === d.key;
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setDayKey(active ? null : d.key)}
+                  disabled={count === 0 && !active}
+                  className={cn(
+                    'flex w-16 shrink-0 snap-start flex-col items-center gap-0.5 rounded-2xl border px-2 py-2.5 transition-all',
+                    active
+                      ? 'border-amber-400/55 bg-amber-400/[0.12]'
+                      : count === 0
+                      ? 'cursor-not-allowed border-white/[0.04] bg-white/[0.02] opacity-40'
+                      : 'border-white/[0.08] bg-white/[0.03] hover:border-white/25'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'text-[9px] font-bold uppercase tracking-wider',
+                      active ? 'text-amber-300' : d.isWeekend ? 'text-amber-400/70' : 'text-white/45'
+                    )}
+                  >
+                    {d.isToday ? "Auj." : d.dayName}
+                  </span>
+                  <span
+                    className={cn(
+                      'font-serif text-xl font-black leading-none',
+                      active ? 'text-amber-200' : 'text-white'
+                    )}
+                  >
+                    {d.dayNum}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-[8.5px] font-semibold uppercase tracking-wider',
+                      active ? 'text-amber-300/80' : 'text-white/40'
+                    )}
+                  >
+                    {d.monthName}
+                  </span>
+                  <span
+                    className={cn(
+                      'mt-0.5 flex h-1 w-6 items-center justify-center rounded-full',
+                      count > 0 ? (active ? 'bg-amber-400' : 'bg-emerald-400/70') : 'bg-transparent'
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="sticky top-3 z-20 mb-7 rounded-3xl border border-zinc-800 bg-zinc-950/90 p-3 shadow-2xl shadow-black/30 backdrop-blur md:p-4">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
             <label className="relative block">

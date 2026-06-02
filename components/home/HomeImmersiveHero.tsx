@@ -150,22 +150,23 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
         </div>
       </div>
 
-      {/* ── Zone 2 · Catégories (flex-1 fills the slack) ── */}
-      <div className="relative z-10 mt-2 flex min-h-0 flex-1 flex-col">
+      {/* ── Zone 2 · Slim category pill nav ── */}
+      <div className="relative z-10 mt-2 shrink-0">
         <SectionHead
           eyebrow="Accès rapide"
-          title={<>Établissements <span className="text-amber-400">disponibles</span> <Spark /></>}
+          title={<>Explorer par <span className="text-amber-400">catégorie</span> <Spark /></>}
         />
-        <div className="mt-2 grid min-h-0 flex-1 grid-cols-3 grid-rows-2 gap-2">
-          {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
+        <div className="no-scrollbar -mx-4 mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-4">
+          {CATEGORIES.map(({ title, href, Icon }) => (
             <Link
               key={title}
               href={href}
-              className="group flex flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#101011] p-1 text-center transition-all duration-300 hover:border-amber-400/30 hover:bg-[#161616] active:scale-95"
+              className="group flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#111111] px-3 py-2 transition-all duration-200 hover:border-amber-400/40 hover:bg-amber-400/[0.06] active:scale-95"
             >
-              <Icon className="size-6 shrink-0 text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.45)] transition-transform duration-300 group-hover:scale-110" strokeWidth={1.6} />
-              <span className="text-[11px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
-              <span className="max-w-full truncate text-[8px] leading-tight text-zinc-500">{subtitle}</span>
+              <span className="flex size-5 items-center justify-center rounded-full bg-amber-400/[0.12] text-amber-400 transition-colors group-hover:bg-amber-400/20">
+                <Icon className="size-3" strokeWidth={1.7} />
+              </span>
+              <span className="whitespace-nowrap text-[11px] font-bold text-white/85 group-hover:text-amber-200">{title}</span>
             </Link>
           ))}
         </div>
@@ -308,30 +309,22 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
         </div>
       </div>
 
-      {/* CATEGORIES strip — pinned to the bottom of the hero */}
+      {/* CATEGORIES pill strip — pinned to the bottom of the hero */}
       <div className="relative z-10 border-t border-white/[0.06] bg-[#0c0c0d]/60 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-8 py-4 lg:px-10">
-          <div className="shrink-0 pr-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">Accès rapide</p>
-            <p className="text-sm font-bold text-white">Établissements</p>
-          </div>
-          <div className="grid flex-1 grid-cols-6 gap-2.5">
-            {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
-              <Link
-                key={title}
-                href={href}
-                className="group flex items-center gap-2.5 rounded-2xl border border-white/[0.06] bg-[#111112] px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-[#161616]"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/[0.1] transition-colors group-hover:bg-amber-400/[0.18]">
-                  <Icon className="size-4 text-amber-400" strokeWidth={1.7} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[13px] font-bold leading-tight text-white group-hover:text-amber-200">{title}</span>
-                  <span className="block truncate text-[10px] leading-tight text-zinc-500">{subtitle}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 px-8 py-3.5 lg:px-10">
+          {CATEGORIES.map(({ title, href, Icon }) => (
+            <Link
+              key={title}
+              href={href}
+              className="group relative flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-200 hover:bg-amber-400/[0.08]"
+            >
+              <Icon className="size-4 text-amber-400/80 transition-colors group-hover:text-amber-400" strokeWidth={1.7} />
+              <span className="whitespace-nowrap text-sm font-semibold text-white/75 transition-colors group-hover:text-white">
+                {title}
+              </span>
+              <span className="absolute inset-x-3 bottom-0.5 h-px scale-x-0 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent transition-transform duration-300 group-hover:scale-x-100" />
+            </Link>
+          ))}
         </div>
       </div>
     </section>

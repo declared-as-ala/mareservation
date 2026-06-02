@@ -395,7 +395,7 @@ export function RoomBookingModal({
         type: 'venue_room',
         title: venue.name,
         imageUrl: coverImg,
-        unitLabel: room.name ?? typeLabel,
+        unitLabel: typeLabel,
         unitType: 'HOTEL',
         dateTime: checkIn.toISOString(),
         endAt: checkOut.toISOString(),
@@ -405,7 +405,7 @@ export function RoomBookingModal({
         roomId: room._id,
         slug: venue.slug,
       });
-      toast.success(`${room.name ?? typeLabel} ajouté au panier`);
+      toast.success(`${typeLabel} ajouté au panier`);
       openDrawer();
       onClose();
     } finally {
@@ -464,15 +464,15 @@ export function RoomBookingModal({
             <div className="flex items-start gap-3 p-4 sm:p-5 border-b border-white/[0.06]">
               {coverImg && (
                 <div className="relative size-14 sm:size-16 shrink-0 overflow-hidden rounded-xl">
-                  <Image src={coverImg} alt={room.name ?? typeLabel} fill className="object-cover" />
+                  <Image src={coverImg} alt={typeLabel} fill className="object-cover" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] uppercase tracking-widest text-amber-400 font-semibold mb-0.5">
-                  {typeLabel}
+                  Réserver
                 </div>
                 <h2 className="text-base sm:text-lg font-bold text-neutral-100 leading-tight truncate">
-                  {room.name ?? typeLabel}
+                  {typeLabel}
                 </h2>
                 <p className="text-xs text-neutral-500 mt-0.5 truncate">{venue.name}</p>
               </div>
@@ -648,9 +648,9 @@ export function RoomBookingModal({
                       <dl className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <dt className="text-neutral-500 flex items-center gap-1.5">
-                            <BedDouble className="size-3.5" /> Chambre
+                            <BedDouble className="size-3.5" /> Type
                           </dt>
-                          <dd className="text-neutral-300 font-medium">{room.name ?? typeLabel}</dd>
+                          <dd className="text-neutral-300 font-medium">{typeLabel}</dd>
                         </div>
                         <div className="flex justify-between">
                           <dt className="text-neutral-500 flex items-center gap-1.5">
@@ -687,6 +687,12 @@ export function RoomBookingModal({
                     <div className="flex items-center gap-2 text-xs text-neutral-600">
                       <Shield className="size-3.5 text-emerald-500 shrink-0" />
                       Annulation gratuite jusqu'à 24h avant l'arrivée
+                    </div>
+
+                    {/* Type-mode allocation note */}
+                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3 text-[11px] leading-relaxed text-amber-200/85">
+                      <strong className="font-bold">Une chambre {typeLabel.toLowerCase()} disponible vous sera attribuée à votre arrivée.</strong>
+                      {' '}Vous pouvez préciser vos préférences (étage, vue, lit) dans une note à l&apos;hôtel.
                     </div>
 
                     {!user && (
