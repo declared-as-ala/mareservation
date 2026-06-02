@@ -99,15 +99,15 @@ export function HomeNavbar() {
               alt="Before You Go"
               width={540}
               height={152}
-              className="h-[58px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[68px] lg:h-[78px]"
+              className="h-[52px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[60px] lg:h-[68px] xl:h-[72px]"
               style={{ width: 'auto' }}
               priority
             />
             <span className="flex flex-col leading-none">
-              <span className="font-serif text-[18px] font-black tracking-tight text-amber-300 sm:text-[22px] lg:text-[26px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
+              <span className="font-serif text-[17px] font-black tracking-tight text-amber-300 sm:text-[19px] lg:text-[21px] 2xl:text-[24px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
                 BeforeYouGo
               </span>
-              <span className="mt-1 text-[9px] font-medium tracking-[0.06em] text-zinc-400 sm:text-[10px]">
+              <span className="mt-1 hidden text-[9px] font-medium tracking-[0.06em] text-zinc-400 sm:text-[10px] 2xl:block">
                 Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
               </span>
             </span>

@@ -265,28 +265,15 @@ function MobileImmersiveCTA() {
         <div aria-hidden className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-full bg-amber-600/[0.16] blur-[50px]" />
 
         <div className="relative p-3.5">
-          {/* Pill row */}
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/[0.10] px-2 py-0.5 backdrop-blur-sm">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
-              </span>
-              <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">
-                Plateforme immersive
-              </span>
-            </div>
-            <div className="flex -space-x-1">
-              {['#fbbf24', '#f59e0b', '#d97706'].map((c, i) => (
-                <span
-                  key={i}
-                  className="size-4 rounded-full border-2 border-[#0d0d0e]"
-                  style={{ background: `linear-gradient(135deg, ${c}, #1a1106)` }}
-                  aria-hidden
-                />
-              ))}
-              <span className="ml-1.5 self-center text-[9px] font-bold text-amber-300/85">+12k</span>
-            </div>
+          {/* Pill */}
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/[0.10] px-2 py-0.5 backdrop-blur-sm">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">
+              Plateforme immersive
+            </span>
           </div>
 
           {/* Heading */}
