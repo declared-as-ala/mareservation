@@ -37,17 +37,25 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-amber-500/15 bg-gradient-to-r from-black via-zinc-950 to-amber-900/40 backdrop-blur supports-[backdrop-filter]:from-black/95 supports-[backdrop-filter]:via-zinc-950/95 supports-[backdrop-filter]:to-amber-900/30">
       <div className="container flex h-[88px] sm:h-[100px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center shrink-0">
+        {/* Logo + brand wordmark */}
+        <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
             src="/logo.png"
             alt="Before You Go"
             width={520}
             height={150}
-            className="h-[72px] w-auto object-contain sm:h-[82px] lg:h-[92px] drop-shadow-[0_6px_22px_rgba(212,175,55,0.45)]"
+            className="h-[58px] w-auto object-contain sm:h-[68px] lg:h-[78px] drop-shadow-[0_6px_22px_rgba(212,175,55,0.45)]"
             style={{ width: 'auto' }}
             priority
           />
+          <span className="flex flex-col leading-none">
+            <span className="font-serif text-[18px] font-black tracking-tight text-amber-300 sm:text-[22px] lg:text-[26px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
+              BeforeYouGo
+            </span>
+            <span className="mt-1 text-[9px] font-medium tracking-[0.06em] text-zinc-400 sm:text-[10px]">
+              Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
+            </span>
+          </span>
         </Link>
 
         {/* Desktop nav — visible on xl+ */}
