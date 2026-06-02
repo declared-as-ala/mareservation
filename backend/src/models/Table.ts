@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type TablePriceType = 'fixed' | 'perPerson' | 'eventPackage';
-export type TableDefaultStatus = 'available' | 'reserved' | 'blocked';
 
 export interface ITable extends Document {
   venueId: Types.ObjectId;
@@ -20,7 +19,7 @@ export interface ITable extends Document {
   isVip: boolean;
   isActive: boolean;
   isReservable: boolean;
-  defaultStatus: TableDefaultStatus;
+  defaultStatus?: string;
   tags: string[];
   displayOrder: number;
 }
@@ -34,7 +33,7 @@ const TableSchema = new Schema<ITable>(
     capacity: { type: Number, required: true, min: 1 },
     capacityMin: { type: Number },
     capacityMax: { type: Number },
-    locationLabel: { type: String },
+    locationLabel: { type: String, required: true },
     priceType: { type: String, enum: ['fixed', 'perPerson', 'eventPackage'], default: 'fixed' },
     basePrice: { type: Number, default: 0 },
     price: { type: Number, required: true },
@@ -43,7 +42,7 @@ const TableSchema = new Schema<ITable>(
     isVip: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     isReservable: { type: Boolean, default: true },
-    defaultStatus: { type: String, enum: ['available', 'reserved', 'blocked'], default: 'available' },
+    defaultStatus: { type: String, default: 'available' },
     tags: { type: [String], default: [] },
     displayOrder: { type: Number, default: 0 },
   },

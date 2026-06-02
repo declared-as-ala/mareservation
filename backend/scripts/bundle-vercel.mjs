@@ -10,14 +10,10 @@ await esbuild.build({
   bundle: true,
   platform: 'node',
   format: 'esm',
-  outfile: join(root, 'api', 'handler.mjs'),
+  outfile: join(root, 'api', 'index.mjs'),
   external: [
-    'dotenv',
     'mongoose', 'bcryptjs', 'cookie-parser', 'cors', 'express', 'helmet',
-    'jsonwebtoken', 'express-rate-limit', 'express-validator', 'zod', 'multer',
-    'cloudinary', 'multer-storage-cloudinary',
-    // CJS + Node builtins (e.g. require("events")) break when inlined into ESM on Vercel
-    'nodemailer',
+    'jsonwebtoken', 'express-rate-limit', 'express-validator', 'zod', 'multer'
   ],
   minify: false,
   sourcemap: false,

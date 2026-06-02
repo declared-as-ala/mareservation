@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import mongoose from 'mongoose';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import { Reservation, type IReservationExtra, type PaymentOption } from '../models/Reservation';
+import { Reservation, type IReservationExtraItem, type PaymentOption } from '../models/Reservation';
 import { ReservationHold } from '../models/ReservationHold';
 import { RoomBlock } from '../models/RoomBlock';
 import { Room } from '../models/Room';
@@ -228,7 +228,7 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     const nights = nightsBetween(hold.startsAt, hold.endsAt);
     const guestsTotal = hold.peopleCount || 1;
     const subtotal = room.pricePerNight * nights;
-    const extrasArr: IReservationExtra[] = Array.isArray(extras)
+    const extrasArr: IReservationExtraItem[] = Array.isArray(extras)
       ? extras.filter((e) => e && typeof e.key === 'string' && typeof e.unitPrice === 'number').map((e: any) => ({
           key: String(e.key),
           name: String(e.name ?? e.key),

@@ -1,2 +1,9 @@
-// Re-export from middlewares for backward compatibility
-export { authenticate, requireAdmin, requireRoles, requireEstablishmentOwner, requireAnyServiceDomains, type AuthRequest } from '../middlewares/auth.middleware';
+export {
+  authenticate,
+  requireAdmin,
+  requireRoles,
+  requireEstablishmentOwner,
+  requireAnyServiceDomains,
+} from '../middlewares/auth.middleware';
+
+export type { AuthRequest } from '../middlewares/auth.middleware';

@@ -1,235 +1,216 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type ReservationStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'checked_in'
-  | 'completed'
-  | 'cancelled'
-  | 'no_show'
   | 'PENDING'
   | 'CONFIRMED'
-  | 'COMPLETED'
   | 'CANCELLED'
-  | 'NO_SHOW';
+  | 'COMPLETED'
+  | 'EXPIRED'
+  // Lowercase variants used by hotel/event/owner flows
+  | 'pending'
+  | 'confirmed'
+  | 'cancelled'
+  | 'completed'
+  | 'checked_in'
+  | 'no_show';
+
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
-export type BookingType = 'TABLE' | 'ROOM' | 'SEAT' | 'COWORKING';
-export type ReservableType = 'table' | 'room' | 'seat_zone' | 'seat';
-export type CheckInStatus = 'not_checked_in' | 'checked_in';
-export type PaymentOption = 'online' | 'deposit' | 'pay_at_hotel';
 
-export interface IPriceBreakdown {
-  subtotal: number;
-  serviceFee?: number;
-  taxes?: number;
-  discount?: number;
-  extrasTotal?: number;
-  total: number;
-  currency: string;
-}
+export type BookingType = 'TABLE' | 'ROOM' | 'SEAT';
 
-export interface IReservationExtra {
+export type PaymentOption = 'online' | 'on_arrival' | 'partial' | 'deposit' | 'pay_at_hotel';
+
+export type CheckInStatus = 'pending' | 'not_checked_in' | 'checked_in' | 'no_show';
+export type ReservationExtraUnit = 'once' | 'per_night' | 'per_person';
+
+export interface IReservationExtraItem {
   key: string;
   name: string;
   unitPrice: number;
   quantity: number;
-  unit?: 'once' | 'per_night' | 'per_person';
+  unit: ReservationExtraUnit;
 }
 
-export interface IReservation extends Document {
-  reservationCode: string;
-  userId: Types.ObjectId;
-  venueId: Types.ObjectId;
-  eventId?: Types.ObjectId;
-  eventSessionId?: Types.ObjectId;
-  reservableUnitId?: Types.ObjectId;
-  reservableType?: ReservableType;
-  bookingType: BookingType;
-  tableId?: Types.ObjectId;
-  roomId?: Types.ObjectId;
-  seatId?: Types.ObjectId;
-  reservationDate?: Date;
-  startAt: Date;
-  endAt: Date;
-  peopleCount?: number;
-  partySize?: number;
+export interface IReservationPriceBreakdown {
+  subtotal?: number;
+  taxes?: number;
+  discount?: number;
+  serviceFee?: number;
+  extrasTotal?: number;
+  total?: number;
+  currency?: string;
+}
+
+/** Extra runtime fields persisted on reservations by the various owner/checkout flows. */
+export interface IReservationExtra {
+  // Identifiers
+  reservationCode?: string;
+  // Guest / customer contact (legacy: guest*, newer: customer*)
   customerFirstName?: string;
   customerLastName?: string;
-  guestFirstName?: string;
-  guestLastName?: string;
-  guestPhone?: string;
-  customerPhone?: string;
   customerEmail?: string;
-  notes?: string;
-  specialRequest?: string;
-  priceBreakdown?: IPriceBreakdown;
-  totalPrice: number;
-  confirmationCode: string;
-  status: ReservationStatus;
-  paymentStatus: PaymentStatus;
-  paymentMethod?: 'cash' | 'card' | 'online' | 'wallet';
-  paymentProvider?: string;
+  customerPhone?: string;
+  // Pricing
   amountPaid?: number;
   remainingAmount?: number;
-  qrCodeData?: string;
-  qrCodeImageUrl?: string;
-  checkInStatus: CheckInStatus;
-  checkedInAt?: Date;
-  checkedInBy?: Types.ObjectId;
-  source?: string;
-  orderType?: 'table_only' | 'with_menu';
-  menuItems?: Array<{
-    menuItemId: Types.ObjectId;
-    name: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
-  menuTotal?: number;
-  menuPrepStatus?: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
-  menuPrepUpdatedAt?: Date;
-  coworkingDurationType?: 'hourly' | 'half_day' | 'full_day';
-  coworkingHours?: number;
-  coworkingAddons?: Array<{
-    key: string;
-    name: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
-  coworkingAddonsTotal?: number;
-  reminderEmailSentAt?: Date;
-  reviewRequestSentAt?: Date;
-  cancellationEmailSentAt?: Date;
-  // Hotel-specific
-  holdId?: Types.ObjectId;
   paymentOption?: PaymentOption;
-  nights?: number;
+  paymentMethod?: string;
+  // Reservable unit / catalog
+  reservableUnitId?: Types.ObjectId | string;
+  reservableType?: 'table' | 'room' | 'seat' | 'ticket';
+  orderType?: 'standard' | 'with_menu' | 'event_ticket';
+  peopleCount?: number;
   adults?: number;
   children?: number;
   childrenAges?: number[];
   roomsCount?: number;
-  arrivalTime?: string; // "HH:mm"
-  extras?: IReservationExtra[];
-  extrasTotal?: number;
-  cancellationDeadline?: Date;
-  acceptedHotelPolicy?: boolean;
-  acceptedPlatformTerms?: boolean;
+  // Check-in lifecycle
+  checkInStatus?: CheckInStatus;
+  checkedInAt?: Date;
+  checkedInBy?: Types.ObjectId | string;
+  // Stay timing
+  reservationDate?: Date;
+  nights?: number;
+  guestCountry?: string;
+  guestCity?: string;
   idNumber?: string;
   nationality?: string;
   dateOfBirth?: Date;
-  guestCountry?: string;
-  guestCity?: string;
+  arrivalTime?: string;
+  specialRequest?: string;
   needBabyBed?: boolean;
   needExtraBed?: boolean;
   accessibilityRequest?: string;
-  internalNotes?: string[];
+  acceptedHotelPolicy?: boolean;
+  acceptedPlatformTerms?: boolean;
+  extras?: IReservationExtraItem[];
+  extrasTotal?: number;
+  priceBreakdown?: IReservationPriceBreakdown;
+  cancellationDeadline?: Date;
+  holdId?: Types.ObjectId | string;
+  // QR + reminders + reviews
+  qrCodeData?: string;
+  qrCodeImageUrl?: string;
+  reminderEmailSentAt?: Date;
+  reviewRequestSentAt?: Date;
+}
+
+export interface IReservation extends Document, IReservationExtra {
+  userId: Types.ObjectId;
+  venueId: Types.ObjectId;
+  eventId?: Types.ObjectId;
+  bookingType: BookingType;
+  tableId?: Types.ObjectId;
+  roomId?: Types.ObjectId;
+  seatId?: Types.ObjectId;
+  startAt: Date;
+  endAt: Date;
+  status: ReservationStatus;
+  paymentStatus: PaymentStatus;
+  confirmationCode: string;
+  totalPrice: number;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  partySize?: number;
+  notes?: string;
+  source?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const ReservationSchema = new Schema<IReservation>(
   {
-    reservationCode: { type: String, unique: true, sparse: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
     eventId: { type: Schema.Types.ObjectId, ref: 'Event' },
-    eventSessionId: { type: Schema.Types.ObjectId, ref: 'EventSession' },
-    reservableUnitId: { type: Schema.Types.ObjectId, ref: 'ReservableUnit' },
-    reservableType: { type: String, enum: ['table', 'room', 'seat_zone', 'seat'] },
-    bookingType: { type: String, enum: ['TABLE', 'ROOM', 'SEAT', 'COWORKING'], required: true },
+    bookingType: { type: String, enum: ['TABLE', 'ROOM', 'SEAT'], required: true },
     tableId: { type: Schema.Types.ObjectId, ref: 'Table' },
     roomId: { type: Schema.Types.ObjectId, ref: 'Room' },
     seatId: { type: Schema.Types.ObjectId, ref: 'Seat' },
-    reservationDate: { type: Date },
     startAt: { type: Date, required: true },
     endAt: { type: Date, required: true },
-    peopleCount: { type: Number },
-    partySize: { type: Number },
-    customerFirstName: { type: String },
-    customerLastName: { type: String },
+    status: {
+      type: String,
+      enum: [
+        'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'EXPIRED',
+        'pending', 'confirmed', 'cancelled', 'completed', 'checked_in', 'no_show',
+      ],
+      default: 'CONFIRMED',
+    },
+    paymentStatus: { type: String, enum: ['unpaid', 'pending', 'paid', 'failed', 'refunded'], default: 'unpaid' },
+    confirmationCode: { type: String, required: true, unique: true },
+    totalPrice: { type: Number, required: true, default: 0 },
     guestFirstName: { type: String },
     guestLastName: { type: String },
     guestPhone: { type: String },
-    customerPhone: { type: String },
-    customerEmail: { type: String },
+    partySize: { type: Number },
     notes: { type: String },
-    specialRequest: { type: String },
-    priceBreakdown: {
-      subtotal: { type: Number },
-      serviceFee: { type: Number },
-      taxes: { type: Number },
-      discount: { type: Number },
-      extrasTotal: { type: Number },
-      total: { type: Number },
-      currency: { type: String },
-    },
-    holdId: { type: Schema.Types.ObjectId, ref: 'ReservationHold' },
-    paymentOption: { type: String, enum: ['online', 'deposit', 'pay_at_hotel'] },
-    nights: { type: Number },
+    source: { type: String, default: 'web' },
+
+    // ── Extras used by hotel/event/owner flows ──
+    reservationCode: { type: String, index: true },
+    customerFirstName: { type: String },
+    customerLastName: { type: String },
+    customerEmail: { type: String },
+    customerPhone: { type: String },
+    amountPaid: { type: Number },
+    remainingAmount: { type: Number },
+    paymentOption: { type: String, enum: ['online', 'on_arrival', 'partial', 'deposit', 'pay_at_hotel'] },
+    paymentMethod: { type: String },
+    reservableUnitId: { type: Schema.Types.ObjectId, ref: 'ReservableUnit' },
+    reservableType: { type: String, enum: ['table', 'room', 'seat', 'ticket'] },
+    orderType: { type: String, enum: ['standard', 'with_menu', 'event_ticket'] },
+    peopleCount: { type: Number },
     adults: { type: Number },
-    children: { type: Number, default: 0 },
+    children: { type: Number },
     childrenAges: { type: [Number], default: [] },
-    roomsCount: { type: Number, default: 1 },
-    arrivalTime: { type: String },
-    extras: [{
-      key: { type: String },
-      name: { type: String },
-      unitPrice: { type: Number },
-      quantity: { type: Number, default: 1 },
-      unit: { type: String, enum: ['once', 'per_night', 'per_person'], default: 'once' },
-    }],
-    extrasTotal: { type: Number, default: 0 },
-    cancellationDeadline: { type: Date },
-    acceptedHotelPolicy: { type: Boolean, default: false },
-    acceptedPlatformTerms: { type: Boolean, default: false },
+    roomsCount: { type: Number },
+    checkInStatus: { type: String, enum: ['pending', 'not_checked_in', 'checked_in', 'no_show'], default: 'pending' },
+    checkedInAt: { type: Date },
+    checkedInBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    reservationDate: { type: Date },
+    nights: { type: Number },
+    guestCountry: { type: String },
+    guestCity: { type: String },
     idNumber: { type: String },
     nationality: { type: String },
     dateOfBirth: { type: Date },
-    guestCountry: { type: String },
-    guestCity: { type: String },
+    arrivalTime: { type: String },
+    specialRequest: { type: String },
     needBabyBed: { type: Boolean, default: false },
     needExtraBed: { type: Boolean, default: false },
     accessibilityRequest: { type: String },
-    internalNotes: { type: [String], default: [] },
-    totalPrice: { type: Number, required: true, default: 0 },
-    confirmationCode: { type: String, required: true, unique: true },
-    status: {
-      type: String,
-      enum: ['pending', 'confirmed', 'checked_in', 'completed', 'cancelled', 'no_show', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'],
-      default: 'confirmed',
+    acceptedHotelPolicy: { type: Boolean, default: false },
+    acceptedPlatformTerms: { type: Boolean, default: false },
+    extras: {
+      type: [
+        {
+          key: { type: String, required: true },
+          name: { type: String, required: true },
+          unitPrice: { type: Number, required: true },
+          quantity: { type: Number, default: 1 },
+          unit: { type: String, enum: ['once', 'per_night', 'per_person'], default: 'once' },
+        },
+      ],
+      default: [],
     },
-    paymentStatus: { type: String, enum: ['unpaid', 'pending', 'paid', 'failed', 'refunded'], default: 'unpaid' },
-    paymentMethod: { type: String, enum: ['cash', 'card', 'online', 'wallet'] },
-    paymentProvider: { type: String },
-    amountPaid: { type: Number, default: 0 },
-    remainingAmount: { type: Number, default: 0 },
+    extrasTotal: { type: Number, default: 0 },
+    priceBreakdown: {
+      subtotal: { type: Number },
+      taxes: { type: Number },
+      discount: { type: Number },
+      serviceFee: { type: Number },
+      extrasTotal: { type: Number },
+      total: { type: Number },
+      currency: { type: String, default: 'TND' },
+    },
+    cancellationDeadline: { type: Date },
+    holdId: { type: Schema.Types.ObjectId, ref: 'ReservationHold' },
     qrCodeData: { type: String },
     qrCodeImageUrl: { type: String },
-    checkInStatus: { type: String, enum: ['not_checked_in', 'checked_in'], default: 'not_checked_in' },
-    checkedInAt: { type: Date },
-    checkedInBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    source: { type: String, default: 'web' },
-    orderType: { type: String, enum: ['table_only', 'with_menu'], default: 'table_only' },
-    menuItems: [{
-      menuItemId: { type: Schema.Types.ObjectId, ref: 'MenuItem' },
-      name: { type: String },
-      quantity: { type: Number, default: 1 },
-      unitPrice: { type: Number },
-    }],
-    menuTotal: { type: Number, default: 0 },
-    menuPrepStatus: { type: String, enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'], default: 'pending' },
-    menuPrepUpdatedAt: { type: Date },
-    coworkingDurationType: { type: String, enum: ['hourly', 'half_day', 'full_day'] },
-    coworkingHours: { type: Number },
-    coworkingAddons: [{
-      key: { type: String },
-      name: { type: String },
-      quantity: { type: Number, default: 1 },
-      unitPrice: { type: Number, default: 0 },
-    }],
-    coworkingAddonsTotal: { type: Number, default: 0 },
     reminderEmailSentAt: { type: Date },
     reviewRequestSentAt: { type: Date },
-    cancellationEmailSentAt: { type: Date },
   },
   { timestamps: true }
 );
@@ -237,8 +218,6 @@ const ReservationSchema = new Schema<IReservation>(
 ReservationSchema.index({ tableId: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ roomId: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ seatId: 1, startAt: 1 });
-ReservationSchema.index({ reservableUnitId: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ userId: 1, createdAt: -1 });
 ReservationSchema.index({ venueId: 1, bookingType: 1, startAt: 1 });
-ReservationSchema.index({ venueId: 1, status: 1, startAt: -1 });
 export const Reservation = mongoose.model<IReservation>('Reservation', ReservationSchema);

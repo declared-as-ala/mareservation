@@ -9,15 +9,14 @@ COPY tsconfig.json ./
 # Install dependencies
 RUN npm install
 
-# Copy source code and build scripts
-COPY scripts ./scripts
+# Copy source code
 COPY src ./src
 
 # Build TypeScript
 RUN npm run build
 
-# Expose port (actual port set via PORT env variable)
-EXPOSE 5000
+# Expose port
+EXPOSE 3001
 
 # Start server
 CMD ["npm", "start"]

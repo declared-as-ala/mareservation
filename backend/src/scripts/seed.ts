@@ -20,8 +20,33 @@ import bcrypt from 'bcryptjs';
 dotenv.config();
 
 const PASSWORD = 'password123';
-const KLAPTY = 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq';
 
+// Klapty 360°: store ONLY the official tunnel embed URL (https://www.klapty.com/tour/tunnel/<TOUR_ID>).
+const KLAPTY_TUNNEL = {
+  cafe1: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  cafe2: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  restaurant: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  restaurant2: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  hotel: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  hotel2: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  cinema: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  cinema2: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  eventSpace1: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+  eventSpace2: 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq',
+};
+
+function assertValidKlaptyTunnelUrl(url: string, label: string): void {
+  if (!url || typeof url !== 'string' || !url.includes('www.klapty.com/tour/tunnel/')) {
+    throw new Error(
+      `[Seed] Invalid Klapty URL for ${label}: must be https://www.klapty.com/tour/tunnel/<TOUR_ID>. Got: ${url}`
+    );
+  }
+  if (url.toLowerCase().includes('storage.klapty.com') || url.includes('/p/')) {
+    throw new Error(`[Seed] Invalid Klapty URL for ${label}: do not use storage.klapty.com or /p/ public pages. Got: ${url}`);
+  }
+}
+
+// Convert pitch/yaw (radians) to xPercent/yPercent for overlay
 function pitchYawToPercent(pitch: number, yaw: number): { xPercent: number; yPercent: number } {
   const xPercent = ((yaw + Math.PI) / (2 * Math.PI)) * 100;
   const yPercent = ((Math.PI / 2 - pitch) / Math.PI) * 100;
@@ -29,6 +54,7 @@ function pitchYawToPercent(pitch: number, yaw: number): { xPercent: number; yPer
 }
 
 async function seed() {
+  Object.entries(KLAPTY_TUNNEL).forEach(([key, url]) => assertValidKlaptyTunnelUrl(url, key));
   await connectDatabase();
 
   await RefreshToken.deleteMany({});
@@ -54,431 +80,409 @@ async function seed() {
     email: 'admin@mareservation.tn',
     passwordHash: hash,
     role: 'ADMIN',
-    emailVerified: true,
   });
 
-  const normalUser = await User.create({
-    fullName: 'Client Ma Reservation',
-    email: 'user@mareservation.tn',
-    passwordHash: hash,
-    role: 'CUSTOMER',
-    emailVerified: true,
-  });
+  const customers = await User.insertMany([
+    { fullName: 'Rania Ben Salem', email: 'client1@example.com', passwordHash: hash, role: 'CUSTOMER' },
+    { fullName: 'Karim Trabelsi', email: 'client2@example.com', passwordHash: hash, role: 'CUSTOMER' },
+    { fullName: 'Amira Jlassi', email: 'client3@example.com', passwordHash: hash, role: 'CUSTOMER' },
+    { fullName: 'Youssef Ben Ammar', email: 'client4@example.com', passwordHash: hash, role: 'CUSTOMER' },
+    { fullName: 'Sarra Gharbi', email: 'client5@example.com', passwordHash: hash, role: 'CUSTOMER' },
+  ]);
 
-  const ownerCafe = await User.create({
-    fullName: 'Owner Cafe MaTable',
-    email: 'cafe@matable.tn',
-    passwordHash: hash,
-    role: 'ESTABLISHMENT_OWNER',
-    emailVerified: true,
-  });
-  const ownerRestaurant = await User.create({
-    fullName: 'Owner Restaurant MaTable',
-    email: 'owner.restaurant@matable.tn',
-    passwordHash: hash,
-    role: 'ESTABLISHMENT_OWNER',
-    emailVerified: true,
-  });
-  const ownerHotel = await User.create({
-    fullName: 'Owner Hotel MaTable',
-    email: 'owner.hotel@matable.tn',
-    passwordHash: hash,
-    role: 'ESTABLISHMENT_OWNER',
-    emailVerified: true,
-  });
-  const ownerEvent = await User.create({
-    fullName: 'Owner Événementiel MaTable',
-    email: 'owner.event@matable.tn',
-    passwordHash: hash,
-    role: 'ESTABLISHMENT_OWNER',
-    emailVerified: true,
-  });
-
-  console.log('👤 Created users: 1 admin + 1 customer + 4 owners');
+  console.log('👤 Created 1 admin, 5 customers');
 
   const categories = await Category.insertMany([
-    { name: 'Cafés & Lounges', slug: 'cafes-lounges', type: 'primary', displayOrder: 1 },
-    { name: 'Bars & Rooftops', slug: 'bars-rooftops', type: 'primary', displayOrder: 2 },
-    { name: 'Restaurants Gastronomiques', slug: 'restaurants-gastronomiques', type: 'primary', displayOrder: 3 },
-    { name: 'Clubs & Resto de Nuit', slug: 'clubs-resto-nuit', type: 'primary', displayOrder: 4 },
-    { name: 'Salles & Événementiel', slug: 'salles-evenementiel', type: 'primary', displayOrder: 5 },
-    { name: 'Hôtels & Resorts', slug: 'hotels-resorts', type: 'primary', displayOrder: 6 },
-    { name: 'Beach Clubs', slug: 'beach-clubs', type: 'primary', displayOrder: 7 },
-    { name: 'Spas & Bien-être', slug: 'spas-bien-etre', type: 'primary', displayOrder: 8 },
+    { name: 'Cafés', slug: 'cafes', type: 'primary', displayOrder: 1 },
+    { name: 'Restaurants', slug: 'restaurants', type: 'primary', displayOrder: 2 },
+    { name: 'Hôtels', slug: 'hotels', type: 'primary', displayOrder: 3 },
+    { name: 'Cinéma', slug: 'cinema', type: 'primary', displayOrder: 4 },
+    { name: 'Événements', slug: 'evenements', type: 'primary', displayOrder: 5 },
   ]);
-  const [catCafes, catBars, catResto, catClubs, catSalles, catHotels, catBeach, catSpas] =
-    categories.map((c) => c._id);
-  console.log('📁 Created 8 categories matching the home page');
+  const catCafes = categories[0]._id;
+  const catRestaurants = categories[1]._id;
+  const catHotels = categories[2]._id;
+  const catCinema = categories[3]._id;
+  const catEvenements = categories[4]._id;
+  console.log('📁 Created 5 categories');
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 1) CAFÉS & LOUNGES — 1 venue
-  // ─────────────────────────────────────────────────────────────────────
+  const heroImages = [
+    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80',
+    'https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=800&q=80',
+    'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80',
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
+    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&q=80',
+    'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&q=80',
+    'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80',
+    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80',
+  ];
+
+  // Café 1
   const cafe1 = await Venue.create({
-    name: 'Babol Coffee Lounge',
-    slug: 'babol-coffee-lounge-tunis',
+    name: 'Babol Coffee',
+    slug: 'babol-coffee-tunis',
     type: 'CAFE',
     city: 'Tunis',
     governorate: 'Tunis',
     address: 'Avenue Habib Bourguiba, Tunis',
-    shortDescription: 'Café lounge cosy avec vue sur l\'avenue.',
-    description: 'Café lounge cosy avec vue sur l\'avenue. Thé, café de spécialité et pâtisseries maison.',
+    shortDescription: 'Café cosy avec vue.',
+    description: 'Café cosy avec vue. Thé, café et pâtisseries.',
+    rating: 4.8,
+    ratingCount: 120,
     startingPrice: 12,
     priceRangeMin: 8,
     priceRangeMax: 25,
     categoryIds: [catCafes],
-    ownerId: ownerCafe._id,
     isPublished: true,
     isFeatured: true,
   });
-  await VenueMedia.create({ venueId: cafe1._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
+  await VenueMedia.insertMany([
+    { venueId: cafe1._id, kind: 'HERO_IMAGE', url: heroImages[0] },
+    { venueId: cafe1._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.cafe1 },
+  ]);
   const cafe1Tables = await Table.insertMany([
     { venueId: cafe1._id, tableNumber: 1, code: 'T1', capacity: 2, locationLabel: 'Fenêtre', price: 12, basePrice: 12, isVip: false },
     { venueId: cafe1._id, tableNumber: 2, code: 'T2', capacity: 4, locationLabel: 'Centre', price: 15, basePrice: 15, isVip: false },
   ]);
-  const cafe1Tour = await VirtualTour.create({ venueId: cafe1._id, provider: 'klapty', embedUrl: KLAPTY, isActive: true });
+  const tour1 = await VirtualTour.create({ venueId: cafe1._id, provider: 'klapty', embedUrl: KLAPTY_TUNNEL.cafe1, isActive: true });
   await TableHotspot.insertMany([
     { venueId: cafe1._id, tableId: cafe1Tables[0]._id, sceneId: 'default', pitch: 0, yaw: -0.6 },
     { venueId: cafe1._id, tableId: cafe1Tables[1]._id, sceneId: 'default', pitch: 0, yaw: 0.6 },
   ]);
-  const cp1 = pitchYawToPercent(0, -0.6);
-  const cp2 = pitchYawToPercent(0, 0.6);
+  const p1 = pitchYawToPercent(0, -0.6);
+  const p2 = pitchYawToPercent(0, 0.6);
   await TourHotspot.insertMany([
-    { venueId: cafe1._id, virtualTourId: cafe1Tour._id, label: 'Table 1', targetType: 'table', targetId: cafe1Tables[0]._id, xPercent: cp1.xPercent, yPercent: cp1.yPercent, isActive: true },
-    { venueId: cafe1._id, virtualTourId: cafe1Tour._id, label: 'Table 2', targetType: 'table', targetId: cafe1Tables[1]._id, xPercent: cp2.xPercent, yPercent: cp2.yPercent, isActive: true },
+    { virtualTourId: tour1._id, label: 'Table 1', targetType: 'table', targetId: cafe1Tables[0]._id, xPercent: p1.xPercent, yPercent: p1.yPercent, isActive: true },
+    { virtualTourId: tour1._id, label: 'Table 2', targetType: 'table', targetId: cafe1Tables[1]._id, xPercent: p2.xPercent, yPercent: p2.yPercent, isActive: true },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 2) BARS & ROOFTOPS — 1 venue (name contains "Bar" for q=Bar)
-  // ─────────────────────────────────────────────────────────────────────
-  const bar = await Venue.create({
-    name: 'Skyline Bar & Rooftop',
-    slug: 'skyline-bar-rooftop-tunis',
-    type: 'EVENT_SPACE',
-    city: 'Tunis',
+  // Café 2
+  const cafe2 = await Venue.create({
+    name: 'Ashkal Arabia',
+    slug: 'ashkal-arabia-sidi-bou-said',
+    type: 'CAFE',
+    city: 'Sidi Bou Said',
     governorate: 'Tunis',
-    address: 'Les Berges du Lac, Tunis',
-    shortDescription: 'Rooftop bar tendance avec vue panoramique.',
-    description: 'Rooftop bar tendance avec vue panoramique sur la ville et le lac. Cocktails signature, DJ sets et tapas raffinés.',
-    startingPrice: 35,
-    priceRangeMin: 25,
-    priceRangeMax: 90,
-    categoryIds: [catBars],
-    ownerId: ownerEvent._id,
+    address: 'Rue de la Corniche, Sidi Bou Said',
+    shortDescription: 'Café avec terrasse et vue mer.',
+    description: 'Café avec terrasse et vue mer.',
+    rating: 4.9,
+    ratingCount: 85,
+    startingPrice: 14,
+    priceRangeMin: 10,
+    priceRangeMax: 22,
+    categoryIds: [catCafes],
     isPublished: true,
-    isFeatured: true,
+    isFeatured: false,
   });
-  await VenueMedia.create({ venueId: bar._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
-  await Table.insertMany([
-    { venueId: bar._id, tableNumber: 1, code: 'B1', capacity: 4, locationLabel: 'Rooftop bar', price: 35, basePrice: 35, isVip: false },
-    { venueId: bar._id, tableNumber: 2, code: 'VIP', capacity: 6, locationLabel: 'Carré VIP', price: 90, basePrice: 90, isVip: true },
+  await VenueMedia.insertMany([
+    { venueId: cafe2._id, kind: 'HERO_IMAGE', url: heroImages[1] },
+    { venueId: cafe2._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.cafe2 },
+  ]);
+  const cafe2Tables = await Table.insertMany([
+    { venueId: cafe2._id, tableNumber: 1, code: 'T1', capacity: 2, locationLabel: 'Terrasse', price: 14, basePrice: 14, isVip: false },
+    { venueId: cafe2._id, tableNumber: 2, code: 'T2', capacity: 2, locationLabel: 'Intérieur', price: 12, basePrice: 12, isVip: false },
+  ]);
+  const tour2 = await VirtualTour.create({ venueId: cafe2._id, provider: 'klapty', embedUrl: KLAPTY_TUNNEL.cafe2, isActive: true });
+  await TableHotspot.insertMany([
+    { venueId: cafe2._id, tableId: cafe2Tables[0]._id, sceneId: 'default', pitch: 0, yaw: -0.5 },
+    { venueId: cafe2._id, tableId: cafe2Tables[1]._id, sceneId: 'default', pitch: 0, yaw: 0.5 },
+  ]);
+  const p3 = pitchYawToPercent(0, -0.5);
+  const p4 = pitchYawToPercent(0, 0.5);
+  await TourHotspot.insertMany([
+    { virtualTourId: tour2._id, label: 'Table 1', targetType: 'table', targetId: cafe2Tables[0]._id, xPercent: p3.xPercent, yPercent: p3.yPercent, isActive: true },
+    { virtualTourId: tour2._id, label: 'Table 2', targetType: 'table', targetId: cafe2Tables[1]._id, xPercent: p4.xPercent, yPercent: p4.yPercent, isActive: true },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 3) RESTAURANTS GASTRONOMIQUES — 1 venue
-  // ─────────────────────────────────────────────────────────────────────
+  // Restaurant 1
   const restaurant = await Venue.create({
-    name: 'Il Monte Cristo Gastronomique',
-    slug: 'il-monte-cristo-gastronomique-tunis',
+    name: 'Il Monte Cristo',
+    slug: 'il-monte-cristo-tunis',
     type: 'RESTAURANT',
     city: 'Tunis',
     governorate: 'Tunis',
     address: 'La Goulette, Tunis',
-    shortDescription: 'Restaurant gastronomique italo-méditerranéen.',
-    description: 'Restaurant gastronomique italo-méditerranéen. Cuisine raffinée par un chef étoilé, cave à vins d\'exception.',
+    shortDescription: 'Restaurant italien et méditerranéen.',
+    description: 'Restaurant italien et méditerranéen. Cuisine raffinée.',
+    rating: 4.7,
+    ratingCount: 200,
     startingPrice: 45,
     priceRangeMin: 35,
-    priceRangeMax: 120,
-    categoryIds: [catResto],
-    ownerId: ownerRestaurant._id,
+    priceRangeMax: 80,
+    categoryIds: [catRestaurants],
     isPublished: true,
     isFeatured: true,
   });
-  await VenueMedia.create({ venueId: restaurant._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
+  await VenueMedia.insertMany([
+    { venueId: restaurant._id, kind: 'HERO_IMAGE', url: heroImages[2] },
+    { venueId: restaurant._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.restaurant },
+  ]);
   const restaurantTables = await Table.insertMany([
     { venueId: restaurant._id, tableNumber: 1, code: 'T1', capacity: 2, locationLabel: 'Fenêtre', price: 45, basePrice: 45, isVip: false },
     { venueId: restaurant._id, tableNumber: 2, code: 'T2', capacity: 4, locationLabel: 'Salle', price: 55, basePrice: 55, isVip: true },
     { venueId: restaurant._id, tableNumber: 3, code: 'T3', capacity: 6, locationLabel: 'Terrasse', price: 65, basePrice: 65, isVip: false },
   ]);
-  const restaurantTour = await VirtualTour.create({ venueId: restaurant._id, provider: 'klapty', embedUrl: KLAPTY, isActive: true });
+  const tourRest = await VirtualTour.create({ venueId: restaurant._id, provider: 'klapty', embedUrl: KLAPTY_TUNNEL.restaurant, isActive: true });
   await TableHotspot.insertMany([
     { venueId: restaurant._id, tableId: restaurantTables[0]._id, sceneId: 'default', pitch: 0, yaw: -0.7 },
     { venueId: restaurant._id, tableId: restaurantTables[1]._id, sceneId: 'default', pitch: 0, yaw: 0 },
     { venueId: restaurant._id, tableId: restaurantTables[2]._id, sceneId: 'default', pitch: 0, yaw: 0.7 },
   ]);
   await TourHotspot.insertMany([
-    { venueId: restaurant._id, virtualTourId: restaurantTour._id, label: 'Table 1', targetType: 'table', targetId: restaurantTables[0]._id, xPercent: pitchYawToPercent(0, -0.7).xPercent, yPercent: pitchYawToPercent(0, -0.7).yPercent, isActive: true },
-    { venueId: restaurant._id, virtualTourId: restaurantTour._id, label: 'Table 2', targetType: 'table', targetId: restaurantTables[1]._id, xPercent: 50, yPercent: 50, isActive: true },
-    { venueId: restaurant._id, virtualTourId: restaurantTour._id, label: 'Table 3', targetType: 'table', targetId: restaurantTables[2]._id, xPercent: pitchYawToPercent(0, 0.7).xPercent, yPercent: pitchYawToPercent(0, 0.7).yPercent, isActive: true },
+    { virtualTourId: tourRest._id, label: 'Table 1', targetType: 'table', targetId: restaurantTables[0]._id, xPercent: pitchYawToPercent(0, -0.7).xPercent, yPercent: pitchYawToPercent(0, -0.7).yPercent, isActive: true },
+    { virtualTourId: tourRest._id, label: 'Table 2', targetType: 'table', targetId: restaurantTables[1]._id, xPercent: 50, yPercent: 50, isActive: true },
+    { virtualTourId: tourRest._id, label: 'Table 3', targetType: 'table', targetId: restaurantTables[2]._id, xPercent: pitchYawToPercent(0, 0.7).xPercent, yPercent: pitchYawToPercent(0, 0.7).yPercent, isActive: true },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 4) CLUBS & RESTO DE NUIT — 1 venue (name contains "Club")
-  // ─────────────────────────────────────────────────────────────────────
-  const club = await Venue.create({
-    name: 'Le Club Mojito Night',
-    slug: 'le-club-mojito-night-gammarth',
+  // Restaurant 2
+  const restaurant2 = await Venue.create({
+    name: 'Le Golfe',
+    slug: 'le-golfe-sousse',
     type: 'RESTAURANT',
-    city: 'Gammarth',
-    governorate: 'Tunis',
-    address: 'Route de Gammarth',
-    shortDescription: 'Resto-club de nuit, cuisine méditerranéenne et clubbing.',
-    description: 'Resto-club de nuit incontournable. Cuisine méditerranéenne raffinée jusqu\'à minuit puis ambiance clubbing avec DJ résidents.',
-    startingPrice: 60,
+    city: 'Sousse',
+    governorate: 'Sousse',
+    address: 'Corniche de Sousse',
+    shortDescription: 'Fruits de mer et vue sur le golfe.',
+    description: 'Restaurant de fruits de mer avec vue sur le golfe. Spécialités tunisiennes.',
+    rating: 4.6,
+    ratingCount: 150,
+    startingPrice: 55,
     priceRangeMin: 40,
-    priceRangeMax: 150,
-    categoryIds: [catClubs],
-    ownerId: ownerRestaurant._id,
+    priceRangeMax: 90,
+    categoryIds: [catRestaurants],
+    isPublished: true,
+    isFeatured: false,
+  });
+  await VenueMedia.insertMany([
+    { venueId: restaurant2._id, kind: 'HERO_IMAGE', url: heroImages[6] },
+    { venueId: restaurant2._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.restaurant2 },
+  ]);
+  const restaurant2Tables = await Table.insertMany([
+    { venueId: restaurant2._id, tableNumber: 1, code: 'T1', capacity: 2, locationLabel: 'Vue mer', price: 55, basePrice: 55, isVip: false },
+    { venueId: restaurant2._id, tableNumber: 2, code: 'T2', capacity: 4, locationLabel: 'Terrasse', price: 60, basePrice: 60, isVip: false },
+  ]);
+
+  // Hotel 1
+  const hotel = await Venue.create({
+    name: 'Hôtel Le Padirac',
+    slug: 'hotel-le-padirac-hammamet',
+    type: 'HOTEL',
+    city: 'Hammamet',
+    governorate: 'Nabeul',
+    address: 'Zone Touristique, Hammamet',
+    shortDescription: 'Hôtel 4 étoiles avec piscine et spa.',
+    description: 'Hôtel 4 étoiles avec piscine et spa. Chambres avec vue mer.',
+    rating: 4.6,
+    ratingCount: 320,
+    startingPrice: 120,
+    priceRangeMin: 100,
+    priceRangeMax: 280,
+    categoryIds: [catHotels],
     isPublished: true,
     isFeatured: true,
   });
-  await VenueMedia.create({ venueId: club._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
-  await Table.insertMany([
-    { venueId: club._id, tableNumber: 1, code: 'D1', capacity: 4, locationLabel: 'Dancefloor', price: 60, basePrice: 60, isVip: false },
-    { venueId: club._id, tableNumber: 2, code: 'VIP', capacity: 8, locationLabel: 'Carré VIP', price: 150, basePrice: 150, isVip: true },
+  await VenueMedia.insertMany([
+    { venueId: hotel._id, kind: 'HERO_IMAGE', url: heroImages[3] },
+    { venueId: hotel._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.hotel },
+  ]);
+  const hotelRooms = await Room.insertMany([
+    { venueId: hotel._id, roomNumber: 101, roomType: 'Standard', capacity: 2, pricePerNight: 120 },
+    { venueId: hotel._id, roomNumber: 102, roomType: 'Standard', capacity: 2, pricePerNight: 120 },
+    { venueId: hotel._id, roomNumber: 201, roomType: 'Vue mer', capacity: 3, pricePerNight: 180 },
+    { venueId: hotel._id, roomNumber: 202, roomType: 'Suite', capacity: 4, pricePerNight: 250 },
+  ]);
+  const tourHotel = await VirtualTour.create({ venueId: hotel._id, provider: 'klapty', embedUrl: KLAPTY_TUNNEL.hotel, isActive: true });
+  await TourHotspot.insertMany([
+    { virtualTourId: tourHotel._id, label: 'Chambre 101', targetType: 'room', targetId: hotelRooms[0]._id, xPercent: 25, yPercent: 50, isActive: true },
+    { virtualTourId: tourHotel._id, label: 'Chambre 102', targetType: 'room', targetId: hotelRooms[1]._id, xPercent: 75, yPercent: 50, isActive: true },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 5) SALLES & ÉVÉNEMENTIEL — 1 venue
-  // ─────────────────────────────────────────────────────────────────────
-  const eventSpace = await Venue.create({
-    name: 'El Teatro — Salle Événementielle',
-    slug: 'el-teatro-salle-evenementielle-tunis',
+  // Hotel 2
+  const hotel2 = await Venue.create({
+    name: 'Dar Hi',
+    slug: 'dar-hi-nefta',
+    type: 'HOTEL',
+    city: 'Nefta',
+    governorate: 'Tozeur',
+    address: 'Nefta, Tozeur',
+    shortDescription: 'Écolodge de charme en bord d\'oasis.',
+    description: 'Écolodge de charme en bord d\'oasis. Piscine et spa.',
+    rating: 4.8,
+    ratingCount: 95,
+    startingPrice: 180,
+    priceRangeMin: 150,
+    priceRangeMax: 350,
+    categoryIds: [catHotels],
+    isPublished: true,
+    isFeatured: false,
+  });
+  await VenueMedia.insertMany([
+    { venueId: hotel2._id, kind: 'HERO_IMAGE', url: heroImages[7] },
+    { venueId: hotel2._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.hotel2 },
+  ]);
+  await Room.insertMany([
+    { venueId: hotel2._id, roomNumber: 1, roomType: 'Pavillon', capacity: 2, pricePerNight: 180 },
+    { venueId: hotel2._id, roomNumber: 2, roomType: 'Suite', capacity: 4, pricePerNight: 280 },
+  ]);
+
+  // Cinema 1
+  const cinema = await Venue.create({
+    name: 'CGR Salle Premium',
+    slug: 'cgr-salle-premium-tunis',
+    type: 'CINEMA',
+    city: 'Tunis',
+    governorate: 'Tunis',
+    address: 'Centre commercial, Tunis',
+    shortDescription: 'Salle de cinéma premium.',
+    description: 'Salle de cinéma premium. Son et image haute définition.',
+    rating: 4.5,
+    ratingCount: 400,
+    startingPrice: 25,
+    priceRangeMin: 20,
+    priceRangeMax: 40,
+    categoryIds: [catCinema],
+    isPublished: true,
+    isFeatured: true,
+  });
+  await VenueMedia.insertMany([
+    { venueId: cinema._id, kind: 'HERO_IMAGE', url: heroImages[4] },
+    { venueId: cinema._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.cinema },
+  ]);
+  const cinemaSeats = await Seat.insertMany([
+    { venueId: cinema._id, seatNumber: 1, zone: 'Centre', price: 25 },
+    { venueId: cinema._id, seatNumber: 2, zone: 'Centre', price: 25 },
+    { venueId: cinema._id, seatNumber: 3, zone: 'Vip', price: 35 },
+  ]);
+  const tourCinema = await VirtualTour.create({ venueId: cinema._id, provider: 'klapty', embedUrl: KLAPTY_TUNNEL.cinema, isActive: true });
+  await TourHotspot.insertMany([
+    { virtualTourId: tourCinema._id, label: 'Zone Centre', targetType: 'seat_zone', targetId: cinemaSeats[0]._id, xPercent: 40, yPercent: 50, isActive: true },
+    { virtualTourId: tourCinema._id, label: 'Zone Vip', targetType: 'seat_zone', targetId: cinemaSeats[2]._id, xPercent: 60, yPercent: 50, isActive: true },
+  ]);
+
+  // Cinema 2
+  const cinema2 = await Venue.create({
+    name: 'Ciné Madart',
+    slug: 'cine-madart-sfax',
+    type: 'CINEMA',
+    city: 'Sfax',
+    governorate: 'Sfax',
+    address: 'Avenue de la République, Sfax',
+    shortDescription: 'Complexe cinéma multi-salles.',
+    description: 'Complexe cinéma multi-salles. Événements et avant-premières.',
+    rating: 4.4,
+    ratingCount: 180,
+    startingPrice: 22,
+    priceRangeMin: 18,
+    priceRangeMax: 35,
+    categoryIds: [catCinema],
+    isPublished: true,
+    isFeatured: false,
+  });
+  await VenueMedia.insertMany([
+    { venueId: cinema2._id, kind: 'HERO_IMAGE', url: heroImages[8] },
+    { venueId: cinema2._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.cinema2 },
+  ]);
+  await Seat.insertMany([
+    { venueId: cinema2._id, seatNumber: 1, zone: 'A', price: 22 },
+    { venueId: cinema2._id, seatNumber: 2, zone: 'A', price: 22 },
+    { venueId: cinema2._id, seatNumber: 3, zone: 'B', price: 28 },
+  ]);
+
+  // Event space 1
+  const eventSpace1 = await Venue.create({
+    name: 'Espace Culturel El Teatro',
+    slug: 'el-teatro-tunis',
     type: 'EVENT_SPACE',
     city: 'Tunis',
     governorate: 'Tunis',
     address: 'Avenue Mohamed V, Tunis',
-    shortDescription: 'Salle de spectacles et événements privés.',
-    description: 'Salle de spectacles, concerts, mariages et événements privés. Capacité 300 personnes, scène modulable et acoustique professionnelle.',
+    shortDescription: 'Salle de spectacles et événements.',
+    description: 'Salle de spectacles, concerts et événements privés. Capacité 300 personnes.',
+    rating: 4.7,
+    ratingCount: 75,
     startingPrice: 50,
     priceRangeMin: 30,
     priceRangeMax: 120,
-    categoryIds: [catSalles],
-    ownerId: ownerEvent._id,
+    categoryIds: [catEvenements],
     isPublished: true,
     isFeatured: true,
   });
-  await VenueMedia.create({ venueId: eventSpace._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
-  await Table.insertMany([
-    { venueId: eventSpace._id, tableNumber: 1, code: 'VIP1', capacity: 4, locationLabel: 'Scène', price: 120, basePrice: 120, isVip: true },
-    { venueId: eventSpace._id, tableNumber: 2, code: 'T2', capacity: 6, locationLabel: 'Salon', price: 80, basePrice: 80, isVip: false },
+  await VenueMedia.insertMany([
+    { venueId: eventSpace1._id, kind: 'HERO_IMAGE', url: heroImages[5] },
+    { venueId: eventSpace1._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.eventSpace1 },
+  ]);
+  const eventSpace1Tables = await Table.insertMany([
+    { venueId: eventSpace1._id, tableNumber: 1, code: 'VIP1', capacity: 4, locationLabel: 'Scène', price: 120, basePrice: 120, isVip: true },
+    { venueId: eventSpace1._id, tableNumber: 2, code: 'T2', capacity: 6, locationLabel: 'Salon', price: 80, basePrice: 80, isVip: false },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 6) HÔTELS & RESORTS — 1 venue
-  // ─────────────────────────────────────────────────────────────────────
-  const hotel = await Venue.create({
-    name: 'El Mouradi Palace Resort',
-    slug: 'el-mouradi-palace-resort-hammamet',
-    type: 'HOTEL',
-    city: 'Hammamet',
-    governorate: 'Nabeul',
-    address: 'Zone Touristique Yasmine, Hammamet',
-    phone: '+216 72 244 444',
-    shortDescription: 'Resort 5 étoiles face à la mer, piscine olympique et spa.',
-    description: 'El Mouradi Palace est un resort 5 étoiles exceptionnel en bord de mer à Yasmine Hammamet. Piscine olympique, spa de luxe, restaurants gastronomiques et plage privée.',
-    startingPrice: 150,
-    priceRangeMin: 150,
-    priceRangeMax: 480,
-    amenities: ['piscine', 'spa', 'wifi', 'parking', 'restaurant', 'plage privée', 'tennis', 'fitness'],
-    categoryIds: [catHotels],
-    ownerId: ownerHotel._id,
-    isPublished: true,
-    isFeatured: true,
-    hasVirtualTour: true,
-    reservationModes: ['room'],
-    immersiveType: 'virtual-tour',
-    immersiveProvider: 'klapty',
-    immersiveUrl: KLAPTY,
-    checkInPolicy: 'Check-in à partir de 14h00',
-    checkOutPolicy: 'Check-out avant 12h00',
-  });
-  await VenueMedia.create({ venueId: hotel._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
-  const hotelRooms = await Room.insertMany([
-    {
-      venueId: hotel._id,
-      roomNumber: 101,
-      name: 'Chambre Standard Vue Jardin',
-      roomType: 'STANDARD',
-      capacity: 2,
-      capacityAdults: 2,
-      bedType: 'Double',
-      pricePerNight: 150,
-      surface: 28,
-      amenities: ['WiFi gratuit', 'Climatisation', 'Minibar', 'Coffre-fort', 'TV satellite'],
-      description: 'Chambre confortable avec vue sur les jardins.',
-      bathroomType: 'Salle de bain privée',
-      isVip: false,
-      hasBalcony: false,
-      status: 'available',
-    },
-    {
-      venueId: hotel._id,
-      roomNumber: 201,
-      name: 'Chambre Supérieure Vue Mer',
-      roomType: 'SUPERIOR',
-      capacity: 2,
-      capacityAdults: 2,
-      bedType: 'King',
-      pricePerNight: 220,
-      surface: 35,
-      amenities: ['WiFi gratuit', 'Climatisation', 'Minibar', 'Coffre-fort', 'TV satellite', 'Balcon privé', 'Vue mer'],
-      description: 'Chambre supérieure avec balcon et vue mer.',
-      bathroomType: 'Salle de bain avec baignoire',
-      isVip: false,
-      hasBalcony: true,
-      status: 'available',
-    },
-    {
-      venueId: hotel._id,
-      roomNumber: 401,
-      name: 'Suite Présidentielle',
-      roomType: 'PRESIDENTIAL',
-      capacity: 4,
-      capacityAdults: 4,
-      bedType: 'King',
-      pricePerNight: 480,
-      surface: 120,
-      amenities: ['WiFi gratuit', 'Climatisation', 'Minibar privé', 'Coffre-fort', 'TV satellite', 'Terrasse panoramique', 'Vue mer 360°', 'Jacuzzi', 'Butler privé'],
-      description: 'La suite la plus prestigieuse. Terrasse panoramique 80m² avec vue 360°.',
-      bathroomType: 'Salle de bain de luxe',
-      isVip: true,
-      hasBalcony: true,
-      hasVirtualTour: true,
-      status: 'available',
-    },
-  ]);
-  const hotelTour = await VirtualTour.create({ venueId: hotel._id, provider: 'klapty', embedUrl: KLAPTY, isActive: true });
-  await TourHotspot.insertMany([
-    { venueId: hotel._id, virtualTourId: hotelTour._id, label: 'Chambre 201', targetType: 'room', targetId: hotelRooms[1]._id, xPercent: 30, yPercent: 48, isActive: true },
-    { venueId: hotel._id, virtualTourId: hotelTour._id, label: 'Suite Présidentielle', targetType: 'room', targetId: hotelRooms[2]._id, xPercent: 65, yPercent: 45, isActive: true },
-  ]);
-
-  // ─────────────────────────────────────────────────────────────────────
-  // 7) BEACH CLUBS — 1 venue (name contains "Beach")
-  // ─────────────────────────────────────────────────────────────────────
-  const beach = await Venue.create({
-    name: 'Azure Beach Club Hammamet',
-    slug: 'azure-beach-club-hammamet',
+  // Event space 2
+  const eventSpace2 = await Venue.create({
+    name: 'Rooftop Monastir',
+    slug: 'rooftop-monastir',
     type: 'EVENT_SPACE',
-    city: 'Hammamet',
-    governorate: 'Nabeul',
-    address: 'Plage de Yasmine Hammamet',
-    shortDescription: 'Beach club exclusif, transats, piscine et lounge bar.',
-    description: 'Beach club exclusif en bord de mer. Transats premium, piscine à débordement, lounge bar et restaurant méditerranéen les pieds dans le sable.',
-    startingPrice: 40,
-    priceRangeMin: 30,
-    priceRangeMax: 200,
-    amenities: ['plage privée', 'piscine', 'restaurant', 'bar', 'parking', 'wifi'],
-    categoryIds: [catBeach],
-    ownerId: ownerEvent._id,
+    city: 'Monastir',
+    governorate: 'Monastir',
+    address: 'Corniche de Monastir',
+    shortDescription: 'Rooftop événements et soirées.',
+    description: 'Rooftop avec vue mer. Soirées privées et événements.',
+    rating: 4.6,
+    ratingCount: 60,
+    startingPrice: 70,
+    priceRangeMin: 50,
+    priceRangeMax: 150,
+    categoryIds: [catEvenements],
     isPublished: true,
-    isFeatured: true,
+    isFeatured: false,
   });
-  await VenueMedia.create({ venueId: beach._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
+  await VenueMedia.insertMany([
+    { venueId: eventSpace2._id, kind: 'HERO_IMAGE', url: heroImages[9] },
+    { venueId: eventSpace2._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY_TUNNEL.eventSpace2 },
+  ]);
   await Table.insertMany([
-    { venueId: beach._id, tableNumber: 1, code: 'BC1', capacity: 2, locationLabel: 'Transat duo', price: 40, basePrice: 40, isVip: false },
-    { venueId: beach._id, tableNumber: 2, code: 'BC2', capacity: 4, locationLabel: 'Cabana', price: 120, basePrice: 120, isVip: true },
-    { venueId: beach._id, tableNumber: 3, code: 'VIP', capacity: 8, locationLabel: 'Lounge VIP', price: 200, basePrice: 200, isVip: true },
+    { venueId: eventSpace2._id, tableNumber: 1, code: 'T1', capacity: 4, locationLabel: 'Vue mer', price: 70, basePrice: 70, isVip: false },
   ]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // 8) SPAS & BIEN-ÊTRE — 1 venue (name contains "Spa")
-  // ─────────────────────────────────────────────────────────────────────
-  const spa = await Venue.create({
-    name: 'Zen Spa & Bien-être',
-    slug: 'zen-spa-bien-etre-sidi-bou-said',
-    type: 'HOTEL',
-    city: 'Sidi Bou Said',
-    governorate: 'Tunis',
-    address: 'Avenue Hédi Chaker, Sidi Bou Said',
-    shortDescription: 'Spa de luxe, hammam, massages et soins du visage.',
-    description: 'Spa de luxe dans un cadre raffiné. Hammam traditionnel, massages signature, soins du visage, rituels orientaux et piscine thermale.',
-    startingPrice: 80,
-    priceRangeMin: 60,
-    priceRangeMax: 250,
-    amenities: ['hammam', 'piscine', 'massage', 'wifi', 'parking'],
-    categoryIds: [catSpas],
-    ownerId: ownerHotel._id,
-    isPublished: true,
-    isFeatured: true,
-    reservationModes: ['room'],
-  });
-  await VenueMedia.create({ venueId: spa._id, kind: 'TOUR_360_EMBED_URL', url: KLAPTY });
-  await Room.insertMany([
-    {
-      venueId: spa._id,
-      roomNumber: 1,
-      name: 'Cabine Hammam Duo',
-      roomType: 'STANDARD',
-      capacity: 2,
-      capacityAdults: 2,
-      bedType: 'Lit de massage',
-      pricePerNight: 80,
-      surface: 20,
-      amenities: ['Hammam', 'Gommage', 'Produits naturels'],
-      description: 'Rituel hammam duo : gommage noir, masque d\'argile, vapeur traditionnelle.',
-      bathroomType: 'Hammam privatif',
-      isVip: false,
-      hasBalcony: false,
-      status: 'available',
-    },
-    {
-      venueId: spa._id,
-      roomNumber: 2,
-      name: 'Suite Signature Massage',
-      roomType: 'SUITE',
-      capacity: 2,
-      capacityAdults: 2,
-      bedType: 'Lit double massage',
-      pricePerNight: 180,
-      surface: 35,
-      amenities: ['Massage 90min', 'Champagne', 'Sauna privé', 'Jacuzzi'],
-      description: 'Suite signature avec massage en duo de 90min, sauna privé et jacuzzi.',
-      bathroomType: 'Salle de bain de luxe',
-      isVip: true,
-      hasBalcony: false,
-      status: 'available',
-    },
-    {
-      venueId: spa._id,
-      roomNumber: 3,
-      name: 'Pavillon Rituel Royal',
-      roomType: 'SUITE',
-      capacity: 2,
-      capacityAdults: 2,
-      bedType: 'Lit royal',
-      pricePerNight: 250,
-      surface: 60,
-      amenities: ['Rituel 3h', 'Hammam privé', 'Massage 4 mains', 'Piscine thermale privée'],
-      description: 'Pavillon prestige : rituel oriental complet de 3h, massage 4 mains, piscine thermale privée.',
-      bathroomType: 'Hammam & jacuzzi privatifs',
-      isVip: true,
-      hasBalcony: false,
-      status: 'available',
-    },
-  ]);
+  console.log('🏢 Created 10 venues: 2 cafés, 2 restaurants, 2 hotels, 2 cinemas, 2 event spaces');
 
-  console.log('🏢 Created 8 venues: 1 per category (café, bar, restaurant, club, salle, hôtel, beach club, spa)');
-
-  // ─────────────────────────────────────────────────────────────────────
-  // Events + sample reservations
-  // ─────────────────────────────────────────────────────────────────────
   const now = new Date();
-  const tonight = new Date(now); tonight.setHours(21, 0, 0, 0);
-  const tomorrowEv = new Date(now); tomorrowEv.setDate(tomorrowEv.getDate() + 2); tomorrowEv.setHours(21, 0, 0, 0);
+  const tonight = new Date(now);
+  tonight.setHours(21, 0, 0, 0);
+  const tomorrowEv = new Date(now);
+  tomorrowEv.setDate(tomorrowEv.getDate() + 2);
+  tomorrowEv.setHours(21, 0, 0, 0);
+  const nextWeek = new Date(now);
+  nextWeek.setDate(nextWeek.getDate() + 5);
+  nextWeek.setHours(19, 30, 0, 0);
+  const pastEv = new Date(now);
+  pastEv.setDate(pastEv.getDate() - 7);
+  pastEv.setHours(20, 0, 0, 0);
 
   await Event.insertMany([
     { venueId: cafe1._id, title: 'Soirée Jazz', slug: 'soiree-jazz-babol', type: 'CONCERT', startAt: tomorrowEv, description: 'Concert jazz en live.', isPublished: true },
-    { venueId: bar._id, title: 'Rooftop Sunset DJ', slug: 'rooftop-sunset-dj-skyline', type: 'SOIREE', startAt: tonight, description: 'Coucher de soleil & DJ set.', isPublished: true },
-    { venueId: club._id, title: 'Nuit Latina', slug: 'nuit-latina-mojito', type: 'SOIREE', startAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 22 * 60 * 60 * 1000), description: 'Salsa, bachata et reggaeton.', isPublished: true },
-    { venueId: eventSpace._id, title: 'Concert Live', slug: 'concert-live-el-teatro', type: 'CONCERT', startAt: tonight, description: 'Concert ce soir.', isPublished: true },
-    { venueId: beach._id, title: 'Beach Party', slug: 'beach-party-azure', type: 'SOIREE', startAt: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 20 * 60 * 60 * 1000), description: 'Soirée plage avec DJ international.', isPublished: true },
+    { venueId: restaurant._id, title: 'Dîner aux chandelles', slug: 'diner-aux-chandelles-monte-cristo', type: 'SOIREE', startAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 20 * 60 * 60 * 1000), description: 'Soirée spéciale.', isPublished: true },
+    { venueId: cinema._id, title: 'Avant-première', slug: 'avant-premiere-cgr', type: 'CINEMA', startAt: nextWeek, description: 'Projection en avant-première.', isPublished: true },
+    { venueId: eventSpace1._id, title: 'Concert Live', slug: 'concert-live-el-teatro', type: 'CONCERT', startAt: tonight, description: 'Concert ce soir.', isPublished: true },
+    { venueId: eventSpace2._id, title: 'Soirée Rooftop', slug: 'soiree-rooftop-monastir', type: 'SOIREE', startAt: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 22 * 60 * 60 * 1000), description: 'Soirée rooftop.', isPublished: true },
   ]);
   console.log('📅 Created 5 events');
 
   const twoHours = 2 * 60 * 60 * 1000;
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(20, 0, 0, 0);
-  const dayAfter = new Date(tomorrow); dayAfter.setDate(dayAfter.getDate() + 1); dayAfter.setHours(19, 30, 0, 0);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(20, 0, 0, 0);
+  const dayAfter = new Date(tomorrow);
+  dayAfter.setDate(dayAfter.getDate() + 1);
+  dayAfter.setHours(19, 30, 0, 0);
+  const lastWeek = new Date(now);
+  lastWeek.setDate(lastWeek.getDate() - 3);
+  lastWeek.setHours(21, 0, 0, 0);
+
+  const customerId = customers[0]._id;
+  const customer2Id = customers[1]._id;
 
   const codes = new Set<string>();
   function uniqueCode() {
@@ -489,16 +493,22 @@ async function seed() {
   }
 
   await Reservation.insertMany([
-    { userId: normalUser._id, venueId: cafe1._id, bookingType: 'TABLE', tableId: cafe1Tables[0]._id, startAt: tomorrow, endAt: new Date(tomorrow.getTime() + twoHours), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 12, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
-    { userId: normalUser._id, venueId: restaurant._id, bookingType: 'TABLE', tableId: restaurantTables[0]._id, startAt: dayAfter, endAt: new Date(dayAfter.getTime() + twoHours), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 45, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
-    { userId: normalUser._id, venueId: hotel._id, bookingType: 'ROOM', roomId: hotelRooms[0]._id, startAt: new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000), endAt: new Date(tomorrow.getTime() + 9 * 24 * 60 * 60 * 1000), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 300, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
+    { userId: customerId, venueId: cafe1._id, bookingType: 'TABLE', tableId: cafe1Tables[0]._id, startAt: tomorrow, endAt: new Date(tomorrow.getTime() + twoHours), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 12, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
+    { userId: customerId, venueId: restaurant._id, bookingType: 'TABLE', tableId: restaurantTables[0]._id, startAt: dayAfter, endAt: new Date(dayAfter.getTime() + twoHours), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 45, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
+    { userId: customerId, venueId: hotel._id, bookingType: 'ROOM', roomId: hotelRooms[0]._id, startAt: new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000), endAt: new Date(tomorrow.getTime() + 9 * 24 * 60 * 60 * 1000), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 240, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
+    { userId: customerId, venueId: cinema._id, bookingType: 'SEAT', seatId: cinemaSeats[0]._id, startAt: nextWeek, endAt: new Date(nextWeek.getTime() + 3 * 60 * 60 * 1000), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 25, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 1 },
+    { userId: customerId, venueId: cafe2._id, bookingType: 'TABLE', tableId: cafe2Tables[1]._id, startAt: lastWeek, endAt: new Date(lastWeek.getTime() + twoHours), status: 'CONFIRMED', paymentStatus: 'paid', confirmationCode: uniqueCode(), totalPrice: 12, guestFirstName: 'Rania', guestLastName: 'Ben Salem', guestPhone: '12345678', partySize: 2 },
+    { userId: customer2Id, venueId: cafe1._id, bookingType: 'TABLE', tableId: cafe1Tables[1]._id, startAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000), endAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 20 * 60 * 60 * 1000), status: 'PENDING', paymentStatus: 'unpaid', confirmationCode: uniqueCode(), totalPrice: 15, guestFirstName: 'Karim', guestLastName: 'Trabelsi', guestPhone: '87654321', partySize: 3 },
+    { userId: customer2Id, venueId: restaurant2._id, bookingType: 'TABLE', tableId: restaurant2Tables[0]._id, startAt: lastWeek, endAt: new Date(lastWeek.getTime() + twoHours), status: 'CANCELLED', paymentStatus: 'refunded', confirmationCode: uniqueCode(), totalPrice: 55, guestFirstName: 'Karim', guestLastName: 'Trabelsi', guestPhone: '87654321', partySize: 2 },
   ]);
-  console.log('📋 Created 3 sample reservations');
+  console.log('📋 Created 7 reservations (CONFIRMED, PENDING, CANCELLED) with confirmation codes');
 
   console.log('\n✅ Seed completed.');
   console.log('\n📝 Credentials (password: ' + PASSWORD + ')');
-  console.log('  Admin:    admin@mareservation.tn');
-  console.log('  Customer: user@mareservation.tn');
+  console.log('  Admin:   admin@mareservation.tn');
+  console.log('  Customer (with reservations): client1@example.com');
+  console.log('  Customer (pending + cancelled): client2@example.com');
+  console.log('  Customers: client3@example.com, client4@example.com, client5@example.com');
 
   await mongoose.connection.close();
   process.exit(0);
