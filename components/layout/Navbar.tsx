@@ -38,19 +38,16 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800/60 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/90">
       <div className="container flex h-[80px] sm:h-[90px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
         {/* Logo */}
-        <Link href="/" className="flex flex-col items-start shrink-0 rounded-xl bg-white/[0.06] px-3 py-1.5 ring-1 ring-white/[0.12]">
+        <Link href="/" className="flex items-center shrink-0">
           <Image
             src="/logo.png"
-            alt="Before you go"
+            alt="Before You Go"
             width={520}
             height={150}
             className="h-[60px] w-auto object-contain sm:h-[68px] lg:h-[76px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
             style={{ width: 'auto' }}
             priority
           />
-          <span className="text-[9px] font-medium tracking-wide text-zinc-400 -mt-1 pl-1 select-none leading-none">
-            Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
-          </span>
         </Link>
 
         {/* Desktop nav — visible on xl+ */}
@@ -158,10 +155,10 @@ export function Navbar() {
             <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0 flex flex-col bg-zinc-950 border-zinc-800">
               <SheetHeader className="px-5 pt-5 pb-4 border-b border-zinc-800">
                 <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
-                <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl bg-white/[0.04] px-2 py-1 ring-1 ring-white/[0.08]">
+                <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block">
                   <Image
                     src="/logo.png"
-                    alt="Before you go"
+                    alt="Before You Go"
                     width={420}
                     height={120}
                     className="h-[52px] w-auto object-contain sm:h-[58px] drop-shadow-[0_6px_18px_rgba(212,175,55,0.3)]"
