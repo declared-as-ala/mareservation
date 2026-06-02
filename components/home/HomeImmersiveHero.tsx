@@ -247,7 +247,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
 /* ─── Mobile immersive CTA — modern, compact, CTA above the fold ─── */
 function MobileImmersiveCTA() {
   return (
-    <div className="relative z-10 mt-auto shrink-0 pt-2">
+    <div className="relative z-10 mt-2 shrink-0">
       <div className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(245,158,11,0.45)_0%,rgba(180,83,9,0.15)_28%,#0d0d0e_55%,#080809_100%)] shadow-[0_20px_50px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(245,158,11,0.22)]">
         {/* Subtle diagonal mesh */}
         <div
@@ -346,7 +346,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle, #fbbf24 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
 
       {/* HERO */}
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 grid-cols-[1.08fr_0.92fr] items-center gap-8 px-8 py-4 lg:gap-12 lg:px-10 lg:py-5">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 grid-cols-[1.1fr_0.9fr] items-center gap-6 px-5 py-3 md:gap-8 md:px-8 lg:gap-12 lg:px-10 lg:py-5">
         {/* LEFT — modern cinematic copy */}
         <div className="flex flex-col">
           {/* Eyebrow with live dot */}
@@ -361,7 +361,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
           </div>
 
           {/* Headline with gradient + animated underline */}
-          <h1 className="mt-4 font-serif text-[36px] font-black leading-[1.02] tracking-tight text-white lg:text-[48px] xl:text-[56px]">
+          <h1 className="mt-3 font-serif text-[28px] font-black leading-[1.02] tracking-tight text-white md:text-[34px] lg:text-[44px] xl:text-[52px]">
             Réservez ce que{' '}
             <span className="relative inline-block">
               <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
@@ -448,7 +448,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
               Tout explorer <ArrowRight className="size-3" />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-2 md:grid-cols-7">
+          <div className="grid grid-cols-4 gap-2 md:grid-cols-4 lg:grid-cols-7">
             {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
               <Link
                 key={title}
