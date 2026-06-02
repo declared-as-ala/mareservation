@@ -35,8 +35,8 @@ export function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-800/60 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/90">
-      <div className="container flex h-[80px] sm:h-[90px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
+    <header className="sticky top-0 z-50 w-full border-b border-amber-500/15 bg-gradient-to-r from-black via-zinc-950 to-amber-900/40 backdrop-blur supports-[backdrop-filter]:from-black/95 supports-[backdrop-filter]:via-zinc-950/95 supports-[backdrop-filter]:to-amber-900/30">
+      <div className="container flex h-[88px] sm:h-[100px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center shrink-0">
           <Image
@@ -44,7 +44,7 @@ export function Navbar() {
             alt="Before You Go"
             width={520}
             height={150}
-            className="h-[60px] w-auto object-contain sm:h-[68px] lg:h-[76px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.32)]"
+            className="h-[72px] w-auto object-contain sm:h-[82px] lg:h-[92px] drop-shadow-[0_6px_22px_rgba(212,175,55,0.45)]"
             style={{ width: 'auto' }}
             priority
           />

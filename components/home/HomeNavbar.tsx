@@ -59,9 +59,9 @@ export function HomeNavbar() {
 
   const bgClass = isHome
     ? scrolled
-      ? 'bg-[#050504]/95 shadow-lg shadow-black/35'
-      : 'bg-[#050504]/82'
-    : 'bg-[#050504]/96 shadow-sm shadow-black/10';
+      ? 'bg-gradient-to-r from-black via-zinc-950/98 to-amber-900/55 shadow-lg shadow-black/35'
+      : 'bg-gradient-to-r from-black/95 via-zinc-950/85 to-amber-900/45'
+    : 'bg-gradient-to-r from-black via-zinc-950/98 to-amber-900/55 shadow-sm shadow-black/10';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,8 +86,9 @@ export function HomeNavbar() {
           bgClass
         )}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,rgba(245,158,11,0.16),transparent_28%),linear-gradient(90deg,rgba(245,158,11,0.08),transparent_35%,rgba(255,255,255,0.03))]" aria-hidden />
-        <div className="relative mx-auto flex h-[76px] sm:h-[84px] lg:h-[88px] max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-zinc-950 to-amber-900/45" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_50%,rgba(245,158,11,0.20),transparent_45%)]" aria-hidden />
+        <div className="relative mx-auto flex h-[84px] sm:h-[92px] lg:h-[100px] max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 lg:px-8">
           {/* Logo */}
           <Link
             href="/"
@@ -98,7 +99,7 @@ export function HomeNavbar() {
               alt="Before You Go"
               width={540}
               height={152}
-              className="h-[60px] w-auto object-contain drop-shadow-[0_8px_18px_rgba(212,175,55,0.22)] transition-transform duration-300 sm:h-[68px] lg:h-[76px]"
+              className="h-[72px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[82px] lg:h-[92px]"
               style={{ width: 'auto' }}
               priority
             />

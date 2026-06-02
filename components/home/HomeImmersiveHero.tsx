@@ -10,7 +10,7 @@ import type { Venue } from '@/lib/api/types';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
   Star, ArrowRight, Globe, ShieldCheck, Armchair,
-  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Trophy,
+  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Trophy, Play,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────
@@ -229,44 +229,90 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
         </div>
       </div>
 
-      {/* ── Zone 3 · Immersive 360 + booking search ── */}
-      <div className="relative z-10 mt-2 shrink-0 overflow-hidden rounded-3xl border border-amber-400/[0.14] bg-gradient-to-br from-[#17120a] via-[#0f0f10] to-[#0a0a0b] p-3.5">
-        {/* orb top-right */}
-        <div aria-hidden className="pointer-events-none absolute -right-5 -top-3">
-          <Orb size={74} />
+      {/* ── Zone 3 · Immersive booking CTA (compact premium) ── */}
+      <MobileImmersiveCTA />
+    </section>
+  );
+}
+
+/* ─── Mobile immersive CTA — modern, compact, CTA above the fold ─── */
+function MobileImmersiveCTA() {
+  return (
+    <div className="relative z-10 mt-auto shrink-0 pt-2">
+      <div className="relative overflow-hidden rounded-3xl border border-amber-400/25 bg-[radial-gradient(circle_at_85%_15%,rgba(245,158,11,0.32),transparent_55%),linear-gradient(135deg,#1d1408_0%,#0f0f10_55%,#0a0a0b_100%)] shadow-[0_18px_44px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
+        {/* Animated dot grid */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.10]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #fbbf24 1px, transparent 1px)',
+            backgroundSize: '14px 14px',
+          }}
+        />
+        {/* Glow blobs */}
+        <div aria-hidden className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-amber-400/[0.20] blur-[55px]" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-amber-600/[0.12] blur-[45px]" />
+
+        {/* Decorative 360° ring (background) */}
+        <div aria-hidden className="pointer-events-none absolute -right-3 top-1/2 -translate-y-1/2 opacity-90">
+          <div className="relative flex size-[96px] items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-amber-400/25 animate-[spin_18s_linear_infinite]" />
+            <div className="absolute inset-2 rounded-full border border-amber-400/15 animate-[spin_28s_linear_infinite_reverse]" />
+            <div className="absolute inset-0 rounded-full bg-amber-500/[0.22] blur-2xl" />
+            <span className="relative font-serif text-[18px] font-black text-amber-300 drop-shadow-[0_0_14px_rgba(245,158,11,0.85)]">
+              360°
+            </span>
+          </div>
         </div>
 
-        <div className="relative">
-          <Eyebrow>Immersive</Eyebrow>
-          <h2 className="mt-1.5 max-w-[80%] font-serif text-[18px] font-black leading-[1.12] tracking-tight text-white">
+        <div className="relative p-3.5">
+          {/* Pill row */}
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-amber-400" />
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-300">
+              Plateforme immersive
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h2 className="mt-1.5 max-w-[78%] font-serif text-[19px] font-black leading-[1.1] tracking-tight text-white">
             Réservez ce que{' '}
-            <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">vous voyez</span>, en 360°.
+            <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+              vous voyez
+            </span>
+            .
           </h2>
 
-          <p className="mt-1.5 max-w-[88%] text-[11px] leading-snug text-white/55">
-            Choisissez votre table directement dans la vue — réservez en quelques secondes.
-          </p>
-
+          {/* Primary CTA — large, always visible */}
           <Link
             href="/explorer"
-            className="group mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
+            className="group mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-[15px] font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.42)] transition-all active:scale-[0.98]"
           >
             Réserver maintenant
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </Link>
 
-          {/* features */}
-          <div className="mt-3 flex items-stretch gap-1.5">
-            {FEATURES.map(({ Icon, label }) => (
-              <div key={label} className="flex flex-1 items-center gap-1 rounded-lg border border-white/[0.06] bg-black/30 px-1.5 py-1">
-                <Icon className="size-3 shrink-0 text-amber-400" strokeWidth={1.8} />
-                <span className="text-[8px] font-medium leading-[1.05] text-white/60">{label}</span>
-              </div>
-            ))}
+          {/* Trust strip */}
+          <div className="mt-2.5 flex items-center justify-between text-[9px] font-medium text-white/55">
+            <span className="inline-flex items-center gap-1">
+              <Globe className="size-3 text-amber-400" strokeWidth={2} />
+              360° immersif
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Armchair className="size-3 text-amber-400" strokeWidth={2} />
+              Choisir sa table
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck className="size-3 text-amber-400" strokeWidth={2} />
+              Paiement sécurisé
+            </span>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -283,53 +329,82 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
       {/* HERO */}
       <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 grid-cols-[1.08fr_0.92fr] items-center gap-8 px-8 py-4 lg:gap-12 lg:px-10 lg:py-5">
-        {/* LEFT — copy + search */}
+        {/* LEFT — modern cinematic copy */}
         <div className="flex flex-col">
-          <Eyebrow>Immersive · 360°</Eyebrow>
-          <h1 className="mt-3 font-serif text-[34px] font-black leading-[1.02] tracking-tight text-white lg:text-[44px] xl:text-[52px]">
+          {/* Eyebrow with live dot */}
+          <div className="inline-flex items-center gap-2 self-start rounded-full border border-amber-400/30 bg-gradient-to-r from-amber-400/[0.10] to-amber-500/[0.04] px-3 py-1.5 backdrop-blur-sm">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
+              <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-300">
+              Plateforme immersive · 360°
+            </span>
+          </div>
+
+          {/* Headline with gradient + animated underline */}
+          <h1 className="mt-4 font-serif text-[36px] font-black leading-[1.02] tracking-tight text-white lg:text-[48px] xl:text-[56px]">
             Réservez ce que{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">vous voyez</span>,
-            <br />en 360°.
+            <span className="relative inline-block">
+              <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+                vous voyez
+              </span>
+              <span aria-hidden className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-amber-400/0 via-amber-400/80 to-amber-400/0" />
+            </span>
+            ,<br />en{' '}
+            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+              360°
+            </span>
+            .
           </h1>
-          <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-white/55 lg:text-[15px]">
-            Explorez cafés, restaurants, hôtels et événements en visite virtuelle.
+
+          <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-white/60 lg:text-[15px]">
+            Explorez cafés, restaurants, hôtels et événements en visite virtuelle immersive.
             Choisissez votre table directement dans la vue — puis réservez en quelques secondes.
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          {/* Modern CTA group */}
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
               href="/explorer"
-              className="group inline-flex h-[46px] items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.30)] transition-all hover:-translate-y-0.5"
+              className="group relative inline-flex h-[50px] items-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-7 text-[15px] font-black text-black shadow-[0_12px_32px_rgba(245,158,11,0.40)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(245,158,11,0.55)]"
             >
-              Réserver maintenant
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+              <span className="relative z-10">Réserver maintenant</span>
+              <ArrowRight className="relative z-10 size-[18px] transition-transform group-hover:translate-x-1" />
+              <span aria-hidden className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             </Link>
             <Link
               href="/comment-ca-marche"
-              className="inline-flex h-[46px] items-center rounded-2xl border border-white/12 bg-white/[0.04] px-5 text-sm font-semibold text-white/75 transition-all hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
+              className="group inline-flex h-[50px] items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-white/80 backdrop-blur-sm transition-all hover:border-amber-400/40 hover:bg-amber-400/[0.06] hover:text-white"
             >
+              <span className="flex size-6 items-center justify-center rounded-full border border-white/20 bg-white/[0.05] transition-colors group-hover:border-amber-400/50 group-hover:bg-amber-400/[0.10]">
+                <Play className="size-2.5 fill-current" />
+              </span>
               Comment ça marche
             </Link>
           </div>
 
-          {/* feature chips */}
-          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+          {/* feature pills + stats merged */}
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.07] pt-4">
             {FEATURES.map(({ Icon, label }) => (
-              <div key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] py-1 pl-1.5 pr-3">
-                <span className="flex size-5 items-center justify-center rounded-full bg-amber-400/[0.12]">
-                  <Icon className="size-2.5 text-amber-400" strokeWidth={1.9} />
+              <div key={label} className="inline-flex items-center gap-2 text-[12px] font-medium text-white/65">
+                <span className="flex size-7 items-center justify-center rounded-xl bg-amber-400/[0.10] shadow-[inset_0_0_0_1px_rgba(245,158,11,0.18)]">
+                  <Icon className="size-3.5 text-amber-400" strokeWidth={1.9} />
                 </span>
-                <span className="text-[11px] font-medium text-white/65">{label}</span>
+                {label}
               </div>
             ))}
           </div>
 
-          {/* mini trust stats */}
-          <div className="mt-4 flex items-center gap-6">
-            {[['500+', 'Lieux'], ['12k+', 'Réservations'], ['4.9★', 'Satisfaction']].map(([v, l]) => (
-              <div key={l}>
-                <div className="font-serif text-lg font-bold text-amber-400 leading-tight">{v}</div>
-                <div className="text-[10px] uppercase tracking-wider text-white/40">{l}</div>
+          {/* mini trust stats inline */}
+          <div className="mt-3 flex items-center gap-6">
+            {[['500+', 'Lieux'], ['12k+', 'Réservations'], ['4.9★', 'Satisfaction']].map(([v, l], i) => (
+              <div key={l} className="flex items-center gap-3">
+                {i > 0 && <span className="h-6 w-px bg-white/[0.08]" />}
+                <div>
+                  <div className="font-serif text-lg font-black leading-none text-amber-400">{v}</div>
+                  <div className="mt-0.5 text-[10px] uppercase tracking-wider text-white/40">{l}</div>
+                </div>
               </div>
             ))}
           </div>
