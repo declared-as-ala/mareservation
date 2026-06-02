@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -98,6 +98,45 @@ export function HomeImmersiveHero() {
 function MobileScreen({ venues }: { venues: CardVenue[] }) {
   const railRef = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const total = venues.slice(0, 6).length;
+
+  const goTo = useCallback((i: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const item = el.querySelector('[data-card]') as HTMLElement | null;
+    const w = item?.offsetWidth ?? 110;
+    el.scrollTo({ left: i * (w + 10), behavior: 'smooth' });
+    setIdx(i);
+  }, []);
+
+  // Auto-rotate every 3s
+  useEffect(() => {
+    if (paused || total < 2) return;
+    const timer = setInterval(() => {
+      setIdx((current) => {
+        const next = (current + 1) % total;
+        const el = railRef.current;
+        if (el) {
+          const item = el.querySelector('[data-card]') as HTMLElement | null;
+          const w = item?.offsetWidth ?? 110;
+          el.scrollTo({ left: next * (w + 10), behavior: 'smooth' });
+        }
+        return next;
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [paused, total]);
+
+  // Pause when tab is hidden — avoid wasted work
+  useEffect(() => {
+    function onVis() {
+      setPaused(document.hidden);
+    }
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   const onScroll = () => {
     const el = railRef.current;
@@ -107,12 +146,10 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
     setIdx(Math.round(el.scrollLeft / (w + 10)));
   };
 
-  const goTo = (i: number) => {
-    const el = railRef.current;
-    if (!el) return;
-    const item = el.querySelector('[data-card]') as HTMLElement | null;
-    const w = item?.offsetWidth ?? 110;
-    el.scrollTo({ left: i * (w + 10), behavior: 'smooth' });
+  const pauseTemporarily = () => {
+    setPaused(true);
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = setTimeout(() => setPaused(false), 4000);
   };
 
   return (
@@ -130,6 +167,8 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
         <div
           ref={railRef}
           onScroll={onScroll}
+          onTouchStart={pauseTemporarily}
+          onPointerDown={pauseTemporarily}
           className="no-scrollbar -mx-4 mt-2 flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-smooth px-4"
         >
           {venues.map((v) => (
@@ -143,30 +182,47 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
             <button
               key={i}
               aria-label={`Aller au lieu ${i + 1}`}
-              onClick={() => goTo(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${idx === i ? 'w-4 bg-amber-400' : 'w-1.5 bg-zinc-700'}`}
-            />
+              onClick={() => {
+                pauseTemporarily();
+                goTo(i);
+              }}
+              className={`relative h-1.5 overflow-hidden rounded-full transition-all duration-300 ${
+                idx === i ? 'w-7 bg-zinc-700/70' : 'w-1.5 bg-zinc-700'
+              }`}
+            >
+              {idx === i && !paused && (
+                <span
+                  key={`p-${i}-${idx}`}
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-amber-500"
+                  style={{ animation: 'autoRotateBar 3s linear forwards' }}
+                />
+              )}
+              {idx === i && paused && (
+                <span className="absolute inset-0 bg-amber-400" />
+              )}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* ── Zone 2 · Slim category pill nav ── */}
+      {/* ── Zone 2 · Catégories en 3 par ligne ── */}
       <div className="relative z-10 mt-2 shrink-0">
         <SectionHead
           eyebrow="Accès rapide"
           title={<>Explorer par <span className="text-amber-400">catégorie</span> <Spark /></>}
         />
-        <div className="no-scrollbar -mx-4 mt-2 flex snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-4">
-          {CATEGORIES.map(({ title, href, Icon }) => (
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
             <Link
               key={title}
               href={href}
-              className="group flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#111111] px-3 py-2 transition-all duration-200 hover:border-amber-400/40 hover:bg-amber-400/[0.06] active:scale-95"
+              className="group flex flex-col items-center justify-center gap-1 rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#141414] to-[#0e0e0e] px-1 py-2.5 text-center transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/35 hover:from-[#1a1610] hover:to-[#121212] active:scale-95"
             >
-              <span className="flex size-5 items-center justify-center rounded-full bg-amber-400/[0.12] text-amber-400 transition-colors group-hover:bg-amber-400/20">
-                <Icon className="size-3" strokeWidth={1.7} />
+              <span className="flex size-7 items-center justify-center rounded-xl bg-amber-400/[0.10] text-amber-400 transition-all group-hover:bg-amber-400/[0.18] group-hover:shadow-[0_0_18px_rgba(245,158,11,0.30)]">
+                <Icon className="size-3.5" strokeWidth={1.7} />
               </span>
-              <span className="whitespace-nowrap text-[11px] font-bold text-white/85 group-hover:text-amber-200">{title}</span>
+              <span className="text-[10.5px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
+              <span className="max-w-full truncate text-[8px] leading-tight text-zinc-500">{subtitle}</span>
             </Link>
           ))}
         </div>
@@ -217,9 +273,6 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
    DESKTOP — dense premium hero (one screen) + categories strip
    ═══════════════════════════════════════════════════════════════ */
 function DesktopScreen({ venues }: { venues: CardVenue[] }) {
-  const [big, ...rest] = venues;
-  const small = rest.slice(0, 2);
-
   return (
     <section className="relative hidden min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] pt-[92px] md:flex">
       {/* Atmosphere */}
@@ -281,26 +334,14 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
           </div>
         </div>
 
-        {/* RIGHT — orb + featured venue bento */}
+        {/* RIGHT — auto-rotating featured venue (real-time, 3s/slide) */}
         <div className="relative">
           <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -z-0 -translate-x-1/2 -translate-y-1/2">
-            <div className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 animate-[spin_36s_linear_infinite] rounded-full border border-amber-400/[0.06]" />
-            <div className="absolute left-1/2 top-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 animate-[spin_24s_linear_infinite_reverse] rounded-full border border-amber-400/[0.09]" />
+            <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 animate-[spin_36s_linear_infinite] rounded-full border border-amber-400/[0.06]" />
+            <div className="absolute left-1/2 top-1/2 h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 animate-[spin_24s_linear_infinite_reverse] rounded-full border border-amber-400/[0.09]" />
           </div>
 
-          <div className="relative grid gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/45">Recommandé pour vous</span>
-              <Link href="/explorer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-amber-400 transition-colors hover:text-amber-300">
-                Tout voir <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-
-            {big && <DesktopVenueCard venue={big} featured />}
-            <div className="grid grid-cols-2 gap-3">
-              {small.map((v) => <DesktopVenueCard key={v._id} venue={v} />)}
-            </div>
-          </div>
+          <DesktopAutoFeatured venues={venues.slice(0, 6)} />
 
           {/* floating 360 orb badge */}
           <div aria-hidden className="absolute -right-3 -top-3 z-20">
@@ -309,22 +350,42 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
         </div>
       </div>
 
-      {/* CATEGORIES pill strip — pinned to the bottom of the hero */}
+      {/* CATEGORIES grid — pinned to the bottom of the hero */}
       <div className="relative z-10 border-t border-white/[0.06] bg-[#0c0c0d]/60 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 px-8 py-3.5 lg:px-10">
-          {CATEGORIES.map(({ title, href, Icon }) => (
+        <div className="mx-auto w-full max-w-7xl px-8 py-5 lg:px-10">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-400/85">
+              Accès rapide · Catégories
+            </p>
             <Link
-              key={title}
-              href={href}
-              className="group relative flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-200 hover:bg-amber-400/[0.08]"
+              href="/explorer"
+              className="inline-flex items-center gap-1 text-[12px] font-semibold text-white/55 transition-colors hover:text-amber-300"
             >
-              <Icon className="size-4 text-amber-400/80 transition-colors group-hover:text-amber-400" strokeWidth={1.7} />
-              <span className="whitespace-nowrap text-sm font-semibold text-white/75 transition-colors group-hover:text-white">
-                {title}
-              </span>
-              <span className="absolute inset-x-3 bottom-0.5 h-px scale-x-0 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent transition-transform duration-300 group-hover:scale-x-100" />
+              Tout explorer <ArrowRight className="size-3.5" />
             </Link>
-          ))}
+          </div>
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+            {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
+              <Link
+                key={title}
+                href={href}
+                className="group flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-[#111112] px-3.5 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-gradient-to-br hover:from-[#1a1610] hover:to-[#111112] hover:shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_0_1px_rgba(245,158,11,0.12)]"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/[0.10] transition-all group-hover:bg-amber-400/[0.20] group-hover:shadow-[0_0_22px_rgba(245,158,11,0.35)]">
+                  <Icon className="size-[18px] text-amber-400" strokeWidth={1.7} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-bold leading-tight text-white group-hover:text-amber-200">
+                    {title}
+                  </span>
+                  <span className="block truncate text-[10.5px] leading-tight text-zinc-500">
+                    {subtitle}
+                  </span>
+                </span>
+                <ArrowRight className="size-3.5 shrink-0 text-zinc-700 transition-all group-hover:translate-x-0.5 group-hover:text-amber-400" />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -370,6 +431,181 @@ function MobileVenueCard({ venue }: { venue: CardVenue }) {
         )}
       </div>
     </Link>
+  );
+}
+
+/* ─── Desktop auto-rotating featured card ─── */
+function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = venues.length;
+
+  useEffect(() => {
+    if (paused || total < 2) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % total), 3000);
+    return () => clearInterval(t);
+  }, [paused, total]);
+
+  useEffect(() => {
+    function onVis() {
+      setPaused(document.hidden);
+    }
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  if (total === 0) return null;
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
+            <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">
+            En vedette · live
+          </span>
+        </div>
+        <Link
+          href="/explorer"
+          className="inline-flex items-center gap-1 text-[12px] font-semibold text-amber-400 transition-colors hover:text-amber-300"
+        >
+          Tout voir <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
+
+      {/* Stacked crossfade */}
+      <div className="relative aspect-[5/6] w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-zinc-950 shadow-[0_30px_80px_rgba(0,0,0,0.55)]">
+        {venues.map((v, i) => {
+          const { label, Icon } = getCategoryInfo(v.type, v.name);
+          const active = i === idx;
+          return (
+            <Link
+              key={v._id}
+              href={getVenueHref(v)}
+              aria-hidden={!active}
+              tabIndex={active ? 0 : -1}
+              className={`absolute inset-0 block transition-opacity duration-[1100ms] ease-out ${
+                active ? 'opacity-100' : 'pointer-events-none opacity-0'
+              }`}
+            >
+              {v.coverImage ? (
+                <Image
+                  src={v.coverImage}
+                  alt={v.name}
+                  fill
+                  priority={i === 0}
+                  sizes="(max-width: 1024px) 50vw, 560px"
+                  className={`object-cover ${active ? 'animate-[autoKenBurns_4.5s_ease-out_forwards]' : ''}`}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-zinc-900">
+                  <Icon className="size-14 text-zinc-700" />
+                </div>
+              )}
+
+              {/* Gradient layers */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/35 via-transparent to-transparent" />
+
+              {/* Top-left: category */}
+              <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/65 px-3 py-1.5 backdrop-blur-md">
+                <Icon className="size-3.5 text-amber-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white">{label}</span>
+              </div>
+
+              {/* Top-right: 360 badge */}
+              {v.hasVirtualTour && (
+                <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-black/65 px-2.5 py-1.5 text-[11px] font-black tracking-wider text-amber-300 backdrop-blur-md">
+                  360°
+                </div>
+              )}
+
+              {/* Bottom content */}
+              <div className="absolute inset-x-0 bottom-0 p-6">
+                <h3 className="font-serif text-[26px] font-black leading-tight tracking-tight text-white drop-shadow-lg">
+                  {v.name}
+                </h3>
+                <div className="mt-2 flex items-center gap-3 text-sm text-white/80">
+                  {v.city && (
+                    <span className="inline-flex items-center gap-1 text-amber-300">
+                      <MapPin className="size-3.5" /> {v.city}
+                    </span>
+                  )}
+                  {typeof v.rating === 'number' && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/25 bg-black/55 px-2 py-0.5 backdrop-blur-sm">
+                      <Star className="size-3 fill-amber-400 text-amber-400" />
+                      <span className="text-[11px] font-bold text-amber-300">{v.rating}</span>
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)]">
+                  Découvrir
+                  <ArrowRight className="size-3.5" />
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+
+        {/* Segmented progress bar */}
+        <div className="absolute inset-x-4 top-4 z-10 flex gap-1.5">
+          {venues.map((_, i) => {
+            const filled = i < idx;
+            const active = i === idx;
+            return (
+              <button
+                key={i}
+                aria-label={`Aller au lieu ${i + 1}`}
+                onClick={() => setIdx(i)}
+                className="relative h-1 flex-1 overflow-hidden rounded-full bg-white/15"
+              >
+                {filled && <span className="absolute inset-0 bg-amber-400/85" />}
+                {active && !paused && (
+                  <span
+                    key={`seg-${i}-${idx}`}
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-300 to-amber-500"
+                    style={{ animation: 'autoRotateBar 3s linear forwards' }}
+                  />
+                )}
+                {active && paused && <span className="absolute inset-0 bg-amber-400" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Thumbnails strip */}
+      <div className="mt-4 grid grid-cols-6 gap-2">
+        {venues.map((v, i) => {
+          const active = i === idx;
+          return (
+            <button
+              key={v._id}
+              onClick={() => setIdx(i)}
+              aria-label={`Voir ${v.name}`}
+              className={`group/thumb relative aspect-[5/4] overflow-hidden rounded-xl border transition-all duration-300 ${
+                active
+                  ? 'border-amber-400/60 ring-2 ring-amber-400/30'
+                  : 'border-white/[0.08] opacity-60 hover:border-white/25 hover:opacity-100'
+              }`}
+            >
+              {v.coverImage && (
+                <Image src={v.coverImage} alt={v.name} fill sizes="80px" className="object-cover" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

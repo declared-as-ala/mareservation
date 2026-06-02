@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ── Auto-rotating carousel keyframes ────────────────────────────── */
+@keyframes autoRotateBar {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0%); }
+}
+@keyframes autoKenBurns {
+  from { transform: scale(1.02); }
+  to   { transform: scale(1.10); }
+}
+
 /* shadcn/tailwind.css inlined — the package only exports this file under the
    "style" condition which @tailwindcss/postcss does not resolve; inlining avoids
    the resolution failure that was preventing the entire CSS pipeline from compiling. */
