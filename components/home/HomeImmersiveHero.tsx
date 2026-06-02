@@ -10,7 +10,7 @@ import type { Venue } from '@/lib/api/types';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
   Star, ArrowRight, Globe, ShieldCheck, Armchair,
-  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2,
+  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Trophy,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────
@@ -57,6 +57,7 @@ const CATEGORIES = [
   { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restaurants', Icon: UtensilsCrossed },
   { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/explorer?q=Bar', Icon: Martini },
   { title: 'Événements', subtitle: 'Concerts • Festivals', href: '/evenements', Icon: PartyPopper },
+  { title: 'Sport', subtitle: 'Matchs • Tournois', href: '/evenements?type=SPORTS', Icon: Trophy },
   { title: 'Business', subtitle: 'Réunions • Coworking', href: '/coworking', Icon: Briefcase },
   { title: 'Bien-être', subtitle: 'Spas • Piscines', href: '/explorer?q=Spa', Icon: Flower2 },
 ];
@@ -274,61 +275,61 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
    ═══════════════════════════════════════════════════════════════ */
 function DesktopScreen({ venues }: { venues: CardVenue[] }) {
   return (
-    <section className="relative hidden min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] pt-[92px] md:flex">
+    <section className="relative hidden min-h-[100dvh] flex-col overflow-hidden bg-[#0B0B0C] pt-[88px] md:flex">
       {/* Atmosphere */}
       <div aria-hidden className="pointer-events-none absolute -left-40 top-1/3 h-[560px] w-[560px] -translate-y-1/2 rounded-full bg-amber-500/[0.06] blur-[150px]" />
       <div aria-hidden className="pointer-events-none absolute -right-24 bottom-0 h-[440px] w-[440px] rounded-full bg-amber-600/[0.045] blur-[130px]" />
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle, #fbbf24 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
 
       {/* HERO */}
-      <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 grid-cols-[1.08fr_0.92fr] items-center gap-10 px-8 py-8 lg:gap-14 lg:px-10">
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl flex-1 grid-cols-[1.08fr_0.92fr] items-center gap-8 px-8 py-4 lg:gap-12 lg:px-10 lg:py-5">
         {/* LEFT — copy + search */}
         <div className="flex flex-col">
           <Eyebrow>Immersive · 360°</Eyebrow>
-          <h1 className="mt-5 font-serif text-[44px] font-black leading-[1.04] tracking-tight text-white lg:text-[56px]">
+          <h1 className="mt-3 font-serif text-[34px] font-black leading-[1.02] tracking-tight text-white lg:text-[44px] xl:text-[52px]">
             Réservez ce que{' '}
             <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">vous voyez</span>,
             <br />en 360°.
           </h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-white/55">
+          <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-white/55 lg:text-[15px]">
             Explorez cafés, restaurants, hôtels et événements en visite virtuelle.
             Choisissez votre table directement dans la vue — puis réservez en quelques secondes.
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-2.5">
             <Link
               href="/explorer"
-              className="group inline-flex h-[52px] items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-8 text-base font-bold text-black shadow-[0_10px_30px_rgba(245,158,11,0.32)] transition-all hover:-translate-y-0.5"
+              className="group inline-flex h-[46px] items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.30)] transition-all hover:-translate-y-0.5"
             >
               Réserver maintenant
-              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/comment-ca-marche"
-              className="inline-flex h-[52px] items-center rounded-2xl border border-white/12 bg-white/[0.04] px-6 text-sm font-semibold text-white/75 transition-all hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
+              className="inline-flex h-[46px] items-center rounded-2xl border border-white/12 bg-white/[0.04] px-5 text-sm font-semibold text-white/75 transition-all hover:border-amber-400/35 hover:bg-amber-400/[0.06] hover:text-white"
             >
               Comment ça marche
             </Link>
           </div>
 
           {/* feature chips */}
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
             {FEATURES.map(({ Icon, label }) => (
-              <div key={label} className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] py-1.5 pl-2 pr-3.5">
-                <span className="flex size-6 items-center justify-center rounded-full bg-amber-400/[0.12]">
-                  <Icon className="size-3 text-amber-400" strokeWidth={1.9} />
+              <div key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] py-1 pl-1.5 pr-3">
+                <span className="flex size-5 items-center justify-center rounded-full bg-amber-400/[0.12]">
+                  <Icon className="size-2.5 text-amber-400" strokeWidth={1.9} />
                 </span>
-                <span className="text-[12px] font-medium text-white/65">{label}</span>
+                <span className="text-[11px] font-medium text-white/65">{label}</span>
               </div>
             ))}
           </div>
 
           {/* mini trust stats */}
-          <div className="mt-7 flex items-center gap-7">
+          <div className="mt-4 flex items-center gap-6">
             {[['500+', 'Lieux'], ['12k+', 'Réservations'], ['4.9★', 'Satisfaction']].map(([v, l]) => (
               <div key={l}>
-                <div className="font-serif text-xl font-bold text-amber-400">{v}</div>
-                <div className="text-[11px] uppercase tracking-wider text-white/40">{l}</div>
+                <div className="font-serif text-lg font-bold text-amber-400 leading-tight">{v}</div>
+                <div className="text-[10px] uppercase tracking-wider text-white/40">{l}</div>
               </div>
             ))}
           </div>
@@ -352,37 +353,36 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
       {/* CATEGORIES grid — pinned to the bottom of the hero */}
       <div className="relative z-10 border-t border-white/[0.06] bg-[#0c0c0d]/60 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-7xl px-8 py-5 lg:px-10">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-400/85">
+        <div className="mx-auto w-full max-w-7xl px-8 py-3 lg:px-10 lg:py-3.5">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400/85">
               Accès rapide · Catégories
             </p>
             <Link
               href="/explorer"
-              className="inline-flex items-center gap-1 text-[12px] font-semibold text-white/55 transition-colors hover:text-amber-300"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/55 transition-colors hover:text-amber-300"
             >
-              Tout explorer <ArrowRight className="size-3.5" />
+              Tout explorer <ArrowRight className="size-3" />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-7">
             {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
               <Link
                 key={title}
                 href={href}
-                className="group flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-[#111112] px-3.5 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-gradient-to-br hover:from-[#1a1610] hover:to-[#111112] hover:shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_0_1px_rgba(245,158,11,0.12)]"
+                className="group flex items-center gap-2.5 rounded-2xl border border-white/[0.07] bg-[#111112] px-3 py-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/35 hover:bg-gradient-to-br hover:from-[#1a1610] hover:to-[#111112] hover:shadow-[0_10px_30px_rgba(0,0,0,0.45),0_0_0_1px_rgba(245,158,11,0.12)]"
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/[0.10] transition-all group-hover:bg-amber-400/[0.20] group-hover:shadow-[0_0_22px_rgba(245,158,11,0.35)]">
-                  <Icon className="size-[18px] text-amber-400" strokeWidth={1.7} />
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/[0.10] transition-all group-hover:bg-amber-400/[0.20] group-hover:shadow-[0_0_22px_rgba(245,158,11,0.35)]">
+                  <Icon className="size-4 text-amber-400" strokeWidth={1.7} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-bold leading-tight text-white group-hover:text-amber-200">
+                  <span className="block truncate text-[12px] font-bold leading-tight text-white group-hover:text-amber-200">
                     {title}
                   </span>
-                  <span className="block truncate text-[10.5px] leading-tight text-zinc-500">
+                  <span className="block truncate text-[10px] leading-tight text-zinc-500">
                     {subtitle}
                   </span>
                 </span>
-                <ArrowRight className="size-3.5 shrink-0 text-zinc-700 transition-all group-hover:translate-x-0.5 group-hover:text-amber-400" />
               </Link>
             ))}
           </div>
@@ -462,27 +462,8 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Header */}
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400/70" />
-            <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
-          </span>
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">
-            En vedette · live
-          </span>
-        </div>
-        <Link
-          href="/explorer"
-          className="inline-flex items-center gap-1 text-[12px] font-semibold text-amber-400 transition-colors hover:text-amber-300"
-        >
-          Tout voir <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
-
       {/* Stacked crossfade */}
-      <div className="relative aspect-[5/6] w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-zinc-950 shadow-[0_30px_80px_rgba(0,0,0,0.55)]">
+      <div className="relative aspect-[16/11] w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-zinc-950 shadow-[0_30px_80px_rgba(0,0,0,0.55)] lg:aspect-[4/3]">
         {venues.map((v, i) => {
           const { label, Icon } = getCategoryInfo(v.type, v.name);
           const active = i === idx;
@@ -583,7 +564,7 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
       </div>
 
       {/* Thumbnails strip */}
-      <div className="mt-4 grid grid-cols-6 gap-2">
+      <div className="mt-2.5 grid grid-cols-6 gap-1.5">
         {venues.map((v, i) => {
           const active = i === idx;
           return (
