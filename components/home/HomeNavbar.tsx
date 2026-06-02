@@ -104,7 +104,7 @@ export function HomeNavbar() {
               priority
             />
             <span className="flex flex-col leading-none">
-              <span className="font-serif text-[17px] font-black tracking-tight text-amber-300 sm:text-[19px] lg:text-[21px] 2xl:text-[24px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
+              <span className="font-serif text-[17px] font-black tracking-tight text-amber-300 sm:text-[19px] lg:text-[20px] xl:text-[19px] 2xl:text-[22px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
                 BeforeYouGo
               </span>
               <span className="mt-1 hidden text-[9px] font-medium tracking-[0.06em] text-zinc-400 sm:text-[10px] 2xl:block">
@@ -163,7 +163,7 @@ export function HomeNavbar() {
                 onBlur={() => setSearchFocused(false)}
                 placeholder="Rechercher..."
                 className={cn(
-                  'h-12 w-[220px] rounded-2xl border bg-white/[0.045] pl-11 pr-4 text-sm font-medium text-neutral-100 placeholder:text-neutral-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 focus:outline-none 2xl:w-[360px]',
+                  'h-12 w-[180px] rounded-2xl border bg-white/[0.045] pl-11 pr-4 text-sm font-medium text-neutral-100 placeholder:text-neutral-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 focus:outline-none 2xl:w-[260px]',
                   searchFocused
                     ? 'border-amber-300/55 bg-white/[0.08] shadow-[0_0_0_3px_rgba(245,158,11,0.12),0_0_26px_rgba(245,158,11,0.12)]'
                     : 'border-white/[0.09] hover:border-white/[0.16] hover:bg-white/[0.06]'
@@ -199,13 +199,13 @@ export function HomeNavbar() {
                 <>
                   <Link
                     href="/login"
-                    className="flex min-h-11 items-center rounded-xl border border-white/[0.09] px-4 py-2 text-[13px] font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
+                    className="flex min-h-11 items-center rounded-xl border border-white/[0.09] px-3 py-2 text-[12px] font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 whitespace-nowrap"
                   >
                     Connexion
                   </Link>
                   <Link
                     href="/register"
-                    className="group relative flex min-h-11 items-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-5 py-2 text-[13px] font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 hover:shadow-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-200"
+                    className="group relative flex min-h-11 items-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-3.5 py-2 text-[12px] font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 hover:shadow-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-200 whitespace-nowrap"
                   >
                     S&apos;inscrire
                   </Link>
