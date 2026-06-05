@@ -377,6 +377,81 @@ async function main(): Promise<void> {
     withVenue360: true,
   });
 
+  console.log('🍸 Seeding 1 Bar & Rooftop…');
+  await seedVenue({
+    slug: 'skyline-rooftop-bar',
+    name: 'Skyline Rooftop Bar',
+    type: 'CAFE_LOUNGE',
+    city: 'Tunis',
+    governorate: 'Tunis',
+    address: 'Avenue Mohamed V, Tunis',
+    description:
+      "Rooftop panoramique au cœur de Tunis. Cocktails signature, vue 360° sur la médina et la baie.",
+    shortDescription: "Rooftop · cocktails signature · vue sur la baie.",
+    coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1600&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1543007630-9710e4a00a20?q=80&w=1600&auto=format&fit=crop',
+    ],
+    amenities: ['bar', 'rooftop', 'cocktails', 'wifi', 'vue-mer'],
+    startingPrice: 0,
+    priceRangeMin: 18,
+    priceRangeMax: 60,
+    rating: 4.7,
+    ratingCount: 234,
+    withVenue360: true,
+  });
+
+  console.log('🏖️  Seeding 1 Beach Club…');
+  await seedVenue({
+    slug: 'azur-beach-club',
+    name: 'Azur Beach Club',
+    type: 'RESTAURANT',
+    city: 'Hammamet',
+    governorate: 'Nabeul',
+    address: 'Yasmine Hammamet, Hammamet',
+    description:
+      "Beach club premium les pieds dans le sable. Restaurant méditerranéen, bar, transats et soirées DJ au coucher du soleil.",
+    shortDescription: "Beach club premium · resto, bar, transats.",
+    coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1551918120-9739cb430c6d?q=80&w=1600&auto=format&fit=crop',
+    ],
+    amenities: ['beach', 'bar', 'restaurant', 'piscine', 'transat', 'dj'],
+    startingPrice: 0,
+    priceRangeMin: 25,
+    priceRangeMax: 120,
+    rating: 4.8,
+    ratingCount: 312,
+    withVenue360: true,
+  });
+
+  console.log('💃 Seeding 1 Club (nightlife)…');
+  await seedVenue({
+    slug: 'club-nocturne',
+    name: 'Club Nocturne',
+    type: 'CAFE_LOUNGE',
+    city: 'Gammarth',
+    governorate: 'Tunis',
+    address: 'Route Touristique, Gammarth',
+    description:
+      "Club nocturne emblématique. Résidents internationaux, sound system Funktion-One, terrasse vue mer.",
+    shortDescription: "Nightclub · Funktion-One · terrasse vue mer.",
+    coverImage: 'https://images.unsplash.com/photo-1571204829887-3b8d69e4094d?q=80&w=1600&auto=format&fit=crop',
+    gallery: [
+      'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1600&auto=format&fit=crop',
+    ],
+    amenities: ['club', 'nightlife', 'bar', 'dj', 'dancefloor'],
+    startingPrice: 0,
+    priceRangeMin: 30,
+    priceRangeMax: 80,
+    rating: 4.6,
+    ratingCount: 178,
+    withVenue360: true,
+  });
+
   console.log('🎤 Seeding 1 Cultural event (concert)…');
   const eventSpaceId = await seedVenue({
     slug: 'hangar-events',
@@ -449,13 +524,16 @@ async function main(): Promise<void> {
   });
 
   console.log('\n✨ Fresh catalog seeded. Visit:');
-  console.log('   /accommodation/riad-azura       — hotel with 5 rooms × 3 types, 360° per room');
-  console.log("   /accommodation/dar-el-medina    — maison d'hôte with 3 rooms × 2 types");
-  console.log('   /cafe/cafe-lumiere              — café with venue 360°');
-  console.log("   /restaurant/la-table-dor        — restaurant with venue 360°");
-  console.log('   /coworking/atelier-lac-2        — coworking with working 360°');
-  console.log("   /evenement/concert-tropic-wave  — ticket-only concert (no 360°)");
-  console.log('   /evenement/match-etoile-vs-esperance — ticket-only match (Sport)');
+  console.log('   /accommodation/riad-azura       — Hôtel · 5 rooms × 3 types, 360° per room');
+  console.log("   /accommodation/dar-el-medina    — Maison d'hôte · 3 rooms × 2 types");
+  console.log('   /restaurant/la-table-dor        — Restaurant · venue 360°');
+  console.log('   /cafe/cafe-lumiere              — Café · venue 360°');
+  console.log('   /cafe/skyline-rooftop-bar       — Bar & Rooftop · venue 360°');
+  console.log('   /restaurant/azur-beach-club     — Beach Club · venue 360°');
+  console.log('   /cafe/club-nocturne             — Club · venue 360°');
+  console.log("   /evenement/concert-tropic-wave  — Événement (concert) · ticket-only");
+  console.log('   /evenement/match-etoile-vs-esperance — Sport (match) · ticket-only');
+  console.log('   /coworking/atelier-lac-2        — Coworking · venue 360°');
 
   await mongoose.disconnect();
 }
