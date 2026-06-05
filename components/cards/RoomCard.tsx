@@ -23,7 +23,7 @@ interface RoomCardProps {
 }
 
 export function RoomCard({ room, venueSlugOrId, className }: RoomCardProps) {
-  const href = venueSlugOrId ? `/lieu/${venueSlugOrId}` : '#';
+  const href = venueSlugOrId ? `/accommodation/${venueSlugOrId}` : '#';
   const venueName =
     room.venueName ?? (typeof room.venueId === 'object' ? room.venueId?.name : undefined);
 

@@ -50,8 +50,8 @@ const EventSchema = new Schema<IEvent>(
     type: {
       type: String,
       enum: [
-        'DJ', 'CHANTEUR', 'CONCERT', 'SOIREE', 'CINEMA', 'STANDUP', 'SPORTS', 'PRIVATE_EVENT', 'CINEMA_SESSION',
-        'concert', 'festival', 'standup', 'sports', 'private_event', 'cinema_session', 'other',
+        'DJ', 'CHANTEUR', 'CONCERT', 'SOIREE', 'CINEMA', 'STANDUP', 'SPORT', 'SPORTS', 'PRIVATE_EVENT', 'CINEMA_SESSION', 'MATCH',
+        'concert', 'festival', 'standup', 'sport', 'sports', 'private_event', 'cinema_session', 'other',
       ],
       default: 'CONCERT',
     },

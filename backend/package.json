@@ -13,6 +13,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts",
     "seed:demo-360": "tsx src/scripts/seed-demo-360.ts",
+    "seed:fresh-catalog": "tsx src/scripts/seed-fresh-catalog.ts",
     "fix-klapty-urls": "tsx src/scripts/fix-klapty-urls.ts"
   },
   "dependencies": {

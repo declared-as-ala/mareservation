@@ -110,8 +110,8 @@ jobs:
             });
           "
 
-          echo "🌐 Running demo 360° seed (idempotent — upserts by slug, safe on every deploy)..."
-          docker compose exec -T backend npm run seed:demo-360 || echo "⚠️  Demo 360° seed failed but continuing deploy."
+          echo "🆕 Running fresh catalog seed (DESTRUCTIVE — wipes venues+events+rooms then reseeds 7 fixtures)..."
+          docker compose exec -T backend npm run seed:fresh-catalog || echo "⚠️  Fresh catalog seed failed but continuing deploy."
 
           echo "📊 Docker services status:"
           docker compose ps

@@ -12,7 +12,7 @@ import {
   MapPin, Search, Coffee, Wine, Utensils, Music2, Hotel,
   Waves, Flower2, PartyPopper, LayoutGrid, SlidersHorizontal,
   X, ArrowRight, Star, Wifi, ChevronDown, BriefcaseBusiness,
-  Dumbbell, UtensilsCrossed,
+  Dumbbell, UtensilsCrossed, Trophy, Home,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -29,16 +29,18 @@ function isValidVenueItem(v: unknown): v is {
    Category tabs  (matching the design)
 ───────────────────────────────────────────── */
 const CATEGORIES = [
-  { key: 'all',         label: 'Tous',              icon: LayoutGrid,      type: '',           q: '' },
-  { key: 'hotels',      label: 'Hôtels',            icon: Hotel,           type: 'HOTEL',      q: '' },
-  { key: 'restaurants', label: 'Restaurants',       icon: Utensils,        type: 'RESTAURANT', q: '' },
-  { key: 'cafes',       label: 'Cafés',             icon: Coffee,          type: 'CAFE',       q: '' },
-  { key: 'bars',        label: 'Bars & Rooftops',   icon: Wine,            type: '',           q: 'Bar' },
-  { key: 'beach',       label: 'Beach Clubs',       icon: Waves,           type: '',           q: 'Beach' },
-  { key: 'clubs',       label: 'Clubs',             icon: Music2,          type: '',           q: 'Club' },
-  { key: 'events',      label: 'Événements',        icon: PartyPopper,     type: 'EVENT_SPACE',q: '' },
-  { key: 'coworking',   label: 'Coworking',         icon: BriefcaseBusiness, type: 'COWORKING', q: '' },
-  { key: 'spas',        label: 'Spas & Bien-être',  icon: Flower2,         type: '',           q: 'Spa' },
+  { key: 'all',         label: 'Tous',              icon: LayoutGrid,      type: '',             q: '' },
+  { key: 'hotels',      label: 'Hôtels',            icon: Hotel,           type: 'HOTEL',        q: '' },
+  { key: 'maisons',     label: 'Maisons d\'hôte',  icon: Home,            type: 'MAISON_DHOTE', q: '' },
+  { key: 'restaurants', label: 'Restaurants',       icon: Utensils,        type: 'RESTAURANT',   q: '' },
+  { key: 'cafes',       label: 'Cafés',             icon: Coffee,          type: 'CAFE',         q: '' },
+  { key: 'bars',        label: 'Bars & Rooftops',   icon: Wine,            type: '',             q: 'Bar' },
+  { key: 'beach',       label: 'Beach Clubs',       icon: Waves,           type: '',             q: 'Beach' },
+  { key: 'clubs',       label: 'Clubs',             icon: Music2,          type: '',             q: 'Club' },
+  { key: 'events',      label: 'Événements',        icon: PartyPopper,     type: 'EVENT_SPACE',  q: '' },
+  { key: 'sport',       label: 'Sport',             icon: Trophy,          type: '',             q: 'Sport' },
+  { key: 'coworking',   label: 'Coworking',         icon: BriefcaseBusiness, type: 'COWORKING',  q: '' },
+  { key: 'spas',        label: 'Spas & Bien-être',  icon: Flower2,         type: '',             q: 'Spa' },
 ];
 
 const SORT_OPTIONS = [
@@ -277,6 +279,42 @@ function ExplorerContent() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════
+          SEARCH BAR
+          ════════════════════════════════════════ */}
+      <div className="border-b border-white/[0.04] bg-[#0a0a0a] px-4 sm:px-8">
+        <div className="mx-auto max-w-7xl py-3">
+          <form onSubmit={handleSearch} className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="search"
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              placeholder="Rechercher un lieu, une ville..."
+              className="h-12 w-full rounded-2xl border border-white/[0.08] bg-[#111] pl-11 pr-28 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
+            />
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {localSearch && (
+                <button
+                  type="button"
+                  aria-label="Effacer"
+                  onClick={() => { setLocalSearch(''); updateParams({ q: '' }); }}
+                  className="flex size-8 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+              <button
+                type="submit"
+                className="inline-flex h-8 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 text-[11px] font-bold text-black shadow-md shadow-amber-400/30 transition-all hover:shadow-amber-400/45"
+              >
+                Rechercher
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 

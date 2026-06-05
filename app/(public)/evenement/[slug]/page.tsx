@@ -377,7 +377,7 @@ export default function EventDetailPage() {
 
           {venueId ? (
             <Button variant="outline" className="rounded-full border-zinc-700 text-zinc-200 hover:bg-zinc-900" asChild>
-              <Link href={`/lieu/${venueId}`}>Voir le lieu</Link>
+              <Link href={`/explorer?venue=${venueId}`}>Voir le lieu</Link>
             </Button>
           ) : null}
         </section>

@@ -171,9 +171,9 @@ export default function CartPage() {
                     <Link
                       href={
                         item.slug
-                          ? `/lieu/${item.slug}`
+                          ? `/explorer?venue=${item.slug}`
                           : item.venueId
-                          ? `/lieu/${item.venueId}`
+                          ? `/explorer?venue=${item.venueId}`
                           : '/explorer'
                       }
                       className="text-xs text-zinc-500 hover:text-amber-400 transition-colors"

@@ -1,6 +1,6 @@
 // Shared types aligned with backend models (ids as strings for JSON)
 
-export type VenueType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'COWORKING' | 'CINEMA' | 'EVENT_SPACE';
+export type VenueType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'MAISON_DHOTE' | 'COWORKING' | 'CINEMA' | 'EVENT_SPACE';
 
 export interface VenueMediaItem {
   _id: string;

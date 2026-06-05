@@ -141,7 +141,7 @@ export function TableReservationModal({
   // ── Direct reserve ─────────────────────────────────────────────────────────
   const handleReserve = async () => {
     if (!isAvailable) return;
-    if (!user) { router.push(`/login?returnTo=${encodeURIComponent(`/lieu/${venue.slug||venue._id}`)}`); return; }
+    if (!user) { router.push(`/login?returnTo=${encodeURIComponent(`/explorer?venue=${venue.slug||venue._id}`)}`); return; }
     if (user.emailVerified === false) {
       toast.error('Verifiez votre email avant de reserver.');
       router.push('/email-verified?success=false');

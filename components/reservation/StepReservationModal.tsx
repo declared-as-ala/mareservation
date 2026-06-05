@@ -520,7 +520,7 @@ export function StepReservationModal({
   const handleReserve = async () => {
     if (!isAvailable) return;
     if (!user) {
-      router.push(`/login?returnTo=${encodeURIComponent(`/lieu/${venue.slug || venue._id}`)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(`/explorer?venue=${venue.slug || venue._id}`)}`);
       return;
     }
     if (user.emailVerified === false) {
