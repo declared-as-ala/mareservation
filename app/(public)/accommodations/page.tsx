@@ -614,35 +614,10 @@ export default function HotelsPage() {
                     </button>
                   </span>
                 )}
-                {amenities.map((a) => (
-                  <span key={a} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-xs text-neutral-400 capitalize">
-                    {a}
-                    <button type="button" onClick={() => setAmenities((prev) => prev.filter((x) => x !== a))} aria-label="Retirer">
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                ))}
-                {virtualTour && (
+                {typeFilter && (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/5 px-3 py-1 text-xs text-amber-400">
-                    <Video className="size-3" />
-                    360°
-                    <button type="button" onClick={() => setVirtualTour(false)} aria-label="Retirer">
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                )}
-                {immersive360 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/5 px-3 py-1 text-xs text-amber-400">
-                    📷 Vue 360°
-                    <button type="button" onClick={() => setImmersive360(false)} aria-label="Retirer">
-                      <X className="size-3" />
-                    </button>
-                  </span>
-                )}
-                {freeCancellation && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/5 px-3 py-1 text-xs text-emerald-400">
-                    🔓 Annulation gratuite
-                    <button type="button" onClick={() => setFreeCancellation(false)} aria-label="Retirer">
+                    {typeFilter === 'HOTEL' ? 'Hôtels' : "Maisons d'hôte"}
+                    <button type="button" onClick={() => setTypeFilter(null)} aria-label="Retirer">
                       <X className="size-3" />
                     </button>
                   </span>
