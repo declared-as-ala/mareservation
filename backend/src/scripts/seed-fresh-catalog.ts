@@ -30,16 +30,21 @@ import { Reservation } from '../models/Reservation';
 
 dotenv.config();
 
-// Klapty tunnel URL (the canonical demo 360 tour).
-const KLAPTY_360 = 'https://www.klapty.com/tour/tunnel/IBJ0xpE8hq';
-
-// Equirectangular panoramas (Unsplash) — used as per-room 360 imagery.
-const PANO = {
-  hotelStandard: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=2400&auto=format&fit=crop',
-  hotelDeluxe: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2400&auto=format&fit=crop',
-  hotelSuite: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=2400&auto=format&fit=crop',
-  maisonSimple: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=2400&auto=format&fit=crop',
-  maisonFamily: 'https://images.unsplash.com/photo-1551776235-dde6c44f4d59?q=80&w=2400&auto=format&fit=crop',
+// Public 360° equirectangular sample panoramas (Photo Sphere Viewer demo
+// CDN). Each one is genuinely panoramic (2:1 ratio) so PanoramaEngine
+// wraps them correctly. Pinned to a stable host that serves CORS.
+const PANO_360 = {
+  hotelStandard: 'https://photo-sphere-viewer-data.netlify.app/assets/sphere.jpg',
+  hotelDeluxe: 'https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-1.jpg',
+  hotelSuite: 'https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-2.jpg',
+  maisonSimple: 'https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-3.jpg',
+  maisonFamily: 'https://photo-sphere-viewer-data.netlify.app/assets/tour/key-biscayne-4.jpg',
+  cafe: 'https://pannellum.org/images/cerro-toco-0.jpg',
+  restaurant: 'https://pannellum.org/images/alma.jpg',
+  coworking: 'https://pannellum.org/images/jfk.jpg',
+  bar: 'https://pannellum.org/images/from-tree.jpg',
+  beachClub: 'https://pannellum.org/images/bma-1.jpg',
+  club: 'https://pannellum.org/images/tocopilla.jpg',
 };
 
 async function wipe(): Promise<void> {
@@ -72,9 +77,11 @@ async function seedVenue(input: {
   priceRangeMax: number;
   rating: number;
   ratingCount: number;
-  withVenue360?: boolean;
+  /** Equirectangular 360 image to render in PanoramaEngine. Omit for ticket-only venues. */
+  panorama360?: string;
   isFeatured?: boolean;
 }): Promise<mongoose.Types.ObjectId> {
+  const hasImmersive = !!input.panorama360;
   const venue = await Venue.create({
     name: input.name,
     slug: input.slug,
@@ -95,19 +102,20 @@ async function seedVenue(input: {
     isPublished: true,
     isFeatured: input.isFeatured ?? true,
     isVedette: false,
-    hasVirtualTour: !!input.withVenue360,
-    immersiveType: input.withVenue360 ? 'virtual-tour' : 'none',
-    immersiveSourceType: input.withVenue360 ? 'embed' : null,
-    immersiveProvider: input.withVenue360 ? 'klapty' : null,
-    immersiveUrl: input.withVenue360 ? KLAPTY_360 : null,
+    hasVirtualTour: hasImmersive,
+    immersiveType: hasImmersive ? 'view-360' : 'none',
+    immersiveSourceType: hasImmersive ? 'upload' : null,
+    immersiveProvider: null,
+    immersiveUrl: hasImmersive ? input.panorama360 : null,
+    immersiveFile: hasImmersive ? input.panorama360 : null,
     approvalStatus: 'approved',
   });
 
-  if (input.withVenue360) {
+  if (hasImmersive && input.panorama360) {
     await VirtualTour.create({
       venueId: venue._id,
-      provider: 'klapty',
-      embedUrl: KLAPTY_360,
+      provider: 'pannellum',
+      embedUrl: input.panorama360,
       previewImage: input.coverImage,
       aspectRatio: 16 / 9,
       isActive: true,
@@ -127,7 +135,7 @@ async function seedHotelRooms(venueId: mongoose.Types.ObjectId): Promise<void> {
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, panoramicImages: [PANO.hotelStandard],
+      hasVirtualTour: true, panoramicImages: [PANO_360.hotelStandard],
     },
     {
       venueId, name: 'Standard Vue Patio', roomNumber: 102, roomType: 'STANDARD',
@@ -136,7 +144,7 @@ async function seedHotelRooms(venueId: mongoose.Types.ObjectId): Promise<void> {
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, panoramicImages: [PANO.hotelStandard],
+      hasVirtualTour: true, panoramicImages: [PANO_360.hotelStandard],
     },
     {
       venueId, name: 'Deluxe Vue Mer', roomNumber: 201, roomType: 'DELUXE',
@@ -145,7 +153,7 @@ async function seedHotelRooms(venueId: mongoose.Types.ObjectId): Promise<void> {
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, hasBalcony: true, panoramicImages: [PANO.hotelDeluxe],
+      hasVirtualTour: true, hasBalcony: true, panoramicImages: [PANO_360.hotelDeluxe],
     },
     {
       venueId, name: 'Deluxe Vue Mer Premium', roomNumber: 202, roomType: 'DELUXE',
@@ -155,7 +163,7 @@ async function seedHotelRooms(venueId: mongoose.Types.ObjectId): Promise<void> {
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, hasBalcony: true, panoramicImages: [PANO.hotelDeluxe],
+      hasVirtualTour: true, hasBalcony: true, panoramicImages: [PANO_360.hotelDeluxe],
     },
     {
       venueId, name: 'Suite Présidentielle', roomNumber: 301, roomType: 'PRESIDENTIAL_SUITE',
@@ -165,7 +173,7 @@ async function seedHotelRooms(venueId: mongoose.Types.ObjectId): Promise<void> {
       coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop'],
       hasVirtualTour: true, hasBalcony: true, isVip: true,
-      panoramicImages: [PANO.hotelSuite],
+      panoramicImages: [PANO_360.hotelSuite],
     },
   ] as any);
 }
@@ -179,7 +187,7 @@ async function seedMaisonRooms(venueId: mongoose.Types.ObjectId): Promise<void> 
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, panoramicImages: [PANO.maisonSimple],
+      hasVirtualTour: true, panoramicImages: [PANO_360.maisonSimple],
     },
     {
       venueId, name: 'Chambre Patio', roomNumber: 2, roomType: 'STANDARD',
@@ -188,7 +196,7 @@ async function seedMaisonRooms(venueId: mongoose.Types.ObjectId): Promise<void> 
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, panoramicImages: [PANO.maisonSimple],
+      hasVirtualTour: true, panoramicImages: [PANO_360.maisonSimple],
     },
     {
       venueId, name: 'Suite Familiale', roomNumber: 3, roomType: 'SUITE',
@@ -198,7 +206,7 @@ async function seedMaisonRooms(venueId: mongoose.Types.ObjectId): Promise<void> 
       isActive: true, isReservable: true,
       coverImage: 'https://images.unsplash.com/photo-1551776235-dde6c44f4d59?q=80&w=1600&auto=format&fit=crop',
       gallery: ['https://images.unsplash.com/photo-1551776235-dde6c44f4d59?q=80&w=1600&auto=format&fit=crop'],
-      hasVirtualTour: true, panoramicImages: [PANO.maisonFamily],
+      hasVirtualTour: true, panoramicImages: [PANO_360.maisonFamily],
     },
   ] as any);
 }
@@ -261,11 +269,11 @@ async function main(): Promise<void> {
     description:
       "Riad de prestige à deux pas de la médina bleue. Chambres en immersion 360° — explorez chaque type de chambre avant de réserver.",
     shortDescription: "Riad de prestige avec visite 360° de chaque chambre.",
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['piscine', 'wifi', 'spa', 'parking', 'restaurant'],
     startingPrice: 320,
@@ -273,7 +281,7 @@ async function main(): Promise<void> {
     priceRangeMax: 1280,
     rating: 4.8,
     ratingCount: 214,
-    withVenue360: true,
+    panorama360: PANO_360.hotelDeluxe,
   });
   await seedHotelRooms(hotelId);
 
@@ -288,10 +296,10 @@ async function main(): Promise<void> {
     description:
       "Maison d'hôte authentique au cœur de la médina de Tunis. Patio andalou, terrasse panoramique, petit-déjeuner local.",
     shortDescription: "Maison d'hôte au cœur de la médina, accueil familial.",
-    coverImage: 'https://images.unsplash.com/photo-1551776235-dde6c44f4d59?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['wifi', 'petit-dej', 'terrasse', 'patio'],
     startingPrice: 180,
@@ -299,7 +307,7 @@ async function main(): Promise<void> {
     priceRangeMax: 320,
     rating: 4.9,
     ratingCount: 168,
-    withVenue360: true,
+    panorama360: PANO_360.maisonSimple,
   });
   await seedMaisonRooms(maisonId);
 
@@ -314,17 +322,17 @@ async function main(): Promise<void> {
     description:
       "Café-coworking en bord de mer. Wi-Fi très haut débit, prises à chaque table, terrasse vue océan.",
     shortDescription: "Café-coworking lumineux, terrasse vue mer.",
-    coverImage: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1521017432531-fbd92d768814?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1453614512568-c4024d13c247?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1525610553991-2bede1a236e2?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['wifi', 'prises', 'terrasse', 'travail', 'brunch'],
     priceRangeMin: 8,
     priceRangeMax: 35,
     rating: 4.6,
     ratingCount: 312,
-    withVenue360: true,
+    panorama360: PANO_360.cafe,
   });
 
   console.log('🍽️  Seeding 1 Restaurant…');
@@ -338,10 +346,10 @@ async function main(): Promise<void> {
     description:
       "Restaurant gastronomique méditerranéen. Visite 360° de la salle avant de réserver votre table.",
     shortDescription: "Gastronomie méditerranéenne · visite 360° de la salle.",
-    coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1592861956120-e524fc739696?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['restaurant', 'wifi', 'romantique', 'vue-mer', 'mediterraneen'],
     startingPrice: 75,
@@ -349,7 +357,7 @@ async function main(): Promise<void> {
     priceRangeMax: 220,
     rating: 4.7,
     ratingCount: 148,
-    withVenue360: true,
+    panorama360: PANO_360.restaurant,
   });
 
   console.log('💼 Seeding 1 Coworking…');
@@ -363,10 +371,10 @@ async function main(): Promise<void> {
     description:
       "Espace de coworking premium : 120 bureaux, 8 salles de réunion, lounge. Visite 360° de chaque zone.",
     shortDescription: "Coworking premium · 120 bureaux · réunions privées.",
-    coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1559136555-9303baea8ebd?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['coworking', 'wifi', 'prises', 'salles-reunion', 'parking', 'cafe'],
     startingPrice: 45,
@@ -374,7 +382,7 @@ async function main(): Promise<void> {
     priceRangeMax: 380,
     rating: 4.7,
     ratingCount: 102,
-    withVenue360: true,
+    panorama360: PANO_360.coworking,
   });
 
   console.log('🍸 Seeding 1 Bar & Rooftop…');
@@ -388,10 +396,10 @@ async function main(): Promise<void> {
     description:
       "Rooftop panoramique au cœur de Tunis. Cocktails signature, vue 360° sur la médina et la baie.",
     shortDescription: "Rooftop · cocktails signature · vue sur la baie.",
-    coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1543007630-9710e4a00a20?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1470337458703-46ad1756a187?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['bar', 'rooftop', 'cocktails', 'wifi', 'vue-mer'],
     startingPrice: 0,
@@ -399,7 +407,7 @@ async function main(): Promise<void> {
     priceRangeMax: 60,
     rating: 4.7,
     ratingCount: 234,
-    withVenue360: true,
+    panorama360: PANO_360.bar,
   });
 
   console.log('🏖️  Seeding 1 Beach Club…');
@@ -413,10 +421,10 @@ async function main(): Promise<void> {
     description:
       "Beach club premium les pieds dans le sable. Restaurant méditerranéen, bar, transats et soirées DJ au coucher du soleil.",
     shortDescription: "Beach club premium · resto, bar, transats.",
-    coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1559544740-3128b0ec05f9?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1551918120-9739cb430c6d?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1519046904884-53103b34b206?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['beach', 'bar', 'restaurant', 'piscine', 'transat', 'dj'],
     startingPrice: 0,
@@ -424,7 +432,7 @@ async function main(): Promise<void> {
     priceRangeMax: 120,
     rating: 4.8,
     ratingCount: 312,
-    withVenue360: true,
+    panorama360: PANO_360.beachClub,
   });
 
   console.log('💃 Seeding 1 Club (nightlife)…');
@@ -438,10 +446,10 @@ async function main(): Promise<void> {
     description:
       "Club nocturne emblématique. Résidents internationaux, sound system Funktion-One, terrasse vue mer.",
     shortDescription: "Nightclub · Funktion-One · terrasse vue mer.",
-    coverImage: 'https://images.unsplash.com/photo-1571204829887-3b8d69e4094d?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=85&w=1600&auto=format&fit=crop',
     gallery: [
-      'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?q=80&w=1600&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=85&w=1600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1574391884720-bbc049ec09ad?q=85&w=1600&auto=format&fit=crop',
     ],
     amenities: ['club', 'nightlife', 'bar', 'dj', 'dancefloor'],
     startingPrice: 0,
@@ -449,7 +457,7 @@ async function main(): Promise<void> {
     priceRangeMax: 80,
     rating: 4.6,
     ratingCount: 178,
-    withVenue360: true,
+    panorama360: PANO_360.club,
   });
 
   console.log('🎤 Seeding 1 Cultural event (concert)…');
@@ -462,14 +470,14 @@ async function main(): Promise<void> {
     address: 'Zone touristique Yasmine, Hammamet',
     description: "Salle événementielle modulable jusqu'à 800 personnes.",
     shortDescription: 'Salle 800 places, scène pro.',
-    coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1600&auto=format&fit=crop',
-    gallery: ['https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=1600&auto=format&fit=crop'],
+    coverImage: 'https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?q=85&w=1600&auto=format&fit=crop',
+    gallery: ['https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=85&w=1600&auto=format&fit=crop'],
     amenities: ['scene-pro', 'parking', 'climatisation', 'bar'],
     priceRangeMin: 0,
     priceRangeMax: 0,
     rating: 4.9,
     ratingCount: 56,
-    withVenue360: false, // event venue itself doesn't expose 360 since events are ticket-only
+    // Event venue stays ticket-only — no immersive 360° at the venue level
   });
   await seedTicketEvent({
     venueId: eventSpaceId,
@@ -477,7 +485,7 @@ async function main(): Promise<void> {
     title: 'Tropic Wave · Concert Live',
     description:
       "Une soirée tropicale immersive — réservez votre billet, profitez du show.",
-    coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=85&w=1600&auto=format&fit=crop',
     type: 'CONCERT',
     daysFromNow: 7,
     tickets: [
@@ -497,14 +505,14 @@ async function main(): Promise<void> {
     address: "Cité Olympique, Radès",
     description: "Stade national de Tunisie · 60 000 places.",
     shortDescription: 'Stade national · 60 000 places.',
-    coverImage: 'https://images.unsplash.com/photo-1518604666860-9ed391f76460?q=80&w=1600&auto=format&fit=crop',
-    gallery: ['https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=80&w=1600&auto=format&fit=crop'],
+    coverImage: 'https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?q=85&w=1600&auto=format&fit=crop',
+    gallery: ['https://images.unsplash.com/photo-1540552964918-09afecb2c7c9?q=85&w=1600&auto=format&fit=crop'],
     amenities: ['parking', 'snack', 'tribune-vip'],
     priceRangeMin: 0,
     priceRangeMax: 0,
     rating: 4.6,
     ratingCount: 412,
-    withVenue360: false,
+    // Stadium stays ticket-only — no immersive 360°
   });
   await seedTicketEvent({
     venueId: stadiumId,
@@ -512,7 +520,7 @@ async function main(): Promise<void> {
     title: 'Match · Étoile du Sahel vs Espérance Sportive',
     description:
       "Classique du championnat tunisien. Réservez votre tribune — billet numérique, entrée scannée à l'arrivée.",
-    coverImage: 'https://images.unsplash.com/photo-1518604666860-9ed391f76460?q=80&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1540552964918-09afecb2c7c9?q=85&w=1600&auto=format&fit=crop',
     type: 'SPORT',
     daysFromNow: 14,
     tickets: [
