@@ -505,8 +505,8 @@ async function main(): Promise<void> {
     address: "Cité Olympique, Radès",
     description: "Stade national de Tunisie · 60 000 places.",
     shortDescription: 'Stade national · 60 000 places.',
-    coverImage: 'https://images.unsplash.com/photo-1577471488278-16eec37ffcc2?q=85&w=1600&auto=format&fit=crop',
-    gallery: ['https://images.unsplash.com/photo-1540552964918-09afecb2c7c9?q=85&w=1600&auto=format&fit=crop'],
+    coverImage: 'https://images.unsplash.com/photo-1518604666860-9ed391f76460?q=85&w=1600&auto=format&fit=crop',
+    gallery: ['https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?q=85&w=1600&auto=format&fit=crop'],
     amenities: ['parking', 'snack', 'tribune-vip'],
     priceRangeMin: 0,
     priceRangeMax: 0,
@@ -520,7 +520,7 @@ async function main(): Promise<void> {
     title: 'Match · Étoile du Sahel vs Espérance Sportive',
     description:
       "Classique du championnat tunisien. Réservez votre tribune — billet numérique, entrée scannée à l'arrivée.",
-    coverImage: 'https://images.unsplash.com/photo-1540552964918-09afecb2c7c9?q=85&w=1600&auto=format&fit=crop',
+    coverImage: 'https://images.unsplash.com/photo-1518604666860-9ed391f76460?q=85&w=1600&auto=format&fit=crop',
     type: 'SPORT',
     daysFromNow: 14,
     tickets: [
