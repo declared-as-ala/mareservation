@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpRight, MapPin, Sparkles, Star, Video } from 'lucide-react';
+import { ArrowUpRight, MapPin, Sparkles, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Venue } from '@/lib/api/types';
 import { TypeBadge } from '@/components/shared/TypeBadge';
@@ -55,7 +55,6 @@ export function VenueCard({ venue, className }: VenueCardProps) {
             )}
             {venue.isFeatured && !venue.isVedette && (
               <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/60 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
-                <Star className="size-3" />
                 Mis en avant
               </span>
             )}

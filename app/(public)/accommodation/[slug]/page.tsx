@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -253,8 +253,6 @@ function HotelHero({
                 <MapPin className="size-4 shrink-0 text-amber-400" />
                 <span>{[venue.address, venue.city].filter(Boolean).join(', ')}</span>
               </div>
-              <span className="hidden h-3.5 w-px bg-white/20 sm:block" />
-              <StarRow count={4} />
               {venue.hasVirtualTour && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
                   <Video className="size-3" /> Visite 360°
@@ -319,10 +317,11 @@ function HotelHero({
 
 interface BookingWidgetProps {
   startingPrice?: number;
-  onSearch: (checkIn: Date, checkOut: Date, guests: number) => void;
+  /** Direct booking — caller picks an available room for these dates and opens the booking modal */
+  onBook: (checkIn: Date, checkOut: Date, guests: number) => void;
 }
 
-function BookingWidget({ startingPrice, onSearch }: BookingWidgetProps) {
+function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -334,12 +333,12 @@ function BookingWidget({ startingPrice, onSearch }: BookingWidgetProps) {
 
   const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 0;
 
-  function handleSearch() {
+  function handleBook() {
     if (!checkIn || !checkOut) {
       toast.error("Veuillez sélectionner vos dates d'arrivée et de départ.");
       return;
     }
-    onSearch(checkIn, checkOut, guests);
+    onBook(checkIn, checkOut, guests);
   }
 
   return (
@@ -435,11 +434,11 @@ function BookingWidget({ startingPrice, onSearch }: BookingWidgetProps) {
         {/* CTA */}
         <button
           type="button"
-          onClick={handleSearch}
+          onClick={handleBook}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40"
         >
-          <Search className="size-4" />
-          Voir les chambres disponibles
+          <Sparkles className="size-4" />
+          Réserver maintenant
         </button>
 
         {/* Trust badge */}
@@ -466,7 +465,8 @@ export default function HotelDetailPage() {
   const [roomSort, setRoomSort] = useState<'price' | 'capacity' | 'surface'>('price');
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
   const [viewerGroup, setViewerGroup] = useState<RoomTypeGroup | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rooms' | 'visite' | 'infos'>('overview');
+  // Default tab: 'visite' for maisons d'hôte (360° first), 'rooms' for hotels
+  const [activeTab, setActiveTab] = useState<'overview' | 'rooms' | 'visite' | 'infos'>('rooms');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const { data: venue, isLoading: venueLoading, error: venueError } = useQuery({
@@ -569,14 +569,35 @@ export default function HotelDetailPage() {
     ((venue.immersiveSourceType === 'url' && venue.immersiveUrl) ||
       (venue.immersiveSourceType === 'upload' && venue.immersiveFile));
 
-  function handleSearchRooms(ci: Date, co: Date, g: number) {
+  // Maisons d'hôte open on the 360° tab by default (immersive-first)
+  const isMaison = venue?.type === 'MAISON_DHOTE';
+  useEffect(() => {
+    if (isMaison && hasVirtualTour) setActiveTab('visite');
+  }, [isMaison, hasVirtualTour]);
+
+  function handleBookDirect(ci: Date, co: Date, g: number) {
     setCheckIn(ci);
     setCheckOut(co);
     setGuests(g);
-    setActiveTab('rooms');
-    setTimeout(() => {
-      document.getElementById('rooms-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+
+    // Pick the cheapest available room that fits the requested party size,
+    // then open the booking modal directly — ticketing-style flow.
+    const eligible = rooms
+      .filter((r) =>
+        r.isReservable &&
+        r.status !== 'reserved' &&
+        r.status !== 'blocked' &&
+        (r.capacityAdults ?? r.capacity ?? 1) >= g
+      )
+      .sort((a, b) => a.pricePerNight - b.pricePerNight);
+
+    if (eligible.length === 0) {
+      toast.error("Aucune chambre disponible pour cette taille de groupe ou ces dates.");
+      setActiveTab('rooms');
+      return;
+    }
+
+    setSelectedRoom(eligible[0]);
   }
 
   // ── Loading ──
@@ -636,9 +657,9 @@ export default function HotelDetailPage() {
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
               {(
                 [
-                  { id: 'overview', label: 'Aperçu' },
                   { id: 'rooms', label: `Chambres${hasRooms ? ` (${rooms.length})` : ''}` },
                   ...(hasVirtualTour ? [{ id: 'visite', label: 'Visite 360°' }] : []),
+                  { id: 'overview', label: 'Aperçu' },
                   { id: 'infos', label: 'Infos pratiques' },
                 ] as { id: string; label: string }[]
               ).map((tab) => (
@@ -990,7 +1011,7 @@ export default function HotelDetailPage() {
             <div className="sticky top-24">
               <BookingWidget
                 startingPrice={venue.startingPrice ?? venue.priceRangeMin}
-                onSearch={handleSearchRooms}
+                onBook={handleBookDirect}
               />
 
               {/* Quick contact */}
@@ -1064,16 +1085,21 @@ export default function HotelDetailPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveTab('rooms');
-                setTimeout(() => {
-                  document
-                    .getElementById('rooms-section')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
+                // Mobile fast-book: jump to the rooms tab if no dates yet, else book directly
+                if (checkIn && checkOut) {
+                  handleBookDirect(checkIn, checkOut, guests);
+                } else {
+                  setActiveTab('rooms');
+                  setTimeout(() => {
+                    document
+                      .getElementById('rooms-section')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 50);
+                }
               }}
               className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-95"
             >
-              Voir les chambres
+              Réserver
             </button>
           </div>
         </div>

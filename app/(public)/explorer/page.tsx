@@ -38,7 +38,7 @@ const CATEGORIES = [
   { key: 'beach',       label: 'Beach Clubs',       icon: Waves,           type: '',             q: 'Beach' },
   { key: 'clubs',       label: 'Clubs',             icon: Music2,          type: '',             q: 'Club' },
   { key: 'events',      label: 'Événements',        icon: PartyPopper,     type: 'EVENT_SPACE',  q: '' },
-  { key: 'sport',       label: 'Sport',             icon: Trophy,          type: '',             q: 'Sport' },
+  { key: 'sport',       label: 'Sport',             icon: Trophy,          type: '',             q: '', href: '/evenements?type=sport' },
   { key: 'coworking',   label: 'Coworking',         icon: BriefcaseBusiness, type: 'COWORKING',  q: '' },
   { key: 'spas',        label: 'Spas & Bien-être',  icon: Flower2,         type: '',             q: 'Spa' },
 ];
@@ -258,6 +258,25 @@ function ExplorerContent() {
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCat?.key === cat.key;
+              const classes = cn(
+                'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap border transition-all duration-200 snap-center',
+                isActive
+                  ? 'bg-amber-400/10 text-amber-400 border-amber-400/40 shadow-md shadow-amber-400/5'
+                  : 'bg-[#0f0f0f] text-zinc-400 border-white/[0.05] hover:border-white/20 hover:text-zinc-200'
+              );
+              const inner = (
+                <>
+                  <Icon className={cn('size-3.5 shrink-0 transition-colors', isActive ? 'text-amber-400' : 'text-zinc-500')} />
+                  {cat.label}
+                </>
+              );
+              if ((cat as any).href) {
+                return (
+                  <a key={cat.key} href={(cat as any).href} className={classes}>
+                    {inner}
+                  </a>
+                );
+              }
               return (
                 <button
                   key={cat.key}
@@ -266,15 +285,9 @@ function ExplorerContent() {
                     setLocalSearch(cat.q ?? '');
                     updateParams({ type: cat.type ?? '', q: cat.q ?? '' });
                   }}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold whitespace-nowrap border transition-all duration-200 snap-center',
-                    isActive
-                      ? 'bg-amber-400/10 text-amber-400 border-amber-400/40 shadow-md shadow-amber-400/5'
-                      : 'bg-[#0f0f0f] text-zinc-400 border-white/[0.05] hover:border-white/20 hover:text-zinc-200'
-                  )}
+                  className={classes}
                 >
-                  <Icon className={cn("size-3.5 shrink-0 transition-colors", isActive ? "text-amber-400" : "text-zinc-500")} />
-                  {cat.label}
+                  {inner}
                 </button>
               );
             })}
@@ -539,8 +552,11 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
   const href      = getVenueHref(venue);
   const img       = venue.coverImage ?? venue.media?.find((m: any) => m.kind === 'HERO_IMAGE')?.url ?? null;
   const { label, Icon } = getTypeMeta(venue);
-  const amenities = getAmenities(venue);
-  const price = (venue.startingPrice as number) ?? (venue.priceRangeMin as number) ?? null;
+  // Price only shown for accommodation types (HOTEL or MAISON_DHOTE)
+  const isAccommodation = venue.type === 'HOTEL' || venue.type === 'MAISON_DHOTE';
+  const price = isAccommodation
+    ? ((venue.startingPrice as number) ?? (venue.priceRangeMin as number) ?? null)
+    : null;
 
   return (
     <a
@@ -589,19 +605,13 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
           </div>
         </div>
 
-        {/* Middle Block: Dynamic circular amenities row with label below */}
-        {amenities.length > 0 && (
-          <div className="flex items-center gap-3 sm:gap-4 my-2 overflow-x-auto no-scrollbar py-0.5">
-            {amenities.slice(0, 4).map(({ label: aLabel, Icon: AIcon }) => (
-              <div key={aLabel} className="flex flex-col items-center gap-0.5 shrink-0 min-w-[42px]">
-                <div className="flex size-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] transition-colors group-hover:border-amber-400/20">
-                  <AIcon className="size-3.5 text-amber-400/80" />
-                </div>
-                <span className="text-[9px] text-zinc-500 font-medium tracking-tight text-center">{aLabel}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Type pill (Hôtel / Restaurant / Café…) */}
+        <div className="my-2 flex items-center">
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/[0.05] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+            <Icon className="size-3" />
+            {label}
+          </span>
+        </div>
 
         {/* Bottom Block: Price & CTA on the right */}
         <div className="flex items-end justify-end gap-3 pt-1.5 border-t border-white/[0.03] mt-auto">
@@ -617,9 +627,7 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
                   <span className="text-[9px] text-zinc-500 font-normal"> / nuit</span>
                 </p>
               </div>
-            ) : (
-              <span className="text-[9px] text-zinc-500 font-medium shrink-0 leading-none">Réservation immédiate</span>
-            )}
+            ) : null}
 
             <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1.5 text-[9px] xs:text-[10px] font-bold text-amber-300 transition-all group-hover:border-amber-400 group-hover:bg-amber-400 group-hover:text-black shrink-0">
               Voir <ArrowRight className="size-2.5 ml-0.5" />

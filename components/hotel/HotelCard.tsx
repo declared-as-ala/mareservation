@@ -142,12 +142,6 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
               <FavoriteButton venueId={venue._id} size="sm" />
             </div>
 
-            {/* Bottom-right: star rating */}
-            <div className="absolute bottom-3 right-3">
-              <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/70 px-2.5 py-1 backdrop-blur-md">
-                <StarRating rating={starRating} />
-              </div>
-            </div>
           </div>
 
           {/* ── Body ── */}

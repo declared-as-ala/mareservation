@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -42,11 +43,18 @@ function minTicketPrice(event: Event) {
   return prices.length ? Math.min(...prices) : null;
 }
 
-export default function EvenementsPage() {
+function EvenementsPageInner() {
+  const sp = useSearchParams();
   const [q, setQ] = useState('');
   const [type, setType] = useState('all');
   const [city, setCity] = useState('all');
   const [dayKey, setDayKey] = useState<string | null>(null); // YYYY-MM-DD
+
+  // Initialise from URL: /evenements?type=sport
+  useEffect(() => {
+    const t = sp.get('type');
+    if (t) setType(t.toLowerCase());
+  }, [sp]);
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['public-events-marketplace'],
@@ -95,7 +103,12 @@ export default function EvenementsPage() {
       const matchQuery = !query || [event.title, event.description, venue?.name, venue?.city]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(query));
-      const matchType = type === 'all' || event.type === type;
+      const matchType =
+        type === 'all' ||
+        String(event.type ?? '').toLowerCase() === type.toLowerCase() ||
+        // Treat SPORT/SPORTS/MATCH as the same "sport" bucket
+        (type.toLowerCase() === 'sport' &&
+          ['sport', 'sports', 'match'].includes(String(event.type ?? '').toLowerCase()));
       const matchCity = city === 'all' || venue?.city === city;
       let matchDay = true;
       if (dayKey && event.startAt) {
@@ -348,5 +361,13 @@ export default function EvenementsPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function EvenementsPage() {
+  return (
+    <Suspense fallback={null}>
+      <EvenementsPageInner />
+    </Suspense>
   );
 }

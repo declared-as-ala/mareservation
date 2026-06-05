@@ -212,14 +212,8 @@ interface FilterPanelProps {
   onPriceIdx: (n: number) => void;
   stars: number;
   onStars: (n: number) => void;
-  amenities: string[];
-  onAmenities: (v: string[]) => void;
-  virtualTour: boolean;
-  onVirtualTour: (v: boolean) => void;
-  freeCancellation: boolean;
-  onFreeCancellation: (v: boolean) => void;
-  immersive360: boolean;
-  onImmersive360: (v: boolean) => void;
+  typeFilter: string | null;
+  onTypeFilter: (v: string | null) => void;
   sort: string;
   onSort: (v: string) => void;
   onClear: () => void;
@@ -229,9 +223,7 @@ interface FilterPanelProps {
 function FilterPanel({
   q, onQ, governorate, onGovernorate,
   priceIdx, onPriceIdx, stars, onStars,
-  amenities, onAmenities, virtualTour, onVirtualTour,
-  freeCancellation, onFreeCancellation,
-  immersive360, onImmersive360,
+  typeFilter, onTypeFilter,
   sort, onSort, onClear, hasFilters,
 }: FilterPanelProps) {
   return (
@@ -313,75 +305,34 @@ function FilterPanel({
         </div>
       </div>
 
-      {/* Amenities */}
+      {/* Type filter (Hôtel / Maison d'hôte) */}
       <div>
         <label className="mb-2 block text-xs font-medium text-neutral-500 uppercase tracking-wider">
-          Services
+          Type d&apos;hébergement
         </label>
         <div className="flex flex-wrap gap-2">
-          {AMENITY_FILTERS.map((a) => {
-            const active = amenities.includes(a.key);
+          {[
+            { key: 'all', label: 'Tous' },
+            { key: 'HOTEL', label: 'Hôtels' },
+            { key: 'MAISON_DHOTE', label: "Maisons d'hôte" },
+          ].map((opt) => {
+            const active = (typeFilter ?? 'all') === opt.key;
             return (
               <button
-                key={a.key}
+                key={opt.key}
                 type="button"
-                onClick={() =>
-                  onAmenities(
-                    active ? amenities.filter((x) => x !== a.key) : [...amenities, a.key]
-                  )
-                }
+                onClick={() => onTypeFilter(opt.key === 'all' ? null : opt.key)}
                 className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all ${
                   active
                     ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
                     : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
                 }`}
               >
-                {a.icon}
-                {a.label}
+                {opt.label}
               </button>
             );
           })}
         </div>
-      </div>
-
-      {/* Toggle chips */}
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={() => onVirtualTour(!virtualTour)}
-          className={`flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
-            virtualTour
-              ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
-              : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
-          }`}
-        >
-          <Video className="size-4" />
-          Visite 360° disponible
-        </button>
-        <button
-          type="button"
-          onClick={() => onImmersive360(!immersive360)}
-          className={`flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
-            immersive360
-              ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
-              : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
-          }`}
-        >
-          <span className="text-base leading-none">📷</span>
-          Vue 360°
-        </button>
-        <button
-          type="button"
-          onClick={() => onFreeCancellation(!freeCancellation)}
-          className={`flex w-full items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
-            freeCancellation
-              ? 'border-emerald-400/50 bg-emerald-400/10 text-emerald-400'
-              : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
-          }`}
-        >
-          <span className="text-base leading-none">🔓</span>
-          Annulation gratuite
-        </button>
       </div>
 
       {/* Clear */}
@@ -407,32 +358,29 @@ export default function HotelsPage() {
   const [governorate, setGovernorate] = useState('__all__');
   const [priceIdx, setPriceIdx] = useState(0);
   const [stars, setStars] = useState(0);
-  const [amenities, setAmenities] = useState<string[]>([]);
-  const [virtualTour, setVirtualTour] = useState(false);
-  const [freeCancellation, setFreeCancellation] = useState(false);
-  const [immersive360, setImmersive360] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sort, setSort] = useState('default');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Legacy filter values kept as constants so the existing filterAndSort signature stays stable
+  const amenities: string[] = [];
+  const virtualTour = false;
+  const freeCancellation = false;
+  const immersive360 = false;
 
   const hasFilters =
     q !== '' ||
     governorate !== '__all__' ||
     priceIdx !== 0 ||
     stars !== 0 ||
-    amenities.length > 0 ||
-    virtualTour ||
-    freeCancellation ||
-    immersive360;
+    !!typeFilter;
 
   function clearFilters() {
     setQ('');
     setGovernorate('__all__');
     setPriceIdx(0);
     setStars(0);
-    setAmenities([]);
-    setVirtualTour(false);
-    setFreeCancellation(false);
-    setImmersive360(false);
+    setTypeFilter(null);
     setSort('default');
   }
 
@@ -450,20 +398,17 @@ export default function HotelsPage() {
   const error = hotelsError;
   const refetch = refetchHotels;
 
-  const hotels = useMemo(
-    () => filterAndSort(raw, { q, governorate, priceIdx, stars, amenities, virtualTour, freeCancellation, immersive360, sort }),
-    [raw, q, governorate, priceIdx, stars, amenities, virtualTour, freeCancellation, immersive360, sort]
-  );
+  const hotels = useMemo(() => {
+    const filtered = filterAndSort(raw, { q, governorate, priceIdx, stars, amenities, virtualTour, freeCancellation, immersive360, sort });
+    return typeFilter ? filtered.filter((v) => v.type === typeFilter) : filtered;
+  }, [raw, q, governorate, priceIdx, stars, sort, typeFilter]);
 
   const filterProps = {
     q, onQ: setQ,
     governorate, onGovernorate: setGovernorate,
     priceIdx, onPriceIdx: setPriceIdx,
     stars, onStars: setStars,
-    amenities, onAmenities: setAmenities,
-    virtualTour, onVirtualTour: setVirtualTour,
-    freeCancellation, onFreeCancellation: setFreeCancellation,
-    immersive360, onImmersive360: setImmersive360,
+    typeFilter, onTypeFilter: setTypeFilter,
     sort, onSort: setSort,
     onClear: clearFilters,
     hasFilters,

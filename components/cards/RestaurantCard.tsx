@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Star, Video, Clock, UtensilsCrossed } from 'lucide-react';
+import { MapPin, Video, Clock, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Venue } from '@/lib/api/types';
 import { getVenueHref } from '@/lib/venueHref';
@@ -109,17 +109,9 @@ export function RestaurantCard({ venue, slot, className }: RestaurantCardProps) 
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-serif text-base font-bold leading-tight text-white transition-colors group-hover:text-amber-100">
-            {venue.name}
-          </h3>
-          {typeof (venue as any).rating === 'number' && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/[0.08] px-2 py-0.5">
-              <Star className="size-3 fill-amber-400 text-amber-400" />
-              <span className="text-[11px] font-bold text-amber-300">{(venue as any).rating}</span>
-            </span>
-          )}
-        </div>
+        <h3 className="font-serif text-base font-bold leading-tight text-white transition-colors group-hover:text-amber-100">
+          {venue.name}
+        </h3>
 
         {venue.city && (
           <div className="flex items-center gap-1 text-[11px] text-amber-400/80">
