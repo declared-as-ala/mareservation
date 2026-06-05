@@ -58,7 +58,7 @@ async function wipe(): Promise<void> {
 async function seedVenue(input: {
   slug: string;
   name: string;
-  type: 'HOTEL' | 'MAISON_DHOTE' | 'CAFE' | 'RESTAURANT' | 'COWORKING' | 'EVENT_SPACE';
+  type: 'HOTEL' | 'MAISON_DHOTE' | 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'COWORKING' | 'EVENT_SPACE';
   city: string;
   governorate?: string;
   address: string;
