@@ -11,8 +11,20 @@ import { TableHotspot } from '../models/TableHotspot';
 import { Event } from '../models/Event';
 import { Reservation } from '../models/Reservation';
 import { Scene } from '../models/Scene';
+import { TablePlacement } from '../models/TablePlacement';
+import { ReservationHold } from '../models/ReservationHold';
+import { TableBlock } from '../models/TableBlock';
+import { subscribeToVenueAvailability } from '../services/availabilityEvents';
 
 const router = Router();
+
+async function findVenueId(idOrSlug: string) {
+  const venue = await (mongoose.Types.ObjectId.isValid(idOrSlug) && idOrSlug.length === 24
+    ? Venue.findById(idOrSlug).select('_id')
+    : Venue.findOne({ slug: idOrSlug }).select('_id')
+  ).lean();
+  return venue ? (venue as any)._id : null;
+}
 
 // GET /api/v1/venues/:id/virtual-tours — list virtual tours for a venue
 router.get('/:id/virtual-tours', async (req, res) => {
@@ -136,6 +148,144 @@ router.get('/:id/scenes', async (req, res) => {
   } catch (error) {
     console.error('Error fetching venue scenes:', error);
     res.status(500).json({ error: 'Échec du chargement des scènes.' });
+  }
+});
+
+// GET /api/v1/venues/:idOrSlug/table-placements — public placements with live table availability
+router.get('/:id/table-placements', async (req, res) => {
+  try {
+    const venueId = await findVenueId(req.params.id);
+    if (!venueId) return res.status(404).json({ error: 'Lieu non trouvé' });
+
+    const placements = await TablePlacement.find({
+      venueId,
+      tableId: { $exists: true },
+    })
+      .populate('tableId')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const { startAt, endAt } = req.query;
+    if ((startAt && !endAt) || (!startAt && endAt)) {
+      return res.status(400).json({ error: 'startAt et endAt doivent être fournis ensemble.' });
+    }
+
+    const reservedTableIds = new Set<string>();
+    const blockedTableIds = new Set<string>();
+    const blockedZones = new Set<string>();
+    let allTablesBlocked = false;
+
+    if (startAt && endAt) {
+      const start = new Date(String(startAt));
+      const end = new Date(String(endAt));
+      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
+        return res.status(400).json({ error: 'Période invalide.' });
+      }
+
+      const tableIds = placements
+        .map((placement: any) => placement.tableId?._id)
+        .filter(Boolean);
+      const [reservations, holds, blocks] = await Promise.all([
+        Reservation.find({
+          venueId,
+          tableId: { $in: tableIds },
+          status: { $in: ['PENDING', 'CONFIRMED', 'pending', 'confirmed', 'checked_in'] },
+          startAt: { $lt: end },
+          endAt: { $gt: start },
+        }).select('tableId').lean(),
+        ReservationHold.find({
+          venueId,
+          status: 'active',
+          expiresAt: { $gt: new Date() },
+          startsAt: { $lt: end },
+          endsAt: { $gt: start },
+          $or: [
+            { tableId: { $in: tableIds } },
+            { reservableUnitId: { $in: tableIds } },
+          ],
+        }).select('tableId reservableUnitId').lean(),
+        TableBlock.find({
+          venueId,
+          isActive: true,
+          startsAt: { $lt: end },
+          endsAt: { $gt: start },
+        }).select('tableId zone').lean(),
+      ]);
+
+      reservations.forEach((reservation: any) => {
+        if (reservation.tableId) reservedTableIds.add(String(reservation.tableId));
+      });
+      holds.forEach((hold: any) => {
+        const tableId = hold.tableId || hold.reservableUnitId;
+        if (tableId) reservedTableIds.add(String(tableId));
+      });
+      blocks.forEach((block: any) => {
+        if (block.tableId) blockedTableIds.add(String(block.tableId));
+        else if (block.zone) blockedZones.add(String(block.zone).trim().toLowerCase());
+        else allTablesBlocked = true;
+      });
+    }
+
+    const result = placements.flatMap((placement: any) => {
+      const table = placement.tableId;
+      if (!table?._id) return [];
+
+      const tableId = String(table._id);
+      const location = String(table.locationLabel || '').trim().toLowerCase();
+      const isBlocked = allTablesBlocked
+        || blockedTableIds.has(tableId)
+        || (location && blockedZones.has(location))
+        || table.isActive === false
+        || table.isReservable === false
+        || table.defaultStatus === 'blocked';
+      const status = isBlocked
+        ? 'blocked'
+        : reservedTableIds.has(tableId) || table.defaultStatus === 'reserved'
+          ? 'reserved'
+          : 'available';
+
+      return [{
+        ...placement,
+        tableId,
+        table: {
+          ...table,
+          status,
+          defaultStatus: table.defaultStatus || 'available',
+        },
+      }];
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching venue table placements:', error);
+    res.status(500).json({ error: 'Échec du chargement des placements.' });
+  }
+});
+
+// GET /api/v1/venues/:idOrSlug/availability-stream — public availability updates
+router.get('/:id/availability-stream', async (req, res) => {
+  try {
+    const venueId = await findVenueId(req.params.id);
+    if (!venueId) return res.status(404).json({ error: 'Lieu non trouvé' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    res.write(`data: ${JSON.stringify({ venueId: String(venueId), type: 'connected', at: new Date().toISOString() })}\n\n`);
+
+    const unsubscribe = subscribeToVenueAvailability(String(venueId), (event) => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    });
+    const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), 25_000);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+    });
+  } catch (error) {
+    console.error('Error opening venue availability stream:', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Échec du flux de disponibilité.' });
   }
 });
 
