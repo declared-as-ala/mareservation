@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue } from '@/lib/api/admin';
+import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue, createAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List, Trash2, Loader2, User, UserPlus, ShieldAlert, Mail, Archive, ArchiveRestore } from 'lucide-react';
+import { MapPin, Search, ExternalLink, Building2, Eye, Coffee, Bed, Film, CalendarDays, MoreHorizontal, Grid3X3, List, Trash2, Loader2, User, UserPlus, ShieldAlert, Mail, Archive, ArchiveRestore, Plus, X } from 'lucide-react';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
 import {
   Select,
@@ -142,6 +142,7 @@ export default function AdminVenuesPage() {
   const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') ?? '');
   const [q, setQ] = useState(() => searchParams.get('q') ?? '');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
+  const [createOpen, setCreateOpen] = useState(false);
   const [ownerFilter, setOwnerFilter] = useState(() => searchParams.get('ownerId') ?? '');
   const [withoutOwner, setWithoutOwner] = useState(() => searchParams.get('withoutOwner') === '1');
   const [pendingDelete, setPendingDelete] = useState<VenueRowWithOwner | null>(null);
@@ -272,8 +273,29 @@ export default function AdminVenuesPage() {
           >
             {viewMode === 'table' ? <Grid3X3 className="size-4" /> : <List className="size-4" />}
           </Button>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl"
+          >
+            <Plus className="size-4 mr-1.5" />
+            Nouvel établissement
+          </Button>
         </div>
       </div>
+
+      {createOpen && (
+        <CreateVenueModal
+          defaultType={typeFilter || ''}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(id) => {
+            setCreateOpen(false);
+            toast.success('Établissement créé. Complétez ses détails.');
+            queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+            // Jump straight to the editor of the freshly created venue
+            window.location.href = `/admin/venues/${id}`;
+          }}
+        />
+      )}
 
       {/* Active owner filter banner */}
       {activeOwner && (
@@ -770,6 +792,178 @@ export default function AdminVenuesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+/* ─── Create-venue modal (works for every VenueType) ──────────────── */
+const TUNISIAN_CITIES = [
+  'Tunis', 'Hammamet', 'Sousse', 'Sfax', 'Monastir', 'Djerba', 'Tozeur',
+  'Nefta', 'Tabarka', 'Mahdia', 'Nabeul', 'Bizerte', 'Kairouan', 'Gabès',
+  'La Marsa', 'Gammarth', 'Sidi Bou Saïd', 'Radès',
+];
+
+function reservationModesFor(type: string): string[] {
+  switch (type) {
+    case 'HOTEL':
+    case 'MAISON_DHOTE':
+      return ['room'];
+    case 'EVENT_SPACE':
+      return ['ticket_only'];
+    case 'CINEMA':
+      return ['seat'];
+    case 'COWORKING':
+      return ['room', 'table'];
+    default:
+      return ['table'];
+  }
+}
+
+function CreateVenueModal({
+  defaultType,
+  onClose,
+  onCreated,
+}: {
+  defaultType: string;
+  onClose: () => void;
+  onCreated: (id: string) => void;
+}) {
+  const [type, setType] = useState<string>(defaultType || 'HOTEL');
+  const [name, setName] = useState('');
+  const [city, setCity] = useState('');
+  const [address, setAddress] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const typeOptions: { value: string; label: string }[] = [
+    { value: 'HOTEL', label: 'Hôtel' },
+    { value: 'MAISON_DHOTE', label: "Maison d'hôte" },
+    { value: 'RESTAURANT', label: 'Restaurant' },
+    { value: 'CAFE', label: 'Café' },
+    { value: 'CAFE_LOUNGE', label: 'Café & Lounge' },
+    { value: 'COWORKING', label: 'Coworking' },
+    { value: 'CINEMA', label: 'Cinéma' },
+    { value: 'EVENT_SPACE', label: 'Salle d\'événements' },
+  ];
+
+  async function handleCreate() {
+    if (!name.trim() || !city.trim() || !address.trim()) {
+      toast.error('Nom, ville et adresse sont requis.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const label = VENUE_TYPE_LABELS[type] ?? type;
+      const res = await createAdminVenue({
+        name: name.trim(),
+        type,
+        city: city.trim(),
+        address: address.trim(),
+        description: `${label} ${name.trim()} situé à ${city.trim()}.`,
+        isPublished: false,
+        reservationModes: reservationModesFor(type) as any,
+      } as any);
+      const id = (res as any)._id ?? (res as any).data?._id;
+      if (!id) throw new Error('ID manquant');
+      onCreated(id);
+    } catch {
+      toast.error("Erreur lors de la création de l'établissement.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-white">Nouvel établissement</h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Vous pourrez compléter tous les détails ensuite.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="text-zinc-500 transition-colors hover:text-zinc-200"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-400">Catégorie *</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-200 focus:outline-none"
+            >
+              {typeOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-400">Nom *</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Riad Azura"
+              className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-400">Ville *</label>
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none"
+            >
+              <option value="">Sélectionner une ville</option>
+              {TUNISIAN_CITIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-400">Adresse *</label>
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Ex: 12 rue des Bougainvilliers"
+              className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 rounded-xl border-zinc-700 text-zinc-400"
+          >
+            Annuler
+          </Button>
+          <Button
+            disabled={saving}
+            onClick={handleCreate}
+            className="flex-1 rounded-xl bg-[#D4AF37] font-semibold text-black hover:bg-[#c9a227]"
+          >
+            {saving ? 'Création…' : 'Créer'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
