@@ -84,9 +84,6 @@ jobs:
           echo "⏳ Waiting for services to be healthy..."
           sleep 10
 
-          echo "🆕 Running fresh catalog seed (DESTRUCTIVE — wipes venues+events+rooms then reseeds 10 fixtures)..."
-          docker compose exec -T backend npm run seed:fresh-catalog || echo "⚠️  Fresh catalog seed failed but continuing deploy."
-
           echo "📊 Docker services status:"
           docker compose ps
 

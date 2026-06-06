@@ -12,6 +12,7 @@ import reservationsRouter from './routes/reservations';
 import authRouter from './routes/auth';
 import searchRouter from './routes/search';
 import adminRouter from './routes/admin';
+import uploadsRouter from './routes/uploads';
 
 dotenv.config();
 
@@ -67,6 +68,7 @@ app.use('/api/v1/reservations', reservationsRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/search', searchRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/uploads', uploadsRouter);
 
 // Legacy /api/* (backward compatibility during migration)
 app.get('/health', (req, res) => {

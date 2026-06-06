@@ -166,9 +166,11 @@ export async function apiDeleteRaw<T = unknown>(path: string): Promise<T> {
 export async function uploadImageFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
+  const token = useAuthStore.getState().accessToken;
   const res = await fetch(`${API_BASE}/api/v1/uploads/image`, {
     method: 'POST',
     credentials: 'include',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: formData,
   });
   const json = (await res.json().catch(() => ({}))) as { data?: { url?: string }; message?: string };
