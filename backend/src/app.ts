@@ -30,6 +30,9 @@ app.use(cors({
     else cb(null, false);
   },
   credentials: true,
+  // Make the Bearer token reach the server through preflight on every browser
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Retry'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -83,9 +86,13 @@ app.use('/api/auth', authRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/admin', adminRouter);
 
-app.use((err: any, req: express.Request, res: express.Response) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+// Error-handling middleware MUST declare 4 parameters; otherwise Express
+// treats it as a regular middleware and shifts (err, req, res) into the
+// next handler — causing `res.status is not a function` further down.
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Error:', err?.message || err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'Internal server error', message: err?.message });
 });
 
 // Explicit 404 — ensures clear JSON response for unknown routes (avoids ambiguous NOT_FOUND)

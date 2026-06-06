@@ -9,6 +9,8 @@ import { TourHotspot } from '../models/TourHotspot';
 import { Table } from '../models/Table';
 import { Room } from '../models/Room';
 import { Seat } from '../models/Seat';
+import { Scene } from '../models/Scene';
+import { TablePlacement } from '../models/TablePlacement';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -626,6 +628,32 @@ router.delete('/hotels/:id/rooms/:roomId', async (req, res) => {
   } catch (error) {
     console.error('Error deleting room:', error);
     res.status(500).json({ error: 'Erreur de suppression de la chambre.' });
+  }
+});
+
+// GET /api/v1/admin/venues/:id/scenes — 360 scenes for a venue
+router.get('/venues/:id/scenes', async (req, res) => {
+  try {
+    const scenes = await Scene.find({ venueId: req.params.id, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    res.json({ success: true, scenes });
+  } catch (error) {
+    console.error('Error fetching scenes:', error);
+    res.status(500).json({ error: 'Erreur de chargement des scènes.' });
+  }
+});
+
+// GET /api/v1/admin/table-placements?venueId=...
+router.get('/table-placements', async (req, res) => {
+  try {
+    const venueId = req.query.venueId as string;
+    if (!venueId) return res.json({ success: true, placements: [] });
+    const placements = await TablePlacement.find({ venueId }).lean();
+    res.json({ success: true, placements });
+  } catch (error) {
+    console.error('Error fetching table placements:', error);
+    res.status(500).json({ error: 'Erreur de chargement.' });
   }
 });
 

@@ -22,10 +22,27 @@ export type ApiResponse<T = unknown> = {
 
 type ApiOptions = Omit<RequestInit, 'body'> & { body?: unknown };
 
-function clearAuthAndRedirectToLogin() {
+/**
+ * Handle a 401 from a non-bootstrap endpoint.
+ *
+ * Only redirect to /login when there is no persisted user — i.e. the
+ * session is genuinely gone. If the user is still in zustand (e.g. admin
+ * was just clicking a mutation button), we surface the error to the caller
+ * without nuking the page. This avoids the "click Créer → bounced to login"
+ * loop that happens when cross-port cookies briefly fail to flow but the
+ * user is otherwise fine.
+ */
+function clearAuthAndRedirectToLogin(method: string = 'GET') {
   const store = useAuthStore.getState();
-  store.clearAll();
+  const isMutation = method !== 'GET';
 
+  // If we still have a user object in memory, treat this as a recoverable
+  // error: keep the user logged in client-side, let the caller toast it.
+  if (isMutation && store.user) {
+    return;
+  }
+
+  store.clearAll();
   if (typeof window !== 'undefined') {
     const currentPath = window.location.pathname || '/';
     if (isProtectedPath(currentPath)) {
@@ -100,13 +117,13 @@ async function apiFetchInternal<T = unknown>(
 
       const retryJson = await parseJson(retryRes);
       if (retryRes.status === 401) {
-        clearAuthAndRedirectToLogin();
+        clearAuthAndRedirectToLogin(options.method ?? 'GET');
         throw new Error('Session expiree. Veuillez vous reconnecter.');
       }
       throw new Error(getErrorMessage(retryJson, retryRes.status));
     }
 
-    clearAuthAndRedirectToLogin();
+    clearAuthAndRedirectToLogin(options.method ?? 'GET');
     throw new Error('Session expiree. Veuillez vous reconnecter.');
   }
 
