@@ -100,15 +100,6 @@ function HotelCardSkeleton() {
   );
 }
 
-// ── Stats bar ───────────────────────────────────────────────────────────────
-
-const STATS = [
-  { label: 'Hôtels partenaires', value: '50+' },
-  { label: 'Villes couvertes', value: '18' },
-  { label: 'Avis vérifiés', value: '4.8★' },
-  { label: 'Chambres disponibles', value: '500+' },
-];
-
 // ── Filter helpers ──────────────────────────────────────────────────────────
 
 function filterAndSort(
@@ -491,19 +482,6 @@ export default function HotelsPage() {
           </motion.div>
         </div>
 
-        {/* Stats strip */}
-        <div className="relative border-t border-white/[0.05]">
-          <div className="mx-auto max-w-7xl px-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/[0.05]">
-              {STATS.map((s) => (
-                <div key={s.label} className="flex flex-col items-center py-5 px-4">
-                  <span className="text-xl font-bold text-amber-400">{s.value}</span>
-                  <span className="mt-0.5 text-[11px] text-neutral-600">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── Main content ── */}
@@ -523,6 +501,31 @@ export default function HotelsPage() {
 
           {/* ── Results ── */}
           <div className="flex-1 min-w-0">
+            {/* Inline mobile type-pill row — always visible, no sheet click needed */}
+            <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
+              {[
+                { key: 'all', label: 'Tous' },
+                { key: 'HOTEL', label: 'Hôtels' },
+                { key: 'MAISON_DHOTE', label: "Maisons d'hôte" },
+              ].map((opt) => {
+                const active = (typeFilter ?? 'all') === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setTypeFilter(opt.key === 'all' ? null : opt.key)}
+                    className={`shrink-0 rounded-full border px-4 py-2 text-xs font-bold transition-all ${
+                      active
+                        ? 'border-amber-400/60 bg-amber-400/[0.12] text-amber-300 shadow-[0_4px_18px_rgba(245,158,11,0.25)]'
+                        : 'border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:border-white/20 hover:text-neutral-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
