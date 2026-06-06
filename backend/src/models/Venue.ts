@@ -27,6 +27,8 @@ export interface IVenue extends Document {
   gallery?: string[];
   categoryIds?: Types.ObjectId[];
   amenities?: string[];
+  /** Official hotel star rating (1-5). Null/undefined for non-hotel venues or unrated. */
+  stars?: number;
   rating: number;
   ratingCount?: number;
   startingPrice?: number;
@@ -75,6 +77,7 @@ const VenueSchema = new Schema<IVenue>(
     gallery: { type: [String], default: [] },
     categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
     amenities: { type: [String], default: [] },
+    stars: { type: Number, min: 1, max: 5 },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     ratingCount: { type: Number, default: 0 },
     startingPrice: { type: Number, default: 0 },

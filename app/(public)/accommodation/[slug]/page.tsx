@@ -232,10 +232,24 @@ function HotelHero({
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="max-w-2xl"
           >
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
                 {venue.type === 'MAISON_DHOTE' ? 'Maison d\'hôte' : 'Hôtel'}
               </span>
+              {typeof venue.stars === 'number' && venue.stars >= 1 && (
+                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-400/40 bg-black/55 px-3 py-1 text-[10px] font-bold tracking-widest text-amber-300 backdrop-blur-sm">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        'size-3',
+                        i < (venue.stars ?? 0) ? 'fill-amber-400 text-amber-400' : 'fill-white/10 text-white/20'
+                      )}
+                    />
+                  ))}
+                  <span className="ml-1.5 text-[11px]">{venue.stars}/5</span>
+                </span>
+              )}
               {venue.isVedette && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
                   <Crown className="size-3" />

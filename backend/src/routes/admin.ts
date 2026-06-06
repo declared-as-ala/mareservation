@@ -340,6 +340,136 @@ router.get('/reservations', async (req, res) => {
   }
 });
 
+// ── Venue CRUD (admin) ────────────────────────────────────────────────
+// Admins can create / edit / delete any venue regardless of ownership.
+const ALLOWED_VENUE_TYPES = [
+  'CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'MAISON_DHOTE',
+  'COWORKING', 'CINEMA', 'EVENT_SPACE',
+] as const;
+
+function slugify(input: string): string {
+  return String(input)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+    .slice(0, 80);
+}
+
+// POST /api/v1/admin/venues — create any venue type
+router.post('/venues', async (req, res) => {
+  try {
+    const {
+      name, type, city, governorate, address, description, shortDescription,
+      coverImage, gallery, phone, slug, amenities, stars,
+      startingPrice, priceRangeMin, priceRangeMax,
+      isPublished, isFeatured, isVedette, reservationModes,
+      immersiveType, immersiveSourceType, immersiveUrl, immersiveFile, immersiveProvider,
+    } = req.body ?? {};
+
+    if (!name || !type || !city || !address) {
+      return res.status(400).json({ error: 'name, type, city, address requis.' });
+    }
+    const upperType = String(type).toUpperCase();
+    if (!ALLOWED_VENUE_TYPES.includes(upperType as any)) {
+      return res.status(400).json({ error: `Type invalide: ${type}.` });
+    }
+
+    // Slug — generate from name if missing, then make sure it's unique.
+    let finalSlug = slug ? slugify(slug) : slugify(String(name));
+    if (finalSlug) {
+      const taken = await Venue.exists({ slug: finalSlug });
+      if (taken) finalSlug = `${finalSlug}-${Date.now().toString(36).slice(-4)}`;
+    }
+
+    const iType = ['none', 'virtual-tour', 'view-360'].includes(String(immersiveType || 'none'))
+      ? String(immersiveType || 'none')
+      : 'none';
+
+    const venue = await Venue.create({
+      name: String(name).trim(),
+      type: upperType,
+      slug: finalSlug || undefined,
+      city: String(city).trim(),
+      governorate: governorate ? String(governorate).trim() : undefined,
+      address: String(address).trim(),
+      description: description ? String(description).trim() : `${upperType.replace('_', ' ')} ${String(name).trim()} situé à ${String(city).trim()}.`,
+      shortDescription: shortDescription ? String(shortDescription).trim() : undefined,
+      coverImage: coverImage ? String(coverImage).trim() : undefined,
+      gallery: Array.isArray(gallery) ? gallery.filter(Boolean) : [],
+      phone: phone ? String(phone).trim() : undefined,
+      amenities: Array.isArray(amenities) ? amenities.filter(Boolean) : [],
+      stars: typeof stars === 'number' && stars >= 1 && stars <= 5 ? stars : undefined,
+      startingPrice: typeof startingPrice === 'number' ? startingPrice : 0,
+      priceRangeMin: typeof priceRangeMin === 'number' ? priceRangeMin : undefined,
+      priceRangeMax: typeof priceRangeMax === 'number' ? priceRangeMax : undefined,
+      isPublished: typeof isPublished === 'boolean' ? isPublished : false,
+      isFeatured: !!isFeatured,
+      isVedette: !!isVedette,
+      reservationModes: Array.isArray(reservationModes) ? reservationModes : [],
+      approvalStatus: 'approved',
+      immersiveType: iType,
+      immersiveSourceType: iType === 'none' ? null : (immersiveSourceType || 'upload'),
+      immersiveProvider: iType === 'none' ? null : (immersiveProvider || 'custom'),
+      immersiveUrl: immersiveUrl || null,
+      immersiveFile: immersiveFile || null,
+      hasVirtualTour: iType !== 'none',
+    });
+
+    res.status(201).json(venue);
+  } catch (error) {
+    console.error('Error creating venue:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la création du lieu.',
+      detail: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+// PATCH /api/v1/admin/venues/:id — update any field
+router.patch('/venues/:id', async (req, res) => {
+  try {
+    const venue = await Venue.findById(req.params.id);
+    if (!venue) return res.status(404).json({ error: 'Lieu introuvable.' });
+
+    const allowed = [
+      'name', 'type', 'city', 'governorate', 'address', 'description', 'shortDescription',
+      'coverImage', 'gallery', 'phone', 'amenities', 'stars',
+      'startingPrice', 'priceRangeMin', 'priceRangeMax',
+      'isPublished', 'isFeatured', 'isVedette', 'reservationModes',
+      'immersiveType', 'immersiveSourceType', 'immersiveUrl', 'immersiveFile', 'immersiveProvider',
+      'checkInPolicy', 'checkOutPolicy', 'rating',
+    ];
+    for (const key of allowed) {
+      if (req.body && key in req.body) {
+        (venue as any)[key] = (req.body as any)[key];
+      }
+    }
+    // Keep hasVirtualTour in sync with immersive fields
+    if ('immersiveType' in (req.body ?? {})) {
+      (venue as any).hasVirtualTour = (venue as any).immersiveType && (venue as any).immersiveType !== 'none';
+    }
+    await venue.save();
+    res.json(venue);
+  } catch (error) {
+    console.error('Error updating venue:', error);
+    res.status(500).json({ error: 'Erreur lors de la mise à jour du lieu.' });
+  }
+});
+
+// DELETE /api/v1/admin/venues/:id
+router.delete('/venues/:id', async (req, res) => {
+  try {
+    const deleted = await Venue.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Lieu introuvable.' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting venue:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression du lieu.' });
+  }
+});
+
 // GET /api/admin/events
 router.get('/events', async (req, res) => {
   try {

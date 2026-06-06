@@ -832,7 +832,9 @@ function CreateVenueModal({
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
+  const [stars, setStars] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const showStars = type === 'HOTEL' || type === 'MAISON_DHOTE';
 
   const typeOptions: { value: string; label: string }[] = [
     { value: 'HOTEL', label: 'Hôtel' },
@@ -861,6 +863,7 @@ function CreateVenueModal({
         description: `${label} ${name.trim()} situé à ${city.trim()}.`,
         isPublished: false,
         reservationModes: reservationModesFor(type) as any,
+        ...(showStars && stars ? { stars } : {}),
       } as any);
       const id = (res as any)._id ?? (res as any).data?._id;
       if (!id) throw new Error('ID manquant');
@@ -945,6 +948,44 @@ function CreateVenueModal({
               className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
             />
           </div>
+
+          {showStars && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                Classement officiel
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { value: null as number | null, label: 'Aucun' },
+                  { value: 1, label: '1★' },
+                  { value: 2, label: '2★' },
+                  { value: 3, label: '3★' },
+                  { value: 4, label: '4★' },
+                  { value: 5, label: '5★' },
+                ].map((opt) => {
+                  const active = stars === opt.value;
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setStars(opt.value)}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-bold transition-all',
+                        active
+                          ? 'border-amber-400/60 bg-amber-400/15 text-amber-300'
+                          : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[10px] text-zinc-500">
+                Hôtels et maisons d&apos;hôte : utilisé pour le badge étoiles visible côté client.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex gap-3">
