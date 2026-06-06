@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Scene } from '../models/Scene';
 import { TablePlacement } from '../models/TablePlacement';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 
 const router = Router();
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/v1/scenes — admin: create a scene
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Non autorisé.' });
     const { venueId, name, description, image, order } = req.body;
@@ -44,7 +44,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/v1/scenes/:id — admin: update a scene
-router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
+router.patch('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const { name, description, image, order, isActive } = req.body;
     const update: Record<string, unknown> = {};
@@ -63,7 +63,7 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/v1/scenes/:id — admin: delete a scene
-router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
+router.delete('/:id', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const scene = await Scene.findByIdAndDelete(req.params.id);
     if (!scene) return sendError(res, { message: 'Scène introuvable.', statusCode: 404 });
@@ -78,7 +78,7 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
 });
 
 // POST /api/v1/scenes/reorder — admin: bulk update order
-router.post('/reorder', authenticate, async (req: AuthRequest, res) => {
+router.post('/reorder', authenticate, requireAdmin, async (req: AuthRequest, res) => {
   try {
     const { items } = req.body as { items: { id: string; order: number }[] };
     if (!Array.isArray(items)) return sendError(res, { message: 'items[] requis.', statusCode: 400 });

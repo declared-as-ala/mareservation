@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -138,6 +138,7 @@ function VenueImage({ coverImage, name }: { coverImage?: string; name: string })
 }
 
 export default function AdminVenuesPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [typeFilter, setTypeFilter] = useState(() => searchParams.get('type') ?? '');
   const [q, setQ] = useState(() => searchParams.get('q') ?? '');
@@ -292,7 +293,7 @@ export default function AdminVenuesPage() {
             toast.success('Établissement créé. Complétez ses détails.');
             queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
             // Jump straight to the editor of the freshly created venue
-            window.location.href = `/admin/venues/${id}`;
+            router.push(`/admin/venues/${id}`);
           }}
         />
       )}

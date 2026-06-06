@@ -634,13 +634,47 @@ router.delete('/hotels/:id/rooms/:roomId', async (req, res) => {
 // GET /api/v1/admin/venues/:id/scenes — 360 scenes for a venue
 router.get('/venues/:id/scenes', async (req, res) => {
   try {
-    const scenes = await Scene.find({ venueId: req.params.id, isActive: true })
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'ID invalide.' });
+    }
+    const scenes = await Scene.find({ venueId: req.params.id, roomId: null, isActive: true })
       .sort({ order: 1, createdAt: 1 })
       .lean();
     res.json({ success: true, scenes });
   } catch (error) {
     console.error('Error fetching scenes:', error);
     res.status(500).json({ error: 'Erreur de chargement des scènes.' });
+  }
+});
+
+// POST /api/v1/admin/venues/:id/scenes — create a venue-level 360 scene
+router.post('/venues/:id/scenes', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'ID invalide.' });
+    }
+    const venueExists = await Venue.exists({ _id: req.params.id });
+    if (!venueExists) return res.status(404).json({ error: 'Lieu introuvable.' });
+
+    const { name, image, description, order } = req.body ?? {};
+    if (!name || !image) {
+      return res.status(400).json({ error: 'name et image requis.' });
+    }
+
+    const scene = await Scene.create({
+      venueId: req.params.id,
+      roomId: null,
+      name: String(name).trim(),
+      image: String(image).trim(),
+      description: description ? String(description).trim() : undefined,
+      order: Number.isFinite(Number(order)) ? Number(order) : 0,
+      isActive: true,
+    });
+
+    res.status(201).json({ success: true, data: scene });
+  } catch (error) {
+    console.error('Error creating venue scene:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de la scène.' });
   }
 });
 

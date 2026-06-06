@@ -48,16 +48,15 @@ function isTokenValid(cookieValue: string | undefined): boolean {
 }
 
 /**
- * In production on Vercel, frontend and backend can live on different domains.
- * In that setup, backend auth cookies are NOT readable by frontend middleware,
- * so route protection must be handled client-side (/auth/me + API 401 handling).
+ * Frontend and backend can live on different origins, including the same host
+ * on different ports. In that setup, backend auth cookies are not reliably
+ * readable by frontend middleware, so auth is handled client-side.
  */
 function canUseEdgeCookieAuth(request: NextRequest): boolean {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) return true;
   try {
-    const apiHost = new URL(apiUrl).hostname;
-    return apiHost === request.nextUrl.hostname;
+    return new URL(apiUrl).origin === request.nextUrl.origin;
   } catch {
     return true;
   }
