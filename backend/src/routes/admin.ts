@@ -498,6 +498,137 @@ router.get('/hotels', async (req, res) => {
   }
 });
 
+// GET /api/v1/admin/hotels/:id — single hotel (front-end expects { data })
+router.get('/hotels/:id', async (req, res) => {
+  try {
+    const hotel = await Venue.findById(req.params.id)
+      .populate('ownerId', 'fullName email phone')
+      .lean();
+    if (!hotel) return res.status(404).json({ error: 'Hôtel introuvable.' });
+    res.json({ success: true, data: hotel });
+  } catch (error) {
+    console.error('Error fetching admin hotel:', error);
+    res.status(500).json({ error: 'Erreur de chargement.' });
+  }
+});
+
+// PATCH /api/v1/admin/hotels/:id — update (mirrors /admin/venues/:id semantics)
+router.patch('/hotels/:id', async (req, res) => {
+  try {
+    const venue = await Venue.findById(req.params.id);
+    if (!venue) return res.status(404).json({ error: 'Hôtel introuvable.' });
+    const allowed = [
+      'name', 'city', 'governorate', 'address', 'description', 'shortDescription',
+      'coverImage', 'gallery', 'phone', 'amenities', 'stars',
+      'startingPrice', 'priceRangeMin', 'priceRangeMax',
+      'isPublished', 'isFeatured', 'isVedette',
+      'checkInPolicy', 'checkOutPolicy',
+      'immersiveType', 'immersiveSourceType', 'immersiveUrl', 'immersiveFile', 'immersiveProvider',
+    ];
+    for (const key of allowed) {
+      if (req.body && key in req.body) (venue as any)[key] = (req.body as any)[key];
+    }
+    if ('immersiveType' in (req.body ?? {})) {
+      (venue as any).hasVirtualTour = (venue as any).immersiveType && (venue as any).immersiveType !== 'none';
+    }
+    await venue.save();
+    res.json({ success: true, data: venue });
+  } catch (error) {
+    console.error('Error updating admin hotel:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour.' });
+  }
+});
+
+// GET /api/v1/admin/hotels/:id/rooms
+router.get('/hotels/:id/rooms', async (req, res) => {
+  try {
+    const rooms = await Room.find({ venueId: req.params.id }).sort({ roomNumber: 1 }).lean();
+    res.json({ success: true, rooms });
+  } catch (error) {
+    console.error('Error fetching admin hotel rooms:', error);
+    res.status(500).json({ error: 'Erreur de chargement des chambres.' });
+  }
+});
+
+// POST /api/v1/admin/hotels/:id/rooms — add room
+router.post('/hotels/:id/rooms', async (req, res) => {
+  try {
+    const hotel = await Venue.findById(req.params.id).lean();
+    if (!hotel) return res.status(404).json({ error: 'Hôtel introuvable.' });
+
+    const last = await Room.findOne({ venueId: req.params.id }).sort({ roomNumber: -1 }).lean();
+    const nextNumber = typeof req.body?.roomNumber === 'number'
+      ? Number(req.body.roomNumber)
+      : ((last as any)?.roomNumber ?? 100) + 1;
+
+    const room = await Room.create({
+      venueId: req.params.id,
+      name: req.body?.name,
+      roomNumber: nextNumber,
+      roomType: req.body?.roomType ?? 'STANDARD',
+      capacity: req.body?.capacity ?? 2,
+      capacityAdults: req.body?.capacityAdults,
+      capacityChildren: req.body?.capacityChildren,
+      bedType: req.body?.bedType,
+      pricePerNight: req.body?.pricePerNight ?? 0,
+      surface: req.body?.surface,
+      description: req.body?.description,
+      amenities: Array.isArray(req.body?.amenities) ? req.body.amenities : [],
+      coverImage: req.body?.coverImage,
+      gallery: Array.isArray(req.body?.gallery) ? req.body.gallery : [],
+      panoramicImages: Array.isArray(req.body?.panoramicImages) ? req.body.panoramicImages : [],
+      hasVirtualTour: !!(req.body?.panoramicImages?.length || req.body?.virtualTourUrl),
+      virtualTourUrl: req.body?.virtualTourUrl,
+      isActive: req.body?.isActive ?? true,
+      isReservable: req.body?.isReservable ?? true,
+    } as any);
+
+    res.status(201).json({ success: true, data: room });
+  } catch (error) {
+    console.error('Error creating room:', error);
+    res.status(500).json({ error: 'Erreur de création de la chambre.' });
+  }
+});
+
+// PATCH /api/v1/admin/hotels/:id/rooms/:roomId
+router.patch('/hotels/:id/rooms/:roomId', async (req, res) => {
+  try {
+    const room = await Room.findOne({ _id: req.params.roomId, venueId: req.params.id });
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    const allowed = [
+      'name', 'roomType', 'capacity', 'capacityAdults', 'capacityChildren',
+      'bedType', 'pricePerNight', 'surface', 'description', 'amenities',
+      'coverImage', 'gallery', 'panoramicImages', 'virtualTourUrl', 'hasVirtualTour',
+      'isActive', 'isReservable',
+    ];
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) (room as any)[key] = (req.body as any)[key];
+    }
+    if ('panoramicImages' in (req.body ?? {}) || 'virtualTourUrl' in (req.body ?? {})) {
+      (room as any).hasVirtualTour = !!(
+        ((req.body as any).panoramicImages?.length) || (req.body as any).virtualTourUrl
+      );
+    }
+    await room.save();
+    res.json({ success: true, data: room });
+  } catch (error) {
+    console.error('Error updating room:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la chambre.' });
+  }
+});
+
+// DELETE /api/v1/admin/hotels/:id/rooms/:roomId
+router.delete('/hotels/:id/rooms/:roomId', async (req, res) => {
+  try {
+    const room = await Room.findOneAndDelete({ _id: req.params.roomId, venueId: req.params.id });
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la chambre.' });
+  }
+});
+
 // GET /api/admin/events
 router.get('/events', async (req, res) => {
   try {
