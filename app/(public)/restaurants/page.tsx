@@ -8,7 +8,6 @@ import {
   Clock,
   Users,
   Calendar,
-  Flame,
   Heart,
   Briefcase,
   Anchor,
@@ -23,15 +22,15 @@ import { cn } from '@/lib/utils';
 // ── Cuisines ────────────────────────────────────────────────────────────────
 
 const CUISINES = [
-  { key: 'all', label: 'Toutes', img: null as string | null },
-  { key: 'tunisien', label: 'Tunisien', img: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?q=80&w=600' },
-  { key: 'italien', label: 'Italien', img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=600' },
-  { key: 'japonais', label: 'Japonais', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=600' },
-  { key: 'libanais', label: 'Libanais', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=600' },
-  { key: 'steakhouse', label: 'Steakhouse', img: 'https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=600' },
-  { key: 'fruits-de-mer', label: 'Fruits de mer', img: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=600' },
-  { key: 'brunch', label: 'Brunch', img: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?q=80&w=600' },
-  { key: 'végé', label: 'Végé', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=600' },
+  { key: 'all', label: 'Toutes' },
+  { key: 'tunisien', label: 'Tunisien' },
+  { key: 'italien', label: 'Italien' },
+  { key: 'japonais', label: 'Japonais' },
+  { key: 'libanais', label: 'Libanais' },
+  { key: 'steakhouse', label: 'Steakhouse' },
+  { key: 'fruits-de-mer', label: 'Fruits de mer' },
+  { key: 'brunch', label: 'Brunch' },
+  { key: 'végé', label: 'Végé' },
 ];
 
 const AMBIENCES = [
@@ -192,34 +191,23 @@ export default function RestaurantsPage() {
         </div>
       </section>
 
-      {/* ── Cuisine carousel ── */}
-      <section className="border-b border-white/[0.06] bg-[#0B0B0C] px-4 py-5 sm:px-6">
+      {/* ── Cuisine filters ── */}
+      <section className="border-b border-white/[0.06] bg-[#0B0B0C] px-4 py-4 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-3 font-serif text-base font-bold text-white sm:text-lg">Cuisines</h2>
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-4 sm:-mx-6 sm:px-6">
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
             {CUISINES.map((c) => (
               <button
                 key={c.key}
                 type="button"
                 onClick={() => setCuisine(c.key)}
                 className={cn(
-                  'group relative aspect-square w-24 shrink-0 snap-start overflow-hidden rounded-2xl border transition-all duration-300',
+                  'shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all',
                   cuisine === c.key
-                    ? 'border-amber-400/50 ring-2 ring-amber-400/30'
-                    : 'border-white/[0.07] hover:border-white/25'
+                    ? 'border-amber-400/55 bg-amber-400/[0.10] text-amber-300'
+                    : 'border-white/[0.08] bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white'
                 )}
               >
-                {c.img ? (
-                  <img src={c.img} alt={c.label} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-amber-400/15 to-amber-600/5">
-                    <Flame className="size-7 text-amber-400" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                <span className="absolute inset-x-1 bottom-1.5 text-center text-[11px] font-bold text-white">
-                  {c.label}
-                </span>
+                {c.label}
               </button>
             ))}
           </div>
