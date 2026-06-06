@@ -342,28 +342,29 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111111] to-[#0B0B0B] shadow-2xl">
+    <div className="overflow-hidden rounded-3xl border border-amber-400/[0.18] bg-gradient-to-br from-[#1a1408] via-[#111111] to-[#0B0B0B] shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
       {/* Price header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+      <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-gradient-to-r from-amber-400/[0.08] to-transparent px-4 py-3.5 sm:px-5 sm:py-4">
         {startingPrice ? (
-          <div>
-            <span className="text-[10px] uppercase tracking-wider text-neutral-600">À partir de</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold text-amber-400">
-                {startingPrice.toLocaleString('fr-TN')} DT
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/85">À partir de</span>
+            <div className="mt-0.5 flex items-baseline gap-1.5">
+              <span className="font-serif text-2xl font-black text-amber-400 sm:text-3xl">
+                {startingPrice.toLocaleString('fr-TN')}
               </span>
-              <span className="text-sm text-neutral-600">/ nuit</span>
+              <span className="text-xs font-bold text-amber-300/80">DT</span>
+              <span className="text-xs text-neutral-500">/ nuit</span>
             </div>
           </div>
         ) : (
           <span className="text-sm font-medium text-neutral-300">Réserver votre séjour</span>
         )}
-        <div className="flex size-9 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/10">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/[0.10] shadow-[0_0_18px_rgba(245,158,11,0.25)]">
           <Sparkles className="size-4 text-amber-400" />
         </div>
       </div>
 
-      <div className="space-y-2.5 p-5">
+      <div className="space-y-2.5 p-4 sm:p-5">
         {/* Dates row */}
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -647,11 +648,11 @@ export default function HotelDetailPage() {
       />
 
       {/* ── Two-column layout ── */}
-      <div className="mx-auto max-w-7xl px-4 py-8 lg:py-10">
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6 lg:py-10">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 lg:gap-8">
 
           {/* ── Left: Main content ── */}
-          <div className="space-y-8 lg:col-span-2">
+          <div className="order-2 space-y-8 lg:order-1 lg:col-span-2">
 
             {/* ── Tab navigation ── */}
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
@@ -1006,9 +1007,9 @@ export default function HotelDetailPage() {
             </AnimatePresence>
           </div>
 
-          {/* ── Right: Sticky booking widget ── */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
+          {/* ── Booking widget: top on mobile, sticky right on desktop ── */}
+          <div className="order-1 lg:order-2 lg:col-span-1">
+            <div className="lg:sticky lg:top-24">
               <BookingWidget
                 startingPrice={venue.startingPrice ?? venue.priceRangeMin}
                 onBook={handleBookDirect}
