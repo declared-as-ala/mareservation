@@ -6,7 +6,7 @@ import { Event } from '../models/Event';
 const router = Router();
 
 // GET /api/search?q=... — search venues, rooms, events
-router.get('/', async (req, res) => {
+router.get(['/', '/global'], async (req, res) => {
   try {
     const q = String(req.query.q || '').trim().toLowerCase();
     if (!q || q.length < 2) {
@@ -47,8 +47,21 @@ router.get('/', async (req, res) => {
         .limit(10),
     ]);
 
+    const venueResults = venues.map((v) => ({ type: 'venue', _id: v._id, name: (v as any).name, city: (v as any).city, venueType: (v as any).type }));
+    const eventResults = events.map((e) => ({
+      type: 'event',
+      _id: e._id,
+      title: (e as any).title,
+      startAt: (e as any).startAt,
+      venueId: (e as any).venueId?._id,
+      venueName: (e as any).venueId?.name,
+      city: (e as any).venueId?.city,
+    }));
+
     res.json({
-      lieux: venues.map((v) => ({ type: 'venue', _id: v._id, name: (v as any).name, city: (v as any).city, venueType: (v as any).type })),
+      venues: venueResults,
+      events: eventResults,
+      lieux: venueResults,
       chambres: rooms.map((r) => ({
         type: 'room',
         _id: r._id,
@@ -58,15 +71,7 @@ router.get('/', async (req, res) => {
         venueName: (r as any).venueId?.name,
         city: (r as any).venueId?.city,
       })),
-      evenements: events.map((e) => ({
-        type: 'event',
-        _id: e._id,
-        title: (e as any).title,
-        startAt: (e as any).startAt,
-        venueId: (e as any).venueId?._id,
-        venueName: (e as any).venueId?.name,
-        city: (e as any).venueId?.city,
-      })),
+      evenements: eventResults,
     });
   } catch (error) {
     console.error('Error searching:', error);

@@ -3,6 +3,7 @@ import { Reservation } from '../models/Reservation';
 import { Table } from '../models/Table';
 import { Room } from '../models/Room';
 import { Seat } from '../models/Seat';
+import { ReservationHold } from '../models/ReservationHold';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateConfirmationCode } from '../utils/confirmationCode';
 
@@ -150,6 +151,66 @@ router.get(['/me', '/'], authenticate, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error fetching reservations:', error);
     res.status(500).json({ error: 'Failed to fetch reservations' });
+  }
+});
+
+router.post('/holds', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { venueId, reservableUnitId, tableId, roomId, seatId, startsAt, endsAt, peopleCount } = req.body ?? {};
+    const resources = [reservableUnitId, tableId, roomId, seatId].filter(Boolean);
+    if (!venueId || !startsAt || !endsAt || resources.length !== 1) {
+      return res.status(400).json({ error: 'venueId, startsAt, endsAt et exactement une ressource sont requis.' });
+    }
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
+      return res.status(400).json({ error: 'Période invalide.' });
+    }
+    await ReservationHold.updateMany(
+      { status: 'active', expiresAt: { $lte: new Date() } },
+      { $set: { status: 'expired' } }
+    );
+    const resourceFilter = reservableUnitId ? { reservableUnitId } : tableId ? { tableId } : roomId ? { roomId } : { seatId };
+    const conflict = await ReservationHold.exists({
+      ...resourceFilter,
+      status: 'active',
+      expiresAt: { $gt: new Date() },
+      startsAt: { $lt: end },
+      endsAt: { $gt: start },
+    });
+    if (conflict) return res.status(409).json({ error: 'Cette ressource est temporairement réservée.' });
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const hold = await ReservationHold.create({
+      venueId,
+      reservableUnitId,
+      tableId,
+      roomId,
+      seatId,
+      userId: req.userId,
+      dateKey: start.toISOString().slice(0, 10),
+      startsAt: start,
+      endsAt: end,
+      peopleCount: Number(peopleCount || 1),
+      status: 'active',
+      expiresAt,
+    });
+    res.status(201).json({ success: true, data: { _id: hold._id, expiresAt: hold.expiresAt } });
+  } catch (error) {
+    console.error('Error creating reservation hold:', error);
+    res.status(500).json({ error: 'Erreur de création du hold.' });
+  }
+});
+
+router.delete('/holds/:id', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const filter: Record<string, unknown> = { _id: req.params.id };
+    if (req.userRole !== 'ADMIN') filter.userId = req.userId;
+    const hold = await ReservationHold.findOneAndUpdate(filter, { $set: { status: 'released' } }, { new: true });
+    if (!hold) return res.status(404).json({ error: 'Hold introuvable.' });
+    res.json({ success: true, message: 'Hold libéré.' });
+  } catch (error) {
+    console.error('Error releasing reservation hold:', error);
+    res.status(500).json({ error: 'Erreur de libération du hold.' });
   }
 });
 

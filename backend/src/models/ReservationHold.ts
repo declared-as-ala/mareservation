@@ -5,6 +5,9 @@ export type HoldStatus = 'active' | 'expired' | 'converted' | 'released';
 export interface IReservationHold extends Document {
   venueId: Types.ObjectId;
   reservableUnitId?: Types.ObjectId;
+  tableId?: Types.ObjectId;
+  roomId?: Types.ObjectId;
+  seatId?: Types.ObjectId;
   eventSessionId?: Types.ObjectId;
   userId?: Types.ObjectId;
   dateKey: string;
@@ -21,6 +24,9 @@ const ReservationHoldSchema = new Schema<IReservationHold>(
   {
     venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
     reservableUnitId: { type: Schema.Types.ObjectId, ref: 'ReservableUnit' },
+    tableId: { type: Schema.Types.ObjectId, ref: 'Table' },
+    roomId: { type: Schema.Types.ObjectId, ref: 'Room' },
+    seatId: { type: Schema.Types.ObjectId, ref: 'Seat' },
     eventSessionId: { type: Schema.Types.ObjectId, ref: 'EventSession' },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     dateKey: { type: String, required: true },
@@ -34,6 +40,9 @@ const ReservationHoldSchema = new Schema<IReservationHold>(
 );
 
 ReservationHoldSchema.index({ reservableUnitId: 1, startsAt: 1, endsAt: 1 });
+ReservationHoldSchema.index({ tableId: 1, startsAt: 1, endsAt: 1 });
+ReservationHoldSchema.index({ roomId: 1, startsAt: 1, endsAt: 1 });
+ReservationHoldSchema.index({ seatId: 1, startsAt: 1, endsAt: 1 });
 ReservationHoldSchema.index({ status: 1, expiresAt: 1 });
 ReservationHoldSchema.index({ userId: 1, status: 1 });
 

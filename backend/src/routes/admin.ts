@@ -11,6 +11,10 @@ import { Room } from '../models/Room';
 import { Seat } from '../models/Seat';
 import { Scene } from '../models/Scene';
 import { TablePlacement } from '../models/TablePlacement';
+import { ReservableUnit } from '../models/ReservableUnit';
+import { BannerSlide } from '../models/BannerSlide';
+import { Category } from '../models/Category';
+import { AppSettings } from '../models/AppSettings';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -248,6 +252,36 @@ router.get('/users', async (req, res) => {
   }
 });
 
+router.patch('/users/:id', async (req, res) => {
+  try {
+    const allowed = ['role', 'isActive', 'fullName'];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) update[key] = (req.body as any)[key];
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).select('-passwordHash');
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de l’utilisateur.' });
+  }
+});
+
+router.delete('/users/:id', async (req: AuthRequest, res) => {
+  try {
+    if (String(req.userId) === req.params.id) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte administrateur.' });
+    }
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable.' });
+    res.json({ success: true, message: 'Utilisateur supprimé.' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Erreur de suppression de l’utilisateur.' });
+  }
+});
+
 // GET /api/admin/venues?page=1&type=&city=&q=
 router.get('/venues', async (req, res) => {
   try {
@@ -357,6 +391,26 @@ function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '')
     .slice(0, 80);
+}
+
+async function deleteSceneAndRelations(sceneId: string) {
+  const scene = await Scene.findByIdAndDelete(sceneId);
+  if (!scene) return null;
+  await Promise.all([
+    TablePlacement.deleteMany({ sceneId }),
+    TourHotspot.deleteMany({ virtualTourId: sceneId }),
+    TourHotspot.deleteMany({ targetType: 'scene', targetId: sceneId }),
+  ]);
+  return scene;
+}
+
+async function findSceneHotspots(sceneIds: Array<mongoose.Types.ObjectId | string>) {
+  if (!sceneIds.length) return [];
+  return TourHotspot.find({
+    virtualTourId: { $in: sceneIds },
+    targetType: 'scene',
+    isActive: true,
+  }).lean();
 }
 
 // POST /api/v1/admin/venues — create any venue type
@@ -631,6 +685,40 @@ router.delete('/hotels/:id/rooms/:roomId', async (req, res) => {
   }
 });
 
+// Generic aliases used by the room editor after a room has been loaded.
+router.patch('/rooms/:roomId', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    const allowed = [
+      'name', 'roomType', 'capacity', 'capacityAdults', 'capacityChildren',
+      'bedType', 'pricePerNight', 'amenities', 'coverImage', 'gallery',
+      'isActive', 'isReservable',
+    ];
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) (room as any)[key] = (req.body as any)[key];
+    }
+    await room.save();
+    res.json({ success: true, data: room });
+  } catch (error) {
+    console.error('Error updating admin room:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la chambre.' });
+  }
+});
+
+router.delete('/rooms/:roomId', async (req, res) => {
+  try {
+    const room = await Room.findByIdAndDelete(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    const scenes = await Scene.find({ roomId: req.params.roomId }).select('_id').lean();
+    await Promise.all(scenes.map((scene) => deleteSceneAndRelations(String(scene._id))));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting admin room:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la chambre.' });
+  }
+});
+
 // GET /api/v1/admin/venues/:id/scenes — 360 scenes for a venue
 router.get('/venues/:id/scenes', async (req, res) => {
   try {
@@ -640,7 +728,8 @@ router.get('/venues/:id/scenes', async (req, res) => {
     const scenes = await Scene.find({ venueId: req.params.id, roomId: null, isActive: true })
       .sort({ order: 1, createdAt: 1 })
       .lean();
-    res.json({ success: true, scenes });
+    const hotspots = await findSceneHotspots(scenes.map((scene) => scene._id));
+    res.json({ success: true, scenes, hotspots });
   } catch (error) {
     console.error('Error fetching scenes:', error);
     res.status(500).json({ error: 'Erreur de chargement des scènes.' });
@@ -678,6 +767,134 @@ router.post('/venues/:id/scenes', async (req, res) => {
   }
 });
 
+router.get('/hotels/:id/scenes', async (req, res) => {
+  try {
+    const scenes = await Scene.find({ venueId: req.params.id, roomId: null, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    const hotspots = await findSceneHotspots(scenes.map((scene) => scene._id));
+    res.json({ success: true, scenes, hotspots });
+  } catch (error) {
+    console.error('Error fetching hotel scenes:', error);
+    res.status(500).json({ error: 'Erreur de chargement des scènes.' });
+  }
+});
+
+router.post('/hotels/:id/scenes', async (req, res) => {
+  try {
+    const venueExists = await Venue.exists({ _id: req.params.id });
+    if (!venueExists) return res.status(404).json({ error: 'Hôtel introuvable.' });
+    const { name, image, description, order } = req.body ?? {};
+    if (!name || !image) return res.status(400).json({ error: 'name et image requis.' });
+    const scene = await Scene.create({
+      venueId: req.params.id,
+      roomId: null,
+      name: String(name).trim(),
+      image: String(image).trim(),
+      description: description ? String(description).trim() : undefined,
+      order: Number(order || 0),
+      isActive: true,
+    });
+    res.status(201).json({ success: true, data: scene });
+  } catch (error) {
+    console.error('Error creating hotel scene:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de la scène.' });
+  }
+});
+
+router.get('/rooms/:roomId/scenes', async (req, res) => {
+  try {
+    const scenes = await Scene.find({ roomId: req.params.roomId, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    const hotspots = await findSceneHotspots(scenes.map((scene) => scene._id));
+    res.json({ success: true, scenes, hotspots });
+  } catch (error) {
+    console.error('Error fetching room scenes:', error);
+    res.status(500).json({ error: 'Erreur de chargement des scènes.' });
+  }
+});
+
+router.post('/rooms/:roomId/scenes', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId).select('venueId').lean();
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    const { name, image, description, order } = req.body ?? {};
+    if (!name || !image) return res.status(400).json({ error: 'name et image requis.' });
+    const scene = await Scene.create({
+      venueId: room.venueId,
+      roomId: req.params.roomId,
+      name: String(name).trim(),
+      image: String(image).trim(),
+      description: description ? String(description).trim() : undefined,
+      order: Number(order || 0),
+      isActive: true,
+    });
+    res.status(201).json({ success: true, data: scene });
+  } catch (error) {
+    console.error('Error creating room scene:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de la scène.' });
+  }
+});
+
+router.patch('/scenes/:sceneId', async (req, res) => {
+  try {
+    const allowed = ['name', 'description', 'image', 'order', 'isActive'];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) update[key] = (req.body as any)[key];
+    }
+    const scene = await Scene.findByIdAndUpdate(req.params.sceneId, { $set: update }, { new: true });
+    if (!scene) return res.status(404).json({ error: 'Scène introuvable.' });
+    res.json({ success: true, data: scene });
+  } catch (error) {
+    console.error('Error updating scene:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la scène.' });
+  }
+});
+
+router.delete('/scenes/:sceneId', async (req, res) => {
+  try {
+    const scene = await deleteSceneAndRelations(req.params.sceneId);
+    if (!scene) return res.status(404).json({ error: 'Scène introuvable.' });
+    res.json({ success: true, message: 'Scène supprimée.' });
+  } catch (error) {
+    console.error('Error deleting scene:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la scène.' });
+  }
+});
+
+router.post('/scene-hotspots', async (req, res) => {
+  try {
+    const { venueId, sceneId, targetSceneId, label, xPercent, yPercent, yaw, pitch } = req.body ?? {};
+    if (!venueId || !sceneId || !targetSceneId || !label || xPercent == null || yPercent == null) {
+      return res.status(400).json({ error: 'venueId, sceneId, targetSceneId, label, xPercent et yPercent requis.' });
+    }
+    const sceneCount = await Scene.countDocuments({
+      _id: { $in: [sceneId, targetSceneId] },
+      venueId,
+      isActive: true,
+    });
+    if (sceneCount !== 2) return res.status(404).json({ error: 'Scène source ou destination introuvable.' });
+    const hotspot = await TourHotspot.create({
+      venueId,
+      virtualTourId: sceneId,
+      targetType: 'scene',
+      targetId: targetSceneId,
+      label: String(label).trim(),
+      xPercent: Number(xPercent),
+      yPercent: Number(yPercent),
+      yaw: yaw == null ? undefined : Number(yaw),
+      pitch: pitch == null ? undefined : Number(pitch),
+      isActive: true,
+    });
+    res.status(201).json({ success: true, data: hotspot });
+  } catch (error) {
+    console.error('Error creating scene hotspot:', error);
+    res.status(500).json({ error: 'Erreur de création du lien 360.' });
+  }
+});
+
 // GET /api/v1/admin/table-placements?venueId=...
 router.get('/table-placements', async (req, res) => {
   try {
@@ -688,6 +905,183 @@ router.get('/table-placements', async (req, res) => {
   } catch (error) {
     console.error('Error fetching table placements:', error);
     res.status(500).json({ error: 'Erreur de chargement.' });
+  }
+});
+
+router.post('/table-placements', async (req, res) => {
+  try {
+    const { venueId, tableId, reservableUnitId, sceneId, ...position } = req.body ?? {};
+    if (!venueId || !sceneId || (!!tableId === !!reservableUnitId)) {
+      return res.status(400).json({ error: 'venueId, sceneId et exactement une ressource sont requis.' });
+    }
+    const placement = await TablePlacement.create({
+      venueId,
+      tableId: tableId || undefined,
+      reservableUnitId: reservableUnitId || undefined,
+      sceneId: String(sceneId),
+      positionType: position.positionType || 'yaw_pitch',
+      yaw: position.yaw == null ? undefined : Number(position.yaw),
+      pitch: position.pitch == null ? undefined : Number(position.pitch),
+      anchorPosition: position.anchorPosition,
+      stemVector: position.stemVector,
+      floorIndex: position.floorIndex,
+    });
+    res.status(201).json({ success: true, data: placement });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Placement déjà existant.' });
+    console.error('Error creating table placement:', error);
+    res.status(500).json({ error: 'Erreur de création du placement.' });
+  }
+});
+
+router.patch('/table-placements/:id', async (req, res) => {
+  try {
+    const allowed = ['sceneId', 'yaw', 'pitch', 'positionType', 'anchorPosition', 'stemVector', 'floorIndex'];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) update[key] = (req.body as any)[key];
+    }
+    const placement = await TablePlacement.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!placement) return res.status(404).json({ error: 'Placement introuvable.' });
+    res.json({ success: true, data: placement });
+  } catch (error) {
+    console.error('Error updating table placement:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour du placement.' });
+  }
+});
+
+router.delete('/table-placements/:id', async (req, res) => {
+  try {
+    const placement = await TablePlacement.findByIdAndDelete(req.params.id);
+    if (!placement) return res.status(404).json({ error: 'Placement introuvable.' });
+    res.json({ success: true, message: 'Placement supprimé.' });
+  } catch (error) {
+    console.error('Error deleting table placement:', error);
+    res.status(500).json({ error: 'Erreur de suppression du placement.' });
+  }
+});
+
+// Compatibility endpoints used by the legacy venue 360 editor.
+router.post('/venues/:venueId/table-placements', async (req, res) => {
+  try {
+    const placement = await TablePlacement.create({
+      ...req.body,
+      venueId: req.params.venueId,
+      sceneId: String(req.body?.sceneId || 'default'),
+      positionType: req.body?.positionType || 'yaw_pitch',
+    });
+    res.status(201).json({ success: true, data: placement });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Placement déjà existant.' });
+    console.error('Error creating venue table placement:', error);
+    res.status(500).json({ error: 'Erreur de création du placement.' });
+  }
+});
+
+router.delete('/venues/:venueId/table-placements/:placementId', async (req, res) => {
+  try {
+    const placement = await TablePlacement.findOneAndDelete({
+      _id: req.params.placementId,
+      venueId: req.params.venueId,
+    });
+    if (!placement) return res.status(404).json({ error: 'Placement introuvable.' });
+    res.json({ success: true, message: 'Placement supprimé.' });
+  } catch (error) {
+    console.error('Error deleting venue table placement:', error);
+    res.status(500).json({ error: 'Erreur de suppression du placement.' });
+  }
+});
+
+router.delete('/venues/:venueId/table-placements', async (req, res) => {
+  try {
+    const result = await TablePlacement.deleteMany({ venueId: req.params.venueId });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error('Error resetting venue table placements:', error);
+    res.status(500).json({ error: 'Erreur de suppression des placements.' });
+  }
+});
+
+router.get('/venues/:id/tables', async (req, res) => {
+  try {
+    const tables = await Table.find({ venueId: req.params.id }).sort({ displayOrder: 1, tableNumber: 1 }).lean();
+    res.json({ success: true, data: tables });
+  } catch (error) {
+    console.error('Error fetching admin tables:', error);
+    res.status(500).json({ error: 'Erreur de chargement des tables.' });
+  }
+});
+
+router.post('/tables', async (req, res) => {
+  try {
+    const { venueId, tableNumber, name, code, capacity, capacityMax, locationLabel, price, minimumSpend, defaultStatus, isVip, isActive } = req.body ?? {};
+    if (!venueId || !capacity) return res.status(400).json({ error: 'venueId et capacity requis.' });
+    const last = await Table.findOne({ venueId }).sort({ tableNumber: -1 }).select('tableNumber').lean();
+    const number = Number(tableNumber || Number((last as any)?.tableNumber || 0) + 1);
+    const table = await Table.create({
+      venueId,
+      tableNumber: number,
+      code: code || `T${number}`,
+      name: name || `Table ${number}`,
+      capacity: Number(capacity),
+      capacityMax: Number(capacityMax || capacity),
+      locationLabel: locationLabel || '',
+      price: Number(price || 0),
+      basePrice: Number(price || 0),
+      minimumSpend: minimumSpend == null ? undefined : Number(minimumSpend),
+      defaultStatus: defaultStatus || 'available',
+      isVip: !!isVip,
+      isActive: isActive !== false,
+      isReservable: true,
+      priceType: 'fixed',
+      currency: 'TND',
+    });
+    res.status(201).json({ success: true, data: table });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Numéro ou code de table déjà utilisé.' });
+    console.error('Error creating admin table:', error);
+    res.status(500).json({ error: 'Erreur de création de la table.' });
+  }
+});
+
+router.patch('/tables/:id', async (req, res) => {
+  try {
+    const allowed = ['tableNumber', 'name', 'code', 'capacity', 'capacityMax', 'locationLabel', 'price', 'minimumSpend', 'defaultStatus', 'isVip', 'isActive'];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in (req.body ?? {})) update[key] = (req.body as any)[key];
+    }
+    if ('price' in update) update.basePrice = update.price;
+    const table = await Table.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!table) return res.status(404).json({ error: 'Table introuvable.' });
+    res.json({ success: true, data: table });
+  } catch (error) {
+    console.error('Error updating admin table:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la table.' });
+  }
+});
+
+router.delete('/tables/:id', async (req, res) => {
+  try {
+    const table = await Table.findByIdAndDelete(req.params.id);
+    if (!table) return res.status(404).json({ error: 'Table introuvable.' });
+    await TablePlacement.deleteMany({ tableId: req.params.id });
+    res.json({ success: true, message: 'Table supprimée.' });
+  } catch (error) {
+    console.error('Error deleting admin table:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la table.' });
+  }
+});
+
+router.get('/reservable-units', async (req, res) => {
+  try {
+    const venueId = req.query.venueId as string;
+    if (!venueId) return res.status(400).json({ error: 'venueId requis.' });
+    const units = await ReservableUnit.find({ venueId }).sort({ displayOrder: 1 }).lean();
+    res.json({ success: true, data: units });
+  } catch (error) {
+    console.error('Error fetching reservable units:', error);
+    res.status(500).json({ error: 'Erreur de chargement des unités.' });
   }
 });
 
@@ -832,6 +1226,121 @@ router.delete('/tour-hotspots/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting tour hotspot:', error);
     res.status(500).json({ error: 'Erreur.' });
+  }
+});
+
+router.get('/banner-slides', async (_req, res) => {
+  try {
+    const slides = await BannerSlide.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
+    res.json({ success: true, data: slides });
+  } catch (error) {
+    console.error('Error fetching banner slides:', error);
+    res.status(500).json({ error: 'Erreur de chargement des bannières.' });
+  }
+});
+
+router.post('/banner-slides', async (req, res) => {
+  try {
+    if (!req.body?.titleFr || !req.body?.imageUrlDesktop) {
+      return res.status(400).json({ error: 'titleFr et imageUrlDesktop requis.' });
+    }
+    const slide = await BannerSlide.create(req.body);
+    res.status(201).json({ success: true, data: slide });
+  } catch (error) {
+    console.error('Error creating banner slide:', error);
+    res.status(500).json({ error: 'Erreur de création de la bannière.' });
+  }
+});
+
+router.patch('/banner-slides/:id', async (req, res) => {
+  try {
+    const slide = await BannerSlide.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    if (!slide) return res.status(404).json({ error: 'Bannière introuvable.' });
+    res.json({ success: true, data: slide });
+  } catch (error) {
+    console.error('Error updating banner slide:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la bannière.' });
+  }
+});
+
+router.delete('/banner-slides/:id', async (req, res) => {
+  try {
+    const slide = await BannerSlide.findByIdAndDelete(req.params.id);
+    if (!slide) return res.status(404).json({ error: 'Bannière introuvable.' });
+    res.json({ success: true, message: 'Bannière supprimée.' });
+  } catch (error) {
+    console.error('Error deleting banner slide:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la bannière.' });
+  }
+});
+
+router.get('/categories', async (_req, res) => {
+  try {
+    const categories = await Category.find().sort({ displayOrder: 1 }).lean();
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ error: 'Erreur de chargement des catégories.' });
+  }
+});
+
+router.post('/categories', async (req, res) => {
+  try {
+    if (!req.body?.name || !req.body?.slug) return res.status(400).json({ error: 'name et slug requis.' });
+    const category = await Category.create(req.body);
+    res.status(201).json({ success: true, data: category });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Slug déjà utilisé.' });
+    console.error('Error creating category:', error);
+    res.status(500).json({ error: 'Erreur de création de la catégorie.' });
+  }
+});
+
+router.patch('/categories/:id', async (req, res) => {
+  try {
+    const category = await Category.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    if (!category) return res.status(404).json({ error: 'Catégorie introuvable.' });
+    res.json({ success: true, data: category });
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Slug déjà utilisé.' });
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour de la catégorie.' });
+  }
+});
+
+router.delete('/categories/:id', async (req, res) => {
+  try {
+    const category = await Category.findByIdAndDelete(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Catégorie introuvable.' });
+    res.json({ success: true, message: 'Catégorie supprimée.' });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ error: 'Erreur de suppression de la catégorie.' });
+  }
+});
+
+router.get('/settings', async (_req, res) => {
+  try {
+    const settings = await AppSettings.findOne().lean();
+    res.json({ success: true, data: settings ?? {} });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Erreur de chargement des paramètres.' });
+  }
+});
+
+router.patch('/settings', async (req, res) => {
+  try {
+    const payload = { ...req.body };
+    if ('maintenanceMode' in payload) {
+      payload.isMaintenanceMode = payload.maintenanceMode;
+      delete payload.maintenanceMode;
+    }
+    const settings = await AppSettings.findOneAndUpdate({}, { $set: payload }, { new: true, upsert: true });
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Erreur de mise à jour des paramètres.' });
   }
 });
 

@@ -12,9 +12,28 @@ import reservationsRouter from './routes/reservations';
 import authRouter from './routes/auth';
 import searchRouter from './routes/search';
 import adminRouter from './routes/admin';
+import adminHotelRouter from './routes/admin-hotel';
+import eventCheckoutRouter from './routes/event-checkout';
+import favoritesRouter from './routes/favorites';
+import hotelCheckoutRouter from './routes/hotel-checkout';
+import menuDuJourRouter from './routes/menu-du-jour';
+import menuRouter from './routes/menuItems';
+import metaRouter from './routes/meta';
+import organizerRouter from './routes/organizer';
 import uploadsRouter from './routes/uploads';
 import ownerRouter from './routes/owner';
+import ownerCoworkingRouter from './routes/owner-coworking';
+import ownerEventsRouter from './routes/owner-events';
+import ownerHotelRouter from './routes/owner-hotel';
+import ownerTableRouter from './routes/owner-table';
+import paymentsRouter from './routes/payments';
+import payoutsRouter from './routes/payouts';
+import pricingRouter from './routes/pricing';
+import reviewsRouter from './routes/reviews';
 import scenesRouter from './routes/scenes';
+import sosConseilRouter from './routes/sos-conseil';
+import supportRouter from './routes/support';
+import tagsRouter from './routes/tags';
 
 dotenv.config();
 
@@ -45,7 +64,7 @@ app.get('/', (req, res) => {
     name: 'Ma Reservation API',
     version: '1.0',
     health: '/api/v1/health',
-    message: 'Use /api/v1/* endpoints. Health check at GET /api/v1/health',
+    message: 'Ma Reservation API is running.',
   });
 });
 
@@ -70,9 +89,28 @@ app.use('/api/v1/reservations', reservationsRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/search', searchRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/admin-hotel', adminHotelRouter);
+app.use('/api/v1/event-checkout', eventCheckoutRouter);
+app.use('/api/v1/favorites', favoritesRouter);
+app.use('/api/v1/hotel-checkout', hotelCheckoutRouter);
+app.use('/api/v1/menu-du-jour', menuDuJourRouter);
+app.use('/api/v1/menu', menuRouter);
+app.use('/api/v1/meta', metaRouter);
+app.use('/api/v1/organizer', organizerRouter);
 app.use('/api/v1/uploads', uploadsRouter);
 app.use('/api/v1/owner', ownerRouter);
+app.use('/api/v1/owner-coworking', ownerCoworkingRouter);
+app.use('/api/v1/owner-events', ownerEventsRouter);
+app.use('/api/v1/owner-hotel', ownerHotelRouter);
+app.use('/api/v1/owner-table', ownerTableRouter);
+app.use('/api/v1/payments', paymentsRouter);
+app.use('/api/v1/payouts', payoutsRouter);
+app.use('/api/v1/pricing', pricingRouter);
+app.use('/api/v1/reviews', reviewsRouter);
 app.use('/api/v1/scenes', scenesRouter);
+app.use('/api/v1/sos-conseil', sosConseilRouter);
+app.use('/api/v1/support', supportRouter);
+app.use('/api/v1/tags', tagsRouter);
 
 // Legacy /api/* (backward compatibility during migration)
 app.get('/health', (req, res) => {
@@ -105,8 +143,9 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not Found',
+    method: req.method,
     path: req.path,
-    message: 'Use /api/v1/* endpoints. Health check at GET /api/v1/health',
+    message: `Endpoint ${req.method} ${req.path} not found.`,
   });
 });
 
