@@ -240,6 +240,9 @@ router.post('/venues/:id/scenes', authenticate, requireEstablishmentOwner, async
       order: Number(order || 0),
       isActive: true,
     });
+    await Venue.findByIdAndUpdate(req.params.id, {
+      $set: { hasVirtualTour: true, immersiveType: 'view-360', immersiveSourceType: 'upload' },
+    });
     await logAudit(req, {
       action: 'VENUE_UPDATED',
       userId: req.userId as any,

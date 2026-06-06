@@ -759,6 +759,9 @@ router.post('/venues/:id/scenes', async (req, res) => {
       order: Number.isFinite(Number(order)) ? Number(order) : 0,
       isActive: true,
     });
+    await Venue.findByIdAndUpdate(req.params.id, {
+      $set: { hasVirtualTour: true, immersiveType: 'view-360', immersiveSourceType: 'upload' },
+    });
 
     res.status(201).json({ success: true, data: scene });
   } catch (error) {
@@ -794,6 +797,9 @@ router.post('/hotels/:id/scenes', async (req, res) => {
       description: description ? String(description).trim() : undefined,
       order: Number(order || 0),
       isActive: true,
+    });
+    await Venue.findByIdAndUpdate(req.params.id, {
+      $set: { hasVirtualTour: true, immersiveType: 'view-360', immersiveSourceType: 'upload' },
     });
     res.status(201).json({ success: true, data: scene });
   } catch (error) {

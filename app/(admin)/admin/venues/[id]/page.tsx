@@ -410,6 +410,26 @@ export default function AdminVenueDetailPage() {
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); if (form) updateMutation.mutate(form); };
 
+  const persistImmersiveUpload = async (url: string, requestedType?: ImmersiveType) => {
+    const immersiveType = requestedType && requestedType !== 'none' ? requestedType : 'view-360';
+    await updateAdminVenue(id, {
+      immersiveType,
+      immersiveSourceType: 'upload',
+      immersiveProvider: 'custom',
+      immersiveUrl: null,
+      immersiveFile: url,
+    });
+    setForm((prev) => prev ? {
+      ...prev,
+      immersiveType,
+      immersiveSourceType: 'upload',
+      immersiveUrl: '',
+      immersiveFile: url,
+    } : prev);
+    queryClient.invalidateQueries({ queryKey: ['venue', id] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
+  };
+
   // ── Cover image upload ──
   const handleCoverUpload = async (file: File) => {
     if (!form) return;
@@ -450,12 +470,7 @@ export default function AdminVenueDetailPage() {
       for (const [idx, file] of list.entries()) {
         const url = await uploadImageFile(file);
         if (!primaryConsumed) {
-          setForm((prev) => prev ? {
-            ...prev,
-            immersiveType: 'view-360',
-            immersiveSourceType: 'upload',
-            immersiveFile: url,
-          } : prev);
+          await persistImmersiveUpload(url, 'view-360');
           primaryConsumed = true;
         } else {
           await createAdminVenueScene(id, {
@@ -480,7 +495,7 @@ export default function AdminVenueDetailPage() {
     setUploading(true);
     try {
       const url = await uploadImageFile(file);
-      setForm({ ...form, immersiveFile: url });
+      await persistImmersiveUpload(url, form.immersiveType);
       toast.success('Fichier uploadé avec succès.');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload.");
@@ -492,7 +507,7 @@ export default function AdminVenueDetailPage() {
     setUploading(true);
     try {
       const url = await uploadImageFile(file);
-      setForm({ ...form, immersiveFile: url, immersiveSourceType: 'upload' });
+      await persistImmersiveUpload(url, form.immersiveType);
       toast.success('Fichier immersif uploadé.');
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload.");

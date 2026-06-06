@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Scene } from '../models/Scene';
 import { TablePlacement } from '../models/TablePlacement';
+import { Venue } from '../models/Venue';
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 
@@ -36,6 +37,9 @@ router.post('/', authenticate, requireAdmin, async (req: AuthRequest, res) => {
       description: description?.trim(),
       image,
       order: order ?? 0,
+    });
+    await Venue.findByIdAndUpdate(venueId, {
+      $set: { hasVirtualTour: true, immersiveType: 'view-360', immersiveSourceType: 'upload' },
     });
     sendSuccess(res, { data: scene, statusCode: 201 });
   } catch (err) {
