@@ -470,6 +470,34 @@ router.delete('/venues/:id', async (req, res) => {
   }
 });
 
+// GET /api/v1/admin/hotels — flat list used by /admin/hotels page
+// Returns { hotels, total } matching the front-end fetchAdminHotels shape.
+router.get('/hotels', async (req, res) => {
+  try {
+    const filter: Record<string, unknown> = { type: 'HOTEL' };
+    if (req.query.city) filter.city = req.query.city;
+    if (req.query.q) {
+      const re = new RegExp(String(req.query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ name: re }, { city: re }, { description: re }];
+    }
+    const page = Math.max(1, parseInt((req.query.page as string) || '1') || 1);
+    const limit = 50;
+    const [hotels, total] = await Promise.all([
+      Venue.find(filter)
+        .populate('ownerId', 'fullName email phone')
+        .sort({ isFeatured: -1, updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Venue.countDocuments(filter),
+    ]);
+    res.json({ hotels, total });
+  } catch (error) {
+    console.error('Error fetching admin hotels:', error);
+    res.status(500).json({ error: 'Erreur de chargement.' });
+  }
+});
+
 // GET /api/admin/events
 router.get('/events', async (req, res) => {
   try {
