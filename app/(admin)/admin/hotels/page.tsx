@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 import { createAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -154,7 +155,7 @@ function HotelCard({ hotel, onDeleted }: { hotel: AdminHotel; onDeleted: () => v
               <Edit2 className="size-3 mr-1.5" /> Gérer
             </Button>
           </Link>
-          <Link href={`/hotel/${hotel.slug}`} target="_blank">
+          <Link href={getVenueHref({ ...hotel, type: 'HOTEL' })} target="_blank">
             <Button size="sm" variant="outline" className="h-8 px-3 rounded-lg border-zinc-700 bg-transparent text-zinc-400 hover:text-white hover:border-zinc-500">
               <Eye className="size-3.5" />
             </Button>

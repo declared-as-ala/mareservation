@@ -38,6 +38,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 import {
   fetchAdminHotels,
   fetchHotelChecklist,
@@ -509,15 +510,15 @@ function ActionsRow({ venue, onDone, canApprove }: { venue: AdminHotel; onDone: 
         Éditer la fiche
       </Link>
       {venue.slug && (
-        <a
-          href={`/hotel/${venue.slug}`}
+        <Link
+          href={getVenueHref({ ...venue, type: 'HOTEL' })}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 h-10 text-sm font-medium text-neutral-300 hover:text-white hover:border-white/20 transition"
         >
           <ExternalLink className="size-4" />
           Voir page publique
-        </a>
+        </Link>
       )}
     </div>
   );

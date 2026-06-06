@@ -12,6 +12,7 @@ import { PageHeader, EmptyState, FormField, dashInput } from '@/components/dashb
 import { VenueEditor } from '@/components/dashboard/VenueEditor';
 import { Modal } from '@/components/dashboard/Modal';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 import { Panorama360Editor, type Panorama360EditorApis } from '@/components/dashboard/Panorama360Editor';
 import {
   createOwnerVenueScene,
@@ -53,15 +54,6 @@ const OPS_LINK: Record<string, { href: string; label: string }> = {
   RESTAURANT: { href: '/owner/table-operations', label: 'Gérer les tables & le service' },
   CAFE: { href: '/owner/table-operations', label: 'Gérer les tables & le service' },
   CAFE_LOUNGE: { href: '/owner/table-operations', label: 'Gérer les tables & le service' },
-};
-
-const PUBLIC_PREFIX: Record<string, string> = {
-  HOTEL: 'hotel',
-  COWORKING: 'coworking',
-  CINEMA: 'cinema',
-  RESTAURANT: 'restaurant',
-  CAFE: 'cafe',
-  CAFE_LOUNGE: 'cafe',
 };
 
 export default function OwnerMyEstablishmentPage() {
@@ -233,7 +225,7 @@ export default function OwnerMyEstablishmentPage() {
                   </span>
                   {active.slug && (
                     <Link
-                      href={`/${PUBLIC_PREFIX[String(active.type).toUpperCase()] ?? 'lieu'}/${active.slug}`}
+                      href={getVenueHref(active)}
                       target="_blank"
                       className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-amber-300"
                     >

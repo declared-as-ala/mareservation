@@ -72,6 +72,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 import dynamic from 'next/dynamic';
 import { Panorama360Editor, type Panorama360EditorApis } from '@/components/dashboard/Panorama360Editor';
 import { deleteOwnerTableBlock, fetchOwnerTableBlocks } from '@/lib/api/owner-table';
@@ -786,7 +787,7 @@ export default function AdminVenueDetailPage() {
             )}
           </div>
           <Button variant="outline" size="sm" asChild className="rounded-xl">
-            <Link href={`/lieu/${venue.slug || venue._id}`} target="_blank">
+            <Link href={getVenueHref(venue)} target="_blank">
               <Eye className="size-3.5 mr-1.5" /> Aperçu
             </Link>
           </Button>

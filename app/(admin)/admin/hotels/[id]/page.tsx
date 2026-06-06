@@ -38,6 +38,7 @@ import { RoomEditorModal } from '@/components/admin/hotel/RoomEditorModal';
 import { VirtualTourBuilder } from '@/components/admin/hotel/VirtualTourBuilder';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 
 const ROOM_TYPE_LABELS: Record<string, string> = {
   STANDARD: 'Standard', SUPERIOR: 'Supérieure', DELUXE: 'Deluxe',
@@ -701,7 +702,7 @@ export default function HotelDetailAdminPage() {
             )}>
               {hotel.isPublished ? <><CheckCircle2 className="size-2.5" /> Publié</> : <><Clock className="size-2.5" /> Brouillon</>}
             </span>
-            <Link href={`/hotel/${hotel.slug}`} target="_blank">
+            <Link href={getVenueHref({ ...hotel, type: 'HOTEL' })} target="_blank">
               <Button size="sm" variant="outline" className="h-8 border-zinc-700 text-zinc-400 hover:text-white rounded-xl text-xs gap-1.5">
                 <Eye className="size-3.5" /> Voir
               </Button>

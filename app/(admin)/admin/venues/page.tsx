@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue, createAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getVenueHref } from '@/lib/venueHref';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -40,7 +41,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-type VenueRow = { _id: string; name: string; type: string; city: string; coverImage?: string; archivedAt?: string | null };
+type VenueRow = { _id: string; name: string; type: string; slug?: string; city: string; coverImage?: string; archivedAt?: string | null };
 type OwnerRef = { _id: string; fullName?: string; email?: string };
 type VenueRowWithOwner = VenueRow & { ownerId?: OwnerRef | string };
 
@@ -528,7 +529,7 @@ export default function AdminVenuesPage() {
                           className="size-8 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
                           aria-label="Voir"
                         >
-                          <Link href={`/lieu/${v._id}`} target="_blank">
+                          <Link href={getVenueHref(v)} target="_blank">
                             <Eye className="size-4" />
                           </Link>
                         </Button>
@@ -551,7 +552,7 @@ export default function AdminVenuesPage() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                              <Link href={`/lieu/${v._id}`} target="_blank" className="flex items-center gap-2">
+                              <Link href={getVenueHref(v)} target="_blank" className="flex items-center gap-2">
                                 <Eye className="size-4" />
                                 Voir sur le site
                               </Link>
@@ -660,7 +661,7 @@ export default function AdminVenuesPage() {
                     asChild
                     className="text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
                   >
-                    <Link href={`/lieu/${v._id}`} target="_blank">
+                    <Link href={getVenueHref(v)} target="_blank">
                       <Eye className="size-4" />
                     </Link>
                   </Button>
