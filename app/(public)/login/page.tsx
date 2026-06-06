@@ -48,16 +48,21 @@ function LoginForm() {
     setLoading(true);
     try {
       const response = await login({ email, password });
-      const { user } = response as { user: typeof response.user };
+      const { user, accessToken } = response as { user: typeof response.user; accessToken?: string };
 
-      // Set Zustand state — backend already set httpOnly cookies.
-      setAuth({
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      });
+      // Set Zustand state — backend set httpOnly cookies, and we also
+      // persist the accessToken for Bearer fallback in case cross-port
+      // cookies don't reach subsequent requests.
+      setAuth(
+        {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          emailVerified: user.emailVerified,
+        },
+        accessToken
+      );
 
       if (user.role === 'ADMIN') {
         router.replace(resolvePostLoginRedirect(user.role, returnTo));

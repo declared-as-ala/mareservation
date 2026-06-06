@@ -20,6 +20,7 @@ export type AuthStatus = 'checking' | 'authenticated' | 'guest';
 
 type AuthState = {
   user: User | null;
+  accessToken: string | null;
   authStatus: AuthStatus;
   isAuthenticated: boolean;
   role: string | null;
@@ -28,7 +29,8 @@ type AuthState = {
   isResolving: boolean;
   /** True when the store has finished its initial hydration from localStorage. */
   hasHydrated: boolean;
-  setAuth: (user: User) => void;
+  setAuth: (user: User, accessToken?: string | null) => void;
+  setAccessToken: (token: string | null) => void;
   logout: () => Promise<void>;
   clearAll: () => void;
   /** Validate the current session by calling /me. Returns user or null. */
@@ -47,12 +49,14 @@ type MeResponse = {
 };
 
 /**
- * Build headers with credentials:include for cookie-based auth.
- * The backend uses httpOnly cookies, so we don't need to manually
- * attach an Authorization header.
+ * Build headers with credentials:include for cookie-based auth, AND
+ * attach a Bearer token when one was returned by /auth/login (fallback
+ * for cross-port deployments where httpOnly cookies may not flow).
  */
-function authHeaders(): Record<string, string> {
-  return { 'Content-Type': 'application/json' };
+function authHeaders(token?: string | null): Record<string, string> {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
 }
 
 /** Map a backend user object to our User type. */
@@ -70,8 +74,9 @@ function mapUser(d: MeResponse): User {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, _get) => ({
+    (set, get) => ({
       user: null,
+      accessToken: null,
       authStatus: 'checking',
       isAuthenticated: false,
       role: null,
@@ -79,9 +84,10 @@ export const useAuthStore = create<AuthState>()(
       isResolving: false,
       hasHydrated: false,
 
-      setAuth: (user) => {
+      setAuth: (user, accessToken) => {
         set({
           user,
+          accessToken: accessToken ?? get().accessToken ?? null,
           authStatus: 'authenticated',
           isAuthenticated: true,
           role: user.role,
@@ -90,9 +96,12 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
+      setAccessToken: (token) => set({ accessToken: token }),
+
       clearAll: () => {
         set({
           user: null,
+          accessToken: null,
           authStatus: 'guest',
           isAuthenticated: false,
           role: null,
@@ -109,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
           // Call backend to invalidate refresh token and clear httpOnly cookies.
           await fetch(`${API_BASE}/api/v1/auth/logout`, {
             method: 'POST',
-            headers: authHeaders(),
+            headers: authHeaders(get().accessToken),
             credentials: 'include',
           });
         } catch {
@@ -117,6 +126,7 @@ export const useAuthStore = create<AuthState>()(
         } finally {
           set({
             user: null,
+            accessToken: null,
             authStatus: 'guest',
             isAuthenticated: false,
             role: null,
@@ -138,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
             method: 'GET',
-            headers: authHeaders(),
+            headers: authHeaders(get().accessToken),
             credentials: 'include',
           });
 
@@ -173,7 +183,7 @@ export const useAuthStore = create<AuthState>()(
             // Retry /me with the new session.
             const res2 = await fetch(`${API_BASE}/api/v1/auth/me`, {
               method: 'GET',
-              headers: authHeaders(),
+              headers: authHeaders(get().accessToken),
               credentials: 'include',
             });
 
@@ -212,9 +222,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'ma-reservation-auth',
-      // Only persist the user object, NOT tokens.
-      // The session is validated via httpOnly cookies on every bootstrap.
-      partialize: (state) => ({ user: state.user }),
+      // Persist the user AND the access token. Token is required for
+      // cross-port deployments where httpOnly cookies may not be sent
+      // by the browser; the API client uses it as a Bearer fallback.
+      partialize: (state) => ({ user: state.user, accessToken: state.accessToken }),
       // Notify when hydration is complete.
       onRehydrateStorage: () => (state) => {
         if (state) {

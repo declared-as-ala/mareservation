@@ -92,16 +92,20 @@ export default function RegisterPage() {
         password,
         phone: phone.trim() || undefined,
       });
-      const { user } = response;
+      const { user, accessToken } = response as { user: typeof response.user; accessToken?: string };
 
-      // Set Zustand state — backend already set httpOnly cookies.
-      setAuth({
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        emailVerified: user.emailVerified,
-      });
+      // Set Zustand state — backend set httpOnly cookies; we also persist
+      // the accessToken as a Bearer fallback for cross-port deployments.
+      setAuth(
+        {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          emailVerified: user.emailVerified,
+        },
+        accessToken
+      );
 
       toast.success('Compte créé ! Vérifiez votre email pour activer votre compte.', { duration: 6000 });
       router.push('/');

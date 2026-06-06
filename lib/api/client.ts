@@ -62,12 +62,17 @@ async function apiFetchInternal<T = unknown>(
     body = JSON.stringify(options.body);
   }
 
+  // Attach Bearer token if the store has one — fallback for deployments
+  // where httpOnly cookies don't reach cross-port subdomains.
+  const token = useAuthStore.getState().accessToken;
+
   const baseOpts: RequestInit = {
     ...options,
     body,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   };
@@ -78,9 +83,15 @@ async function apiFetchInternal<T = unknown>(
     const refreshed = await refreshAuthSession(API_BASE);
 
     if (refreshed) {
+      // Refresh may have returned a fresh accessToken — pick up the new one.
+      const freshToken = useAuthStore.getState().accessToken;
       const retryRes = await fetch(url, {
         ...baseOpts,
-        headers: { ...baseOpts.headers, 'X-Retry': '1' } as Record<string, string>,
+        headers: {
+          ...baseOpts.headers,
+          ...(freshToken ? { Authorization: `Bearer ${freshToken}` } : {}),
+          'X-Retry': '1',
+        } as Record<string, string>,
       });
 
       if (retryRes.ok) {
