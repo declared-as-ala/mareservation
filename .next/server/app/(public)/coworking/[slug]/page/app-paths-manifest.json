@@ -1,3 +1,0 @@
-{
-  "/(public)/coworking/[slug]/page": "app/(public)/coworking/[slug]/page.js"
-}

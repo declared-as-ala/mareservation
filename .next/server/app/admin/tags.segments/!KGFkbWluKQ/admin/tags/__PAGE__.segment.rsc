@@ -1,5 +1,0 @@
-1:"$Sreact.fragment"
-2:I[97367,["/_next/static/chunks/ff1a16fafef87110.js","/_next/static/chunks/61cc43b3d7ad2990.js"],"OutletBoundary"]
-3:"$Sreact.suspense"
-0:{"buildId":"elTIVqnVaErs6IGcJx-FV","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"space-y-6","children":[["$","h1",null,{"className":"text-2xl font-bold","children":"Tags"}],["$","div",null,{"data-slot":"card","className":"bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm","children":["$","div",null,{"data-slot":"card-header","className":"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6","children":[["$","div",null,{"data-slot":"card-title","className":"leading-none font-semibold","children":"Gestion des tags"}],["$","div",null,{"data-slot":"card-content","className":"px-6 pt-4","children":["$","p",null,{"className":"text-muted-foreground","children":"CRUD tags à connecter à l'API admin."}]}]]}]}]]}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"loading":null,"isPartial":false}
-4:null

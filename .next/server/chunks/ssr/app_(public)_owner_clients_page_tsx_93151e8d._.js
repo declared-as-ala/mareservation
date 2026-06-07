@@ -1,3 +1,0 @@
-module.exports=[9640,a=>{"use strict";var b=a.i(87924);function c(){return(0,b.jsxs)("div",{className:"mx-auto max-w-4xl space-y-2 px-4 py-10 text-zinc-100",children:[(0,b.jsx)("h1",{className:"text-2xl font-semibold",children:"Clients"}),(0,b.jsx)("p",{className:"text-sm text-zinc-400",children:"Vue clients proprietaire disponible via reservations associees."})]})}a.s(["default",()=>c])}];
-
-//# sourceMappingURL=app_%28public%29_owner_clients_page_tsx_93151e8d._.js.map

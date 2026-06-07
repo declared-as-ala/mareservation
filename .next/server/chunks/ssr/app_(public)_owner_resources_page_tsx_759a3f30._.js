@@ -1,3 +1,0 @@
-module.exports=[59993,a=>{"use strict";var b=a.i(87924);function c(){return(0,b.jsxs)("div",{className:"mx-auto max-w-4xl space-y-2 px-4 py-10 text-zinc-100",children:[(0,b.jsx)("h1",{className:"text-2xl font-semibold",children:"Ressources dynamiques"}),(0,b.jsx)("p",{className:"text-sm text-zinc-400",children:"Gestion tables/chambres/places: utilisez l'admin des lieux pour edition detaillee des ressources reservables."})]})}a.s(["default",()=>c])}];
-
-//# sourceMappingURL=app_%28public%29_owner_resources_page_tsx_759a3f30._.js.map
