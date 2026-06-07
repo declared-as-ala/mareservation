@@ -67,6 +67,11 @@ jobs:
           fi
           echo "   ✅ FRONTEND_URL=http://${VPS_IP}:3000"
 
+          echo "📋 Mirroring .env to backend/.env (docker-compose expects it there)..."
+          mkdir -p backend
+          cp -f .env backend/.env
+          echo "   ✅ backend/.env synced"
+
           echo "🏗️ Building Docker images..."
           docker compose build
 
