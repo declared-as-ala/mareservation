@@ -9,6 +9,10 @@ coverage/
 # Production
 dist/
 build/
+.next/
+frontend/.next/
+**/.next/
+**/tsconfig.tsbuildinfo
 
 # Environment variables
 .env
