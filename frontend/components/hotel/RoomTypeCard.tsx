@@ -198,15 +198,16 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-3xl border bg-gradient-to-b from-[#111111] to-[#0B0B0B] shadow-xl transition-all duration-300',
+        // Wider, horizontal layout — gallery on the left on lg, body on the right.
+        'group relative grid overflow-hidden rounded-3xl border bg-gradient-to-b from-[#111111] to-[#0B0B0B] shadow-xl transition-all duration-300 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]',
         isAvailable
-          ? 'border-white/[0.07] hover:-translate-y-1 hover:border-amber-400/30 hover:shadow-2xl hover:shadow-amber-400/10'
+          ? 'border-white/[0.07] hover:border-amber-400/30 hover:shadow-2xl hover:shadow-amber-400/10'
           : 'border-white/[0.04] opacity-75',
         className
       )}
     >
       {/* ── Gallery area ── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 md:aspect-[16/10]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 sm:aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
         <GalleryCarousel images={combinedGallery} alt={typeLabel} />
 
         {/* Top-left: type label */}
@@ -352,7 +353,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
                   : 'cursor-not-allowed bg-white/[0.05] text-neutral-600'
               )}
             >
-              {isAvailable ? 'Réserver' : 'Complet'}
+              {isAvailable ? `Réserver ${typeLabel}` : 'Complet'}
             </button>
           </div>
         </div>

@@ -848,7 +848,7 @@ export default function HotelDetailPage() {
                           {roomTypeGroups.length} type{roomTypeGroups.length > 1 ? 's' : ''} de chambre
                         </h2>
                         <p className="text-[12px] text-neutral-500">
-                          Réservez le type qui vous convient — une chambre disponible vous sera attribuée.
+                          La réservation est <strong className="text-amber-300">par type de chambre</strong>, pas par numéro — l&apos;hôtel vous attribue une chambre disponible à votre arrivée.
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] p-1">
@@ -914,7 +914,7 @@ export default function HotelDetailPage() {
                     </div>
                   ) : (
                     <AnimatePresence>
-                      <div className="grid gap-5 md:grid-cols-2">
+                      <div className="flex flex-col gap-6">
                         {roomTypeGroups.map((g) => (
                           <RoomTypeCard
                             key={g.roomType}
