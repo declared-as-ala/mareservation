@@ -196,20 +196,38 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
   const totalPrice = minPrice * Math.max(1, nights);
   const showTotal = nights > 1;
 
-  // Pick the first available 360° panorama for the type — the inline viewer
-  // shows it so the customer can rotate without opening a modal.
-  const firstPanorama: string | null = (() => {
-    for (const r of group.rooms) {
-      if (r.virtualTourUrl) return r.virtualTourUrl;
-      if (r.panoramicImages && r.panoramicImages.length > 0) return r.panoramicImages[0];
+  // Pick the first available 360° asset for the type. We distinguish two
+  // shapes:
+  //   - panoramaImageUrl: a flat equirectangular image (PanoramaEngine wraps
+  //     it into a rotatable sphere on the page)
+  //   - tourEmbedUrl: a Klapty / Matterport iframe (renders as <iframe>)
+  // panoramicImages[] is always equirectangular when present.
+  function isLikelyEquirectangular(url: string): boolean {
+    const u = url.toLowerCase();
+    if (u.endsWith('.jpg') || u.endsWith('.jpeg') || u.endsWith('.png') || u.endsWith('.webp')) return true;
+    if (u.includes('unsplash.com') || u.includes('photo-sphere-viewer-data') || u.includes('pannellum.org')) return true;
+    return false;
+  }
+  let panoramaImageUrl: string | null = null;
+  let tourEmbedUrl: string | null = null;
+  for (const r of group.rooms) {
+    if (!panoramaImageUrl && r.panoramicImages && r.panoramicImages.length > 0) {
+      panoramaImageUrl = r.panoramicImages[0];
     }
-    return null;
-  })();
+    if (!panoramaImageUrl && r.virtualTourUrl && isLikelyEquirectangular(r.virtualTourUrl)) {
+      panoramaImageUrl = r.virtualTourUrl;
+    }
+    if (!tourEmbedUrl && r.virtualTourUrl && !isLikelyEquirectangular(r.virtualTourUrl)) {
+      tourEmbedUrl = r.virtualTourUrl;
+    }
+    if (panoramaImageUrl && tourEmbedUrl) break;
+  }
+  const hasInlinePanorama = !!panoramaImageUrl || !!tourEmbedUrl;
 
   // Default to 360° when the type has a panorama — the whole point is that
   // the customer arrives and immediately sees the rotatable scene.
   const [galleryMode, setGalleryMode] = useState<'photo' | '360'>(
-    firstPanorama ? '360' : 'photo'
+    hasInlinePanorama ? '360' : 'photo'
   );
 
   return (
@@ -230,10 +248,10 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
     >
       {/* ── Gallery area ── */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 sm:aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
-        {galleryMode === '360' && firstPanorama ? (
+        {galleryMode === '360' && panoramaImageUrl ? (
           <div className="absolute inset-0">
             <PanoramaEngine
-              imageUrl={firstPanorama}
+              imageUrl={panoramaImageUrl}
               markers={[]}
               mode="navigate"
               scenes={[]}
@@ -242,6 +260,14 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
               onMarkerClick={() => undefined}
             />
           </div>
+        ) : galleryMode === '360' && tourEmbedUrl ? (
+          <iframe
+            src={tourEmbedUrl}
+            title={`Visite 360° — ${typeLabel}`}
+            className="absolute inset-0 h-full w-full border-0"
+            allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+            allowFullScreen
+          />
         ) : (
           <GalleryCarousel images={combinedGallery} alt={typeLabel} />
         )}
@@ -272,7 +298,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
         </div>
 
         {/* Photo / 360° toggle pill (bottom-left of gallery) */}
-        {firstPanorama && (
+        {hasInlinePanorama && (
           <div className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/15 bg-black/70 p-0.5 backdrop-blur-md">
             <button
               type="button"
@@ -303,7 +329,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
         )}
 
         {/* Plein écran button when 360 — opens the multi-room scene viewer */}
-        {firstPanorama && galleryMode === '360' && group.rooms.length > 1 && (
+        {hasInlinePanorama && galleryMode === '360' && group.rooms.length > 1 && (
           <button
             type="button"
             onClick={() => onView360(group)}
