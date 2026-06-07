@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+
+const PanoramaEngine = dynamic(
+  () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
 import {
   BedDouble,
   Users,
@@ -190,6 +196,22 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
   const totalPrice = minPrice * Math.max(1, nights);
   const showTotal = nights > 1;
 
+  // Pick the first available 360° panorama for the type — the inline viewer
+  // shows it so the customer can rotate without opening a modal.
+  const firstPanorama: string | null = (() => {
+    for (const r of group.rooms) {
+      if (r.virtualTourUrl) return r.virtualTourUrl;
+      if (r.panoramicImages && r.panoramicImages.length > 0) return r.panoramicImages[0];
+    }
+    return null;
+  })();
+
+  // Default to 360° when the type has a panorama — the whole point is that
+  // the customer arrives and immediately sees the rotatable scene.
+  const [galleryMode, setGalleryMode] = useState<'photo' | '360'>(
+    firstPanorama ? '360' : 'photo'
+  );
+
   return (
     <motion.article
       layout
@@ -208,7 +230,21 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
     >
       {/* ── Gallery area ── */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 sm:aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
-        <GalleryCarousel images={combinedGallery} alt={typeLabel} />
+        {galleryMode === '360' && firstPanorama ? (
+          <div className="absolute inset-0">
+            <PanoramaEngine
+              imageUrl={firstPanorama}
+              markers={[]}
+              mode="navigate"
+              scenes={[]}
+              activeSceneId={null}
+              onSceneChange={() => undefined}
+              onMarkerClick={() => undefined}
+            />
+          </div>
+        ) : (
+          <GalleryCarousel images={combinedGallery} alt={typeLabel} />
+        )}
 
         {/* Top-left: type label */}
         <div className="pointer-events-none absolute left-3 top-3 z-10">
@@ -225,14 +261,8 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
           </span>
         </div>
 
-        {/* Top-right: bigger 360° + view badges */}
+        {/* Top-right: badges */}
         <div className="pointer-events-none absolute right-3 top-3 z-10 flex flex-col items-end gap-1.5">
-          {hasVirtualTour && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/55 bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1 text-[11px] font-black text-black shadow-[0_4px_16px_rgba(245,158,11,0.45)]">
-              <Video className="size-3.5" />
-              Visite 360°
-            </span>
-          )}
           {hasBalcony && (
             <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-md">
               <Eye className="size-3" />
@@ -241,21 +271,52 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
           )}
         </div>
 
-        {/* Centre overlay CTA when 360 available — only on hover, button on the body still does the work on tap */}
-        {hasVirtualTour && (
+        {/* Photo / 360° toggle pill (bottom-left of gallery) */}
+        {firstPanorama && (
+          <div className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/15 bg-black/70 p-0.5 backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => setGalleryMode('photo')}
+              className={cn(
+                'rounded-full px-3 py-1 text-[11px] font-bold transition-all',
+                galleryMode === 'photo'
+                  ? 'bg-white text-black'
+                  : 'text-white/70 hover:text-white'
+              )}
+            >
+              Photos
+            </button>
+            <button
+              type="button"
+              onClick={() => setGalleryMode('360')}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold transition-all',
+                galleryMode === '360'
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-[0_4px_14px_rgba(245,158,11,0.45)]'
+                  : 'text-amber-300 hover:text-amber-200'
+              )}
+            >
+              <Video className="size-3" />
+              360°
+            </button>
+          </div>
+        )}
+
+        {/* Plein écran button when 360 — opens the multi-room scene viewer */}
+        {firstPanorama && galleryMode === '360' && group.rooms.length > 1 && (
           <button
             type="button"
             onClick={() => onView360(group)}
-            aria-label="Ouvrir la visite 360°"
-            className="absolute inset-x-0 bottom-14 z-[5] mx-auto hidden h-10 w-[60%] items-center justify-center gap-1.5 rounded-full border border-white/25 bg-black/65 px-4 text-[12px] font-bold text-white backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-amber-400/85 hover:text-black sm:inline-flex"
+            aria-label="Ouvrir la visite plein écran"
+            className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-amber-400/85 hover:text-black"
           >
-            <Video className="size-3.5" />
-            Explorer en 360°
+            <Maximize2 className="size-3" />
+            Voir toutes ({group.rooms.length})
           </button>
         )}
 
-        {/* Bottom-left: availability pill */}
-        <div className="pointer-events-none absolute bottom-3 left-3 z-10">
+        {/* Top-right: availability pill (moved here so it doesn't collide with the gallery toggle) */}
+        <div className="pointer-events-none absolute right-3 top-12 z-10">
           <AvailabilityPill count={availableCount} total={totalCount} />
         </div>
       </div>
