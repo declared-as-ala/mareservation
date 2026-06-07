@@ -181,6 +181,7 @@ export async function resetAdminTablePlacements(venueId: string): Promise<void> 
 
 export interface VirtualScene {
   _id: string;
+  roomId?: string | null;
   name: string;
   description?: string;
   image: string;
@@ -194,6 +195,8 @@ export interface VirtualHotspot {
   label: string;
   xPercent: number;
   yPercent: number;
+  yaw?: number;
+  pitch?: number;
 }
 
 export async function fetchVenueScenes(

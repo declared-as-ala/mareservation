@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 
@@ -17,8 +15,6 @@ import {
   Eye,
   Crown,
   Video,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   CheckCircle2,
   XCircle,
@@ -45,106 +41,8 @@ export interface RoomTypeGroup {
 interface RoomTypeCardProps {
   group: RoomTypeGroup;
   nights: number;
-  onReserve: (group: RoomTypeGroup) => void;
   onView360: (group: RoomTypeGroup) => void;
   className?: string;
-}
-
-/* ── Image carousel with swipe (mobile) + arrows (desktop) ── */
-function GalleryCarousel({ images, alt }: { images: string[]; alt: string }) {
-  const [idx, setIdx] = useState(0);
-  const total = images.length;
-
-  if (total === 0) {
-    return (
-      <div className="flex h-full items-center justify-center bg-white/[0.03]">
-        <BedDouble className="size-12 text-neutral-700" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="group/carousel relative h-full" {...swipeHandlers(setIdx, total)}>
-      <Image
-        src={images[idx]}
-        alt={alt}
-        fill
-        className="object-cover transition-all duration-500"
-        sizes="(max-width: 768px) 100vw, 50vw"
-        priority={idx === 0}
-      />
-      {/* Soft gradient for text legibility */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
-
-      {total > 1 && (
-        <>
-          {/* Desktop arrows — hidden on touch by default */}
-          <button
-            type="button"
-            aria-label="Photo précédente"
-            onClick={(e) => {
-              e.preventDefault();
-              setIdx((i) => (i - 1 + total) % total);
-            }}
-            className="absolute left-3 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-sm transition-all hover:bg-black/80 group-hover/carousel:flex md:flex"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Photo suivante"
-            onClick={(e) => {
-              e.preventDefault();
-              setIdx((i) => (i + 1) % total);
-            }}
-            className="absolute right-3 top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-sm transition-all hover:bg-black/80 group-hover/carousel:flex md:flex"
-          >
-            <ChevronRight className="size-4" />
-          </button>
-
-          {/* Dots */}
-          <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Image ${i + 1}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIdx(i);
-                }}
-                className={cn(
-                  'h-1.5 rounded-full transition-all duration-200',
-                  i === idx ? 'w-5 bg-amber-400' : 'w-1.5 bg-white/45 hover:bg-white/70'
-                )}
-              />
-            ))}
-          </div>
-
-          {/* Image count chip */}
-          <div className="absolute bottom-3 right-3 rounded-full border border-white/15 bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white/85 backdrop-blur-sm">
-            {idx + 1} / {total}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* Lightweight swipe handlers for touch carousels */
-function swipeHandlers(setIdx: (fn: (i: number) => number) => void, total: number) {
-  let startX = 0;
-  return {
-    onTouchStart: (e: React.TouchEvent) => {
-      startX = e.touches[0].clientX;
-    },
-    onTouchEnd: (e: React.TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - startX;
-      if (Math.abs(dx) < 30) return;
-      if (dx < 0) setIdx((i) => (i + 1) % total);
-      else setIdx((i) => (i - 1 + total) % total);
-    },
-  };
 }
 
 /* ── Availability pill ── */
@@ -177,14 +75,13 @@ function AvailabilityPill({ count, total }: { count: number; total: number }) {
 }
 
 /* ── Main card ── */
-export function RoomTypeCard({ group, nights, onReserve, onView360, className }: RoomTypeCardProps) {
+export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCardProps) {
   const {
     roomType,
     representativeRoom: rep,
     minPrice,
     availableCount,
     totalCount,
-    combinedGallery,
     hasVirtualTour,
     aggregatedAmenities,
     hasBalcony,
@@ -210,7 +107,12 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
   }
   let panoramaImageUrl: string | null = null;
   let tourEmbedUrl: string | null = null;
+  let totalTourSceneCount = 0;
   for (const r of group.rooms) {
+    totalTourSceneCount += r.tourScenes?.length ?? 0;
+    if (!panoramaImageUrl && r.tourScenes && r.tourScenes.length > 0) {
+      panoramaImageUrl = r.tourScenes[0].image;
+    }
     if (!panoramaImageUrl && r.panoramicImages && r.panoramicImages.length > 0) {
       panoramaImageUrl = r.panoramicImages[0];
     }
@@ -223,12 +125,6 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
     if (panoramaImageUrl && tourEmbedUrl) break;
   }
   const hasInlinePanorama = !!panoramaImageUrl || !!tourEmbedUrl;
-
-  // Default to 360° when the type has a panorama — the whole point is that
-  // the customer arrives and immediately sees the rotatable scene.
-  const [galleryMode, setGalleryMode] = useState<'photo' | '360'>(
-    hasInlinePanorama ? '360' : 'photo'
-  );
 
   return (
     <motion.article
@@ -246,9 +142,9 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
         className
       )}
     >
-      {/* ── Gallery area ── */}
+      {/* ── Room 360 area ── */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 sm:aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
-        {galleryMode === '360' && panoramaImageUrl ? (
+        {panoramaImageUrl ? (
           <div className="absolute inset-0">
             <PanoramaEngine
               imageUrl={panoramaImageUrl}
@@ -260,7 +156,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
               onMarkerClick={() => undefined}
             />
           </div>
-        ) : galleryMode === '360' && tourEmbedUrl ? (
+        ) : tourEmbedUrl ? (
           <iframe
             src={tourEmbedUrl}
             title={`Visite 360° — ${typeLabel}`}
@@ -269,7 +165,15 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
             allowFullScreen
           />
         ) : (
-          <GalleryCarousel images={combinedGallery} alt={typeLabel} />
+          <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-white/[0.03] to-transparent px-6 text-center">
+            <Video className="size-12 text-neutral-700" />
+            <div>
+              <p className="text-sm font-semibold text-neutral-400">Visite 360° non publiée</p>
+              <p className="mt-1 text-xs text-neutral-600">
+                Cette chambre ne dispose pas encore d&apos;une visite immersive.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Top-left: type label */}
@@ -297,39 +201,15 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
           )}
         </div>
 
-        {/* Photo / 360° toggle pill (bottom-left of gallery) */}
         {hasInlinePanorama && (
-          <div className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-0.5 rounded-full border border-white/15 bg-black/70 p-0.5 backdrop-blur-md">
-            <button
-              type="button"
-              onClick={() => setGalleryMode('photo')}
-              className={cn(
-                'rounded-full px-3 py-1 text-[11px] font-bold transition-all',
-                galleryMode === 'photo'
-                  ? 'bg-white text-black'
-                  : 'text-white/70 hover:text-white'
-              )}
-            >
-              Photos
-            </button>
-            <button
-              type="button"
-              onClick={() => setGalleryMode('360')}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold transition-all',
-                galleryMode === '360'
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-[0_4px_14px_rgba(245,158,11,0.45)]'
-                  : 'text-amber-300 hover:text-amber-200'
-              )}
-            >
-              <Video className="size-3" />
-              360°
-            </button>
+          <div className="pointer-events-none absolute bottom-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-black/70 px-3 py-1.5 text-[11px] font-bold text-amber-300 backdrop-blur-md">
+            <Video className="size-3" />
+            Visite 360°
           </div>
         )}
 
         {/* Plein écran button when 360 — opens the multi-room scene viewer */}
-        {hasInlinePanorama && galleryMode === '360' && group.rooms.length > 1 && (
+        {hasInlinePanorama && (group.rooms.length > 1 || totalTourSceneCount > 1) && (
           <button
             type="button"
             onClick={() => onView360(group)}
@@ -403,7 +283,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Price + CTA row */}
+        {/* Price + 360 tour row */}
         <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-3.5 sm:flex-row sm:items-end sm:justify-between sm:gap-2">
           <div>
             <div className="text-[10px] font-medium uppercase tracking-wider text-neutral-600">
@@ -429,19 +309,6 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
                 <span className="sm:hidden">360°</span>
               </button>
             )}
-            <button
-              type="button"
-              disabled={!isAvailable}
-              onClick={() => isAvailable && onReserve(group)}
-              className={cn(
-                'inline-flex h-11 min-w-[120px] items-center justify-center gap-1.5 rounded-2xl px-5 text-[13px] font-bold transition-all active:scale-95',
-                isAvailable
-                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(245,158,11,0.45)]'
-                  : 'cursor-not-allowed bg-white/[0.05] text-neutral-600'
-              )}
-            >
-              {isAvailable ? `Réserver ${typeLabel}` : 'Complet'}
-            </button>
           </div>
         </div>
       </div>

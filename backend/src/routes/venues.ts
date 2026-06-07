@@ -26,6 +26,51 @@ async function findVenueId(idOrSlug: string) {
   return venue ? (venue as any)._id : null;
 }
 
+async function attachRoomTours(rooms: any[]) {
+  if (!rooms.length) return rooms;
+
+  const roomIds = rooms.map((room) => room._id);
+  const scenes = await Scene.find({ roomId: { $in: roomIds }, isActive: true })
+    .sort({ order: 1, createdAt: 1 })
+    .lean();
+  const sceneIds = scenes.map((scene) => scene._id);
+  const hotspots = sceneIds.length
+    ? await TourHotspot.find({
+        virtualTourId: { $in: sceneIds },
+        targetType: 'scene',
+        isActive: true,
+      }).lean()
+    : [];
+
+  const scenesByRoom = new Map<string, any[]>();
+  const hotspotsByScene = new Map<string, any[]>();
+
+  for (const scene of scenes) {
+    const key = String((scene as any).roomId);
+    scenesByRoom.set(key, [...(scenesByRoom.get(key) ?? []), scene]);
+  }
+  for (const hotspot of hotspots) {
+    const key = String((hotspot as any).virtualTourId);
+    hotspotsByScene.set(key, [...(hotspotsByScene.get(key) ?? []), hotspot]);
+  }
+
+  return rooms.map((room) => {
+    const tourScenes = scenesByRoom.get(String(room._id)) ?? [];
+    const tourHotspots = tourScenes.flatMap((scene) => hotspotsByScene.get(String(scene._id)) ?? []);
+    return {
+      ...room,
+      hasVirtualTour: Boolean(
+        room.hasVirtualTour ||
+        room.virtualTourUrl ||
+        room.panoramicImages?.length ||
+        tourScenes.length
+      ),
+      tourScenes,
+      tourHotspots,
+    };
+  });
+}
+
 // GET /api/v1/venues/:id/virtual-tours — list virtual tours for a venue
 router.get('/:id/virtual-tours', async (req, res) => {
   try {
@@ -159,7 +204,8 @@ router.get('/:id/rooms', async (req, res) => {
     const venueId = await findVenueId(req.params.id);
     if (!venueId) return res.status(404).json({ error: 'Lieu non trouvé' });
 
-    const rooms = await Room.find({ venueId, isActive: true }).sort({ roomNumber: 1 }).lean();
+    const roomRows = await Room.find({ venueId, isActive: true }).sort({ roomNumber: 1 }).lean();
+    const rooms = await attachRoomTours(roomRows as any[]);
 
     const { startAt, endAt } = req.query;
     if (startAt && endAt) {
@@ -185,6 +231,34 @@ router.get('/:id/rooms', async (req, res) => {
   } catch (error) {
     console.error('Error fetching venue rooms:', error);
     res.status(500).json({ error: 'Erreur lors du chargement des chambres.' });
+  }
+});
+
+// GET /api/v1/venues/:idOrSlug/rooms/:roomId/scenes - public room-level 360 tour
+router.get('/:id/rooms/:roomId/scenes', async (req, res) => {
+  try {
+    const venueId = await findVenueId(req.params.id);
+    if (!venueId) return res.status(404).json({ error: 'Lieu non trouve' });
+
+    const room = await Room.findOne({ _id: req.params.roomId, venueId, isActive: true }).select('_id').lean();
+    if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+
+    const scenes = await Scene.find({ roomId: room._id, isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    const sceneIds = scenes.map((scene) => scene._id);
+    const hotspots = sceneIds.length
+      ? await TourHotspot.find({
+          virtualTourId: { $in: sceneIds },
+          targetType: 'scene',
+          isActive: true,
+        }).lean()
+      : [];
+
+    res.json({ scenes, hotspots });
+  } catch (error) {
+    console.error('Error fetching room scenes:', error);
+    res.status(500).json({ error: 'Erreur lors du chargement de la visite de la chambre.' });
   }
 });
 
@@ -358,8 +432,9 @@ router.get('/:id', async (req, res) => {
       : [];
 
     const { startAt, endAt } = req.query;
+    const roomsWithTours = await attachRoomTours(rooms as any[]);
     let tablesWithStatus = (tables as any[]).map((t) => ({ ...t, status: 'available' as string }));
-    let roomsWithStatus = (rooms as any[]).map((r) => ({ ...r, status: 'available' as string }));
+    let roomsWithStatus = roomsWithTours.map((r) => ({ ...r, status: 'available' as string }));
     let seatsWithStatus = (seats as any[]).map((s) => ({ ...s, status: 'available' as string }));
 
     if (startAt && endAt) {
@@ -377,7 +452,7 @@ router.get('/:id', async (req, res) => {
         ...t,
         status: reservedTableIds.has(t._id.toString()) ? 'reserved' : 'available',
       }));
-      roomsWithStatus = (rooms as any[]).map((r) => ({
+      roomsWithStatus = roomsWithTours.map((r) => ({
         ...r,
         status: reservedRoomIds.has(r._id.toString()) ? 'reserved' : 'available',
       }));

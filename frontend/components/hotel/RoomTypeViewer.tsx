@@ -16,7 +16,7 @@ import {
   Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { HotelRoom } from '@/lib/api/types';
+import type { HotelRoom, HotelTourHotspot } from '@/lib/api/types';
 import { ROOM_TYPE_LABELS } from '@/lib/api/rooms';
 import type { RoomTypeGroup } from './RoomTypeCard';
 
@@ -28,39 +28,64 @@ const PanoramaEngine = dynamic(
 interface SceneEntry {
   _id: string;
   name: string;
-  image: string;
+  description?: string;
+  image?: string;
+  embedUrl?: string;
   room: HotelRoom;
+  hotspots: HotelTourHotspot[];
 }
 
 interface RoomTypeViewerProps {
   group: RoomTypeGroup | null;
   open: boolean;
   onClose: () => void;
-  onReserve: (group: RoomTypeGroup) => void;
 }
 
-function getRoomPanorama(r: HotelRoom): string | null {
-  if (r.virtualTourUrl) return r.virtualTourUrl;
-  if (r.panoramicImages && r.panoramicImages.length > 0) return r.panoramicImages[0];
-  return null;
+function isPanoramaImage(url?: string): url is string {
+  if (!url) return false;
+  const value = url.toLowerCase();
+  return ['.jpg', '.jpeg', '.png', '.webp'].some((extension) => value.includes(extension));
 }
 
-export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeViewerProps) {
+export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
   const scenes: SceneEntry[] = useMemo(() => {
     if (!group) return [];
-    return group.rooms
-      .map((r) => {
-        const img = getRoomPanorama(r);
-        return img
-          ? {
-              _id: r._id,
-              name: r.name ?? `Chambre ${r.roomNumber}`,
-              image: img,
-              room: r,
-            }
-          : null;
-      })
-      .filter(Boolean) as SceneEntry[];
+    return group.rooms.flatMap((room) => {
+      const roomName = room.name ?? `Chambre ${room.roomNumber}`;
+      if (room.tourScenes?.length) {
+        return room.tourScenes.map((scene) => ({
+          _id: scene._id,
+          name: `${roomName} - ${scene.name}`,
+          description: scene.description,
+          image: scene.image,
+          room,
+          hotspots: room.tourHotspots ?? [],
+        }));
+      }
+
+      const legacyImages = [...(room.panoramicImages ?? [])];
+      if (isPanoramaImage(room.virtualTourUrl) && !legacyImages.includes(room.virtualTourUrl)) {
+        legacyImages.push(room.virtualTourUrl);
+      }
+      const entries: SceneEntry[] = legacyImages.map((image, index) => ({
+        _id: `${room._id}-panorama-${index}`,
+        name: legacyImages.length > 1 ? `${roomName} - vue ${index + 1}` : roomName,
+        description: undefined,
+        image,
+        room,
+        hotspots: [] as HotelTourHotspot[],
+      }));
+      if (room.virtualTourUrl && !isPanoramaImage(room.virtualTourUrl)) {
+        entries.push({
+          _id: `${room._id}-embedded-tour`,
+          name: roomName,
+          embedUrl: room.virtualTourUrl,
+          room,
+          hotspots: [],
+        });
+      }
+      return entries;
+    });
   }, [group]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -108,6 +133,15 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
   const activeScene = scenes.find((s) => s._id === activeId) ?? scenes[0];
   const activeImage = activeScene?.image;
   const activeRoom = activeScene?.room;
+  const activeHotspots = (activeScene?.hotspots ?? []).filter(
+    (hotspot) => hotspot.virtualTourId === activeScene?._id
+  );
+  const navHotspots = activeHotspots.map((hotspot) => ({
+    id: hotspot._id,
+    label: hotspot.label,
+    yaw: hotspot.yaw ?? ((hotspot.xPercent / 100) - 0.5) * Math.PI * 2,
+    pitch: hotspot.pitch ?? (0.5 - (hotspot.yPercent / 100)) * Math.PI,
+  }));
 
   return (
     <AnimatePresence>
@@ -141,7 +175,7 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
                   Visite 360°
                 </span>
                 <span className="truncate text-sm font-semibold text-white">
-                  {activeRoom?.name ?? `Chambre ${activeRoom?.roomNumber}`}
+                  {activeScene?.name ?? activeRoom?.name ?? `Chambre ${activeRoom?.roomNumber}`}
                 </span>
               </div>
             </div>
@@ -165,9 +199,24 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
                   imageUrl={activeImage}
                   markers={[]}
                   mode="navigate"
-                  scenes={scenes.map(({ _id, name, image }) => ({ _id, name, image }))}
+                  scenes={scenes
+                    .filter((scene): scene is SceneEntry & { image: string } => !!scene.image)
+                    .map(({ _id, name, image }) => ({ _id, name, image }))}
                   activeSceneId={activeId}
                   onSceneChange={(id) => setActiveId(id)}
+                  navHotspots={navHotspots}
+                  onNavHotspotClick={(hotspotId) => {
+                    const hotspot = activeHotspots.find((item) => item._id === hotspotId);
+                    if (hotspot) setActiveId(hotspot.targetId);
+                  }}
+                />
+              ) : activeScene?.embedUrl ? (
+                <iframe
+                  src={activeScene.embedUrl}
+                  title={`Visite 360° - ${activeScene.name}`}
+                  className="h-full w-full border-0"
+                  allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+                  allowFullScreen
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-neutral-600">
@@ -264,7 +313,7 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
                 {scenes.length > 1 && (
                   <div className="border-t border-white/[0.06] p-3 sm:p-4">
                     <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
-                      Autres chambres de ce type ({scenes.length})
+                      Autres vues 360 de ce type ({scenes.length})
                     </p>
                     <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                       {scenes.map((s) => (
@@ -280,13 +329,19 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
                               : 'border-white/[0.08] hover:border-white/25'
                           )}
                         >
-                          <Image
-                            src={s.image}
-                            alt={s.name}
-                            fill
-                            sizes="96px"
-                            className="object-cover"
-                          />
+                          {s.image ? (
+                            <Image
+                              src={s.image}
+                              alt={s.name}
+                              fill
+                              sizes="96px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center bg-white/[0.04]">
+                              <Video className="size-6 text-amber-400/70" />
+                            </div>
+                          )}
                           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                           <div className="pointer-events-none absolute inset-x-1 bottom-1 truncate text-[9px] font-semibold text-white">
                             {s.name}
@@ -297,35 +352,6 @@ export function RoomTypeViewer({ group, open, onClose, onReserve }: RoomTypeView
                   </div>
                 )}
 
-                {/* Sticky CTA */}
-                <div className="mt-auto border-t border-white/[0.06] bg-[#0B0B0B] p-4 sm:p-5">
-                  <div className="mb-2 flex items-baseline justify-between">
-                    <span className="text-[11px] uppercase tracking-wider text-neutral-500">
-                      À partir de
-                    </span>
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-serif text-xl font-black text-amber-400">
-                        {group.minPrice.toLocaleString('fr-TN')} DT
-                      </span>
-                      <span className="text-[11px] text-neutral-500">/ nuit</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={group.availableCount === 0}
-                    onClick={() => onReserve(group)}
-                    className={cn(
-                      'flex h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-sm font-bold transition-all active:scale-95',
-                      group.availableCount > 0
-                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] hover:-translate-y-0.5'
-                        : 'cursor-not-allowed bg-white/[0.05] text-neutral-600'
-                    )}
-                  >
-                    {group.availableCount > 0
-                      ? `Réserver une ${typeLabel}`
-                      : 'Type complet'}
-                  </button>
-                </div>
               </div>
             </aside>
           </div>

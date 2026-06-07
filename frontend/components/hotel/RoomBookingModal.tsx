@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -342,6 +342,7 @@ interface RoomBookingModalProps {
   onClose: () => void;
   initialCheckIn?: Date;
   initialCheckOut?: Date;
+  initialGuests?: number;
 }
 
 export function RoomBookingModal({
@@ -351,6 +352,7 @@ export function RoomBookingModal({
   onClose,
   initialCheckIn,
   initialCheckOut,
+  initialGuests = 1,
 }: RoomBookingModalProps) {
   const router = useRouter();
   const { user, hasHydrated, isResolving } = useAuthStore();
@@ -358,7 +360,7 @@ export function RoomBookingModal({
 
   const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn ?? null);
   const [checkOut, setCheckOut] = useState<Date | null>(initialCheckOut ?? null);
-  const [guests, setGuests] = useState(1);
+  const [guests, setGuests] = useState(initialGuests);
   const [step, setStep] = useState<'dates' | 'guest-info' | 'confirm'>('dates');
   const [loading, setLoading] = useState(false);
   const [guestInfo, setGuestInfo] = useState({
@@ -378,13 +380,15 @@ export function RoomBookingModal({
   const total = subtotal + taxes;
 
   // Reset on open
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
-      setStep('dates');
+      setCheckIn(initialCheckIn ?? null);
+      setCheckOut(initialCheckOut ?? null);
+      setGuests(initialGuests);
+      setStep(initialCheckIn && initialCheckOut ? 'guest-info' : 'dates');
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, initialCheckIn, initialCheckOut, initialGuests]);
 
   async function handleAddToCart() {
     if (!checkIn || !checkOut) return;

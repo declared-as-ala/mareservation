@@ -401,6 +401,20 @@ async function deleteSceneAndRelations(sceneId: string) {
     TourHotspot.deleteMany({ virtualTourId: sceneId }),
     TourHotspot.deleteMany({ targetType: 'scene', targetId: sceneId }),
   ]);
+  if (scene.roomId) {
+    const [remainingScenes, room] = await Promise.all([
+      Scene.countDocuments({ roomId: scene.roomId, isActive: true }),
+      Room.findById(scene.roomId),
+    ]);
+    if (room) {
+      room.hasVirtualTour = Boolean(
+        remainingScenes ||
+        room.virtualTourUrl ||
+        room.panoramicImages?.length
+      );
+      await room.save();
+    }
+  }
   return scene;
 }
 
@@ -599,7 +613,25 @@ router.patch('/hotels/:id', async (req, res) => {
 router.get('/hotels/:id/rooms', async (req, res) => {
   try {
     const rooms = await Room.find({ venueId: req.params.id }).sort({ roomNumber: 1 }).lean();
-    res.json({ success: true, rooms });
+    const sceneRoomIds = new Set(
+      (await Scene.distinct('roomId', {
+        venueId: req.params.id,
+        roomId: { $ne: null },
+        isActive: true,
+      })).filter(Boolean).map(String)
+    );
+    res.json({
+      success: true,
+      rooms: rooms.map((room: any) => ({
+        ...room,
+        hasVirtualTour: Boolean(
+          room.hasVirtualTour ||
+          room.virtualTourUrl ||
+          room.panoramicImages?.length ||
+          sceneRoomIds.has(String(room._id))
+        ),
+      })),
+    });
   } catch (error) {
     console.error('Error fetching admin hotel rooms:', error);
     res.status(500).json({ error: 'Erreur de chargement des chambres.' });
@@ -628,8 +660,17 @@ router.post('/hotels/:id/rooms', async (req, res) => {
       bedType: req.body?.bedType,
       pricePerNight: req.body?.pricePerNight ?? 0,
       surface: req.body?.surface,
+      floor: req.body?.floor,
+      view: req.body?.view,
       description: req.body?.description,
+      bathroomType: req.body?.bathroomType,
       amenities: Array.isArray(req.body?.amenities) ? req.body.amenities : [],
+      services: Array.isArray(req.body?.services) ? req.body.services : [],
+      isVip: !!req.body?.isVip,
+      hasBalcony: !!req.body?.hasBalcony,
+      smokingAllowed: !!req.body?.smokingAllowed,
+      minimumNights: req.body?.minimumNights,
+      defaultStatus: req.body?.defaultStatus,
       coverImage: req.body?.coverImage,
       gallery: Array.isArray(req.body?.gallery) ? req.body.gallery : [],
       panoramicImages: Array.isArray(req.body?.panoramicImages) ? req.body.panoramicImages : [],
@@ -653,7 +694,9 @@ router.patch('/hotels/:id/rooms/:roomId', async (req, res) => {
     if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
     const allowed = [
       'name', 'roomType', 'capacity', 'capacityAdults', 'capacityChildren',
-      'bedType', 'pricePerNight', 'surface', 'description', 'amenities',
+      'bedType', 'pricePerNight', 'surface', 'floor', 'view', 'description',
+      'bathroomType', 'amenities', 'services', 'isVip', 'hasBalcony',
+      'smokingAllowed', 'minimumNights', 'defaultStatus',
       'coverImage', 'gallery', 'panoramicImages', 'virtualTourUrl', 'hasVirtualTour',
       'isActive', 'isReservable',
     ];
@@ -661,8 +704,11 @@ router.patch('/hotels/:id/rooms/:roomId', async (req, res) => {
       if (key in (req.body ?? {})) (room as any)[key] = (req.body as any)[key];
     }
     if ('panoramicImages' in (req.body ?? {}) || 'virtualTourUrl' in (req.body ?? {})) {
-      (room as any).hasVirtualTour = !!(
-        ((req.body as any).panoramicImages?.length) || (req.body as any).virtualTourUrl
+      const hasScenes = await Scene.exists({ roomId: room._id, isActive: true });
+      (room as any).hasVirtualTour = Boolean(
+        (room as any).panoramicImages?.length ||
+        (room as any).virtualTourUrl ||
+        hasScenes
       );
     }
     await room.save();
@@ -678,6 +724,8 @@ router.delete('/hotels/:id/rooms/:roomId', async (req, res) => {
   try {
     const room = await Room.findOneAndDelete({ _id: req.params.roomId, venueId: req.params.id });
     if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
+    const scenes = await Scene.find({ roomId: req.params.roomId }).select('_id').lean();
+    await Promise.all(scenes.map((scene) => deleteSceneAndRelations(String(scene._id))));
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting room:', error);
@@ -692,11 +740,22 @@ router.patch('/rooms/:roomId', async (req, res) => {
     if (!room) return res.status(404).json({ error: 'Chambre introuvable.' });
     const allowed = [
       'name', 'roomType', 'capacity', 'capacityAdults', 'capacityChildren',
-      'bedType', 'pricePerNight', 'amenities', 'coverImage', 'gallery',
+      'bedType', 'pricePerNight', 'surface', 'floor', 'view', 'description',
+      'bathroomType', 'amenities', 'services', 'isVip', 'hasBalcony',
+      'smokingAllowed', 'minimumNights', 'defaultStatus',
+      'coverImage', 'gallery', 'panoramicImages', 'virtualTourUrl', 'hasVirtualTour',
       'isActive', 'isReservable',
     ];
     for (const key of allowed) {
       if (key in (req.body ?? {})) (room as any)[key] = (req.body as any)[key];
+    }
+    if ('panoramicImages' in (req.body ?? {}) || 'virtualTourUrl' in (req.body ?? {})) {
+      const hasScenes = await Scene.exists({ roomId: room._id, isActive: true });
+      (room as any).hasVirtualTour = Boolean(
+        (room as any).virtualTourUrl ||
+        (room as any).panoramicImages?.length ||
+        hasScenes
+      );
     }
     await room.save();
     res.json({ success: true, data: room });
@@ -836,6 +895,7 @@ router.post('/rooms/:roomId/scenes', async (req, res) => {
       order: Number(order || 0),
       isActive: true,
     });
+    await Room.findByIdAndUpdate(req.params.roomId, { $set: { hasVirtualTour: true } });
     res.status(201).json({ success: true, data: scene });
   } catch (error) {
     console.error('Error creating room scene:', error);
@@ -882,6 +942,12 @@ router.post('/scene-hotspots', async (req, res) => {
       isActive: true,
     });
     if (sceneCount !== 2) return res.status(404).json({ error: 'Scène source ou destination introuvable.' });
+    const resolvedYaw = yaw == null
+      ? ((Number(xPercent) / 100) - 0.5) * Math.PI * 2
+      : Number(yaw);
+    const resolvedPitch = pitch == null
+      ? (0.5 - (Number(yPercent) / 100)) * Math.PI
+      : Number(pitch);
     const hotspot = await TourHotspot.create({
       venueId,
       virtualTourId: sceneId,
@@ -890,8 +956,8 @@ router.post('/scene-hotspots', async (req, res) => {
       label: String(label).trim(),
       xPercent: Number(xPercent),
       yPercent: Number(yPercent),
-      yaw: yaw == null ? undefined : Number(yaw),
-      pitch: pitch == null ? undefined : Number(pitch),
+      yaw: resolvedYaw,
+      pitch: resolvedPitch,
       isActive: true,
     });
     res.status(201).json({ success: true, data: hotspot });

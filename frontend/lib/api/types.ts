@@ -241,6 +241,8 @@ export interface HotelRoom {
   hasVirtualTour?: boolean;
   virtualTourUrl?: string;
   panoramicImages?: string[];
+  tourScenes?: Scene[];
+  tourHotspots?: HotelTourHotspot[];
   defaultStatus?: 'available' | 'reserved' | 'blocked';
   /** Dynamically computed when fetched with availability window */
   status?: 'available' | 'reserved' | 'blocked';
@@ -290,12 +292,24 @@ export interface HotelSearchFilters {
 export interface Scene {
   _id: string;
   venueId: string;
+  roomId?: string | null;
   name: string;
   description?: string;
   image: string;
   order: number;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface HotelTourHotspot {
+  _id: string;
+  virtualTourId: string;
+  targetId: string;
+  label: string;
+  xPercent: number;
+  yPercent: number;
+  yaw?: number;
+  pitch?: number;
 }
 
 export interface Category {

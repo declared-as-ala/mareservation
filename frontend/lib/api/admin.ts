@@ -557,11 +557,16 @@ export interface AdminHotelRoom {
   description?: string;
   bathroomType?: string;
   amenities: string[];
+  services?: string[];
   isActive: boolean;
   isReservable: boolean;
   isVip?: boolean;
   hasBalcony?: boolean;
+  smokingAllowed?: boolean;
+  minimumNights?: number;
+  defaultStatus?: 'available' | 'reserved' | 'blocked';
   hasVirtualTour?: boolean;
+  virtualTourUrl?: string;
   status?: 'available' | 'reserved' | 'blocked';
   coverImage?: string;
   gallery?: string[];
@@ -589,6 +594,7 @@ export interface AdminHotelBooking {
 export interface AdminHotelScene {
   _id: string;
   venueId: string;
+  roomId?: string | null;
   name: string;
   description?: string;
   image: string;

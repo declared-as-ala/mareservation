@@ -31,8 +31,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { fetchVenueByIdOrSlug } from '@/lib/api/venues';
-import { fetchVenueRooms, getRoomNights } from '@/lib/api/rooms';
+import { fetchVenueByIdOrSlug, fetchVenueScenes } from '@/lib/api/venues';
+import { fetchVenueRooms, getRoomNights, ROOM_TYPE_LABELS } from '@/lib/api/rooms';
 import type { Venue, HotelRoom } from '@/lib/api/types';
 import { RoomBookingModal } from '@/components/hotel/RoomBookingModal';
 import { RoomTypeCard, type RoomTypeGroup } from '@/components/hotel/RoomTypeCard';
@@ -50,6 +50,11 @@ const PanoramaEngine = dynamic(
 
 const MatterportClientViewer = dynamic(
   () => import('@/components/immersive/MatterportClientViewer'),
+  { ssr: false }
+);
+
+const PanoramaTourViewer = dynamic(
+  () => import('@/components/immersive/PanoramaTourViewer').then((module) => ({ default: module.PanoramaTourViewer })),
   { ssr: false }
 );
 
@@ -171,11 +176,13 @@ function HotelHero({
   images,
   onBack,
   onOpenGallery,
+  onOpenTour,
 }: {
   venue: Venue;
   images: string[];
   onBack: () => void;
   onOpenGallery: (index: number) => void;
+  onOpenTour: () => void;
 }) {
   const cover = images[0];
   const thumbs = images.slice(1, 5);
@@ -268,9 +275,13 @@ function HotelHero({
                 <span>{[venue.address, venue.city].filter(Boolean).join(', ')}</span>
               </div>
               {venue.hasVirtualTour && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-300">
-                  <Video className="size-3" /> Visite 360°
-                </span>
+                <button
+                  type="button"
+                  onClick={onOpenTour}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/15 px-3 text-[11px] font-bold text-amber-300 backdrop-blur-sm transition-all hover:border-amber-400/60 hover:bg-amber-400/25"
+                >
+                  <Video className="size-3" /> Explorer en 360
+                </button>
               )}
             </div>
           </motion.div>
@@ -331,19 +342,35 @@ function HotelHero({
 
 interface BookingWidgetProps {
   startingPrice?: number;
-  /** Direct booking — caller picks an available room for these dates and opens the booking modal */
-  onBook: (checkIn: Date, checkOut: Date, guests: number) => void;
+  groups: RoomTypeGroup[];
+  checkIn: Date | null;
+  checkOut: Date | null;
+  guests: number;
+  selectedRoomType: string;
+  onCheckInChange: (date: Date | null) => void;
+  onCheckOutChange: (date: Date | null) => void;
+  onGuestsChange: (guests: number) => void;
+  onRoomTypeChange: (roomType: string) => void;
+  onBook: () => void;
 }
 
-function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
+function BookingWidget({
+  startingPrice,
+  groups,
+  checkIn,
+  checkOut,
+  guests,
+  selectedRoomType,
+  onCheckInChange,
+  onCheckOutChange,
+  onGuestsChange,
+  onRoomTypeChange,
+  onBook,
+}: BookingWidgetProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const [checkIn, setCheckIn] = useState<Date | null>(null);
-  const [checkOut, setCheckOut] = useState<Date | null>(null);
-  const [guests, setGuests] = useState(2);
 
   const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 0;
 
@@ -352,7 +379,11 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
       toast.error("Veuillez sélectionner vos dates d'arrivée et de départ.");
       return;
     }
-    onBook(checkIn, checkOut, guests);
+    if (!selectedRoomType) {
+      toast.error('Veuillez choisir un type de chambre ou de suite.');
+      return;
+    }
+    onBook();
   }
 
   return (
@@ -391,8 +422,8 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
               value={checkIn ? checkIn.toISOString().slice(0, 10) : ''}
               onChange={(e) => {
                 const d = e.target.value ? new Date(e.target.value) : null;
-                setCheckIn(d);
-                if (d && checkOut && checkOut <= d) setCheckOut(null);
+                onCheckInChange(d);
+                if (d && checkOut && checkOut <= d) onCheckOutChange(null);
               }}
               className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
             />
@@ -405,7 +436,7 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
               type="date"
               min={checkIn ? new Date(checkIn.getTime() + 86400000).toISOString().slice(0, 10) : tomorrow.toISOString().slice(0, 10)}
               value={checkOut ? checkOut.toISOString().slice(0, 10) : ''}
-              onChange={(e) => setCheckOut(e.target.value ? new Date(e.target.value) : null)}
+              onChange={(e) => onCheckOutChange(e.target.value ? new Date(e.target.value) : null)}
               className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
             />
           </div>
@@ -420,7 +451,7 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setGuests((g) => Math.max(1, g - 1))}
+              onClick={() => onGuestsChange(Math.max(1, guests - 1))}
               aria-label="Réduire"
               className="flex size-7 items-center justify-center rounded-full border border-white/[0.08] text-neutral-500 transition-all hover:border-white/20 hover:text-white disabled:opacity-30"
               disabled={guests <= 1}
@@ -430,13 +461,44 @@ function BookingWidget({ startingPrice, onBook }: BookingWidgetProps) {
             <span className="w-5 text-center text-sm font-semibold text-neutral-100">{guests}</span>
             <button
               type="button"
-              onClick={() => setGuests((g) => Math.min(10, g + 1))}
+              onClick={() => onGuestsChange(Math.min(10, guests + 1))}
               aria-label="Augmenter"
               className="flex size-7 items-center justify-center rounded-full border border-white/[0.08] text-neutral-500 transition-all hover:border-white/20 hover:text-white"
             >
               <Plus className="size-3.5" />
             </button>
           </div>
+        </div>
+
+        {/* Room or suite type */}
+        <div>
+          <label
+            htmlFor="hotel-room-type"
+            className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-neutral-600"
+          >
+            Chambre / Suite
+          </label>
+          <select
+            id="hotel-room-type"
+            value={selectedRoomType}
+            onChange={(event) => onRoomTypeChange(event.target.value)}
+            className="h-11 w-full rounded-xl border border-white/[0.08] bg-[#101010] px-3 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
+          >
+            <option value="">Choisir un type</option>
+            {groups.map((group) => {
+              const label = ROOM_TYPE_LABELS[group.roomType] ?? group.roomType;
+              const capacity = Math.max(
+                ...group.rooms.map((room) => room.capacityAdults ?? room.capacity ?? 1)
+              );
+              const unavailable = group.availableCount === 0 || capacity < guests;
+              return (
+                <option key={group.roomType} value={group.roomType} disabled={unavailable}>
+                  {label} · {group.minPrice.toLocaleString('fr-TN')} DT
+                  {unavailable ? ' · indisponible' : ''}
+                </option>
+              );
+            })}
+          </select>
         </div>
 
         {/* Nights label */}
@@ -476,12 +538,11 @@ export default function HotelDetailPage() {
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [guests, setGuests] = useState(2);
-  const [roomTypeFilter, setRoomTypeFilter] = useState('');
+  const [selectedRoomType, setSelectedRoomType] = useState('');
   const [roomSort, setRoomSort] = useState<'price' | 'capacity' | 'surface'>('price');
   const [selectedRoom, setSelectedRoom] = useState<HotelRoom | null>(null);
   const [viewerGroup, setViewerGroup] = useState<RoomTypeGroup | null>(null);
-  // Default tab: 'visite' for maisons d'hôte (360° first), 'rooms' for hotels
-  const [activeTab, setActiveTab] = useState<'overview' | 'rooms' | 'visite' | 'infos'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'visite' | 'infos'>('visite');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   const { data: venue, isLoading: venueLoading, error: venueError } = useQuery({
@@ -490,8 +551,14 @@ export default function HotelDetailPage() {
     enabled: !!slug,
   });
 
+  const { data: venueTour = { scenes: [], hotspots: [] } } = useQuery({
+    queryKey: ['hotel-tour', slug],
+    queryFn: () => fetchVenueScenes(slug),
+    enabled: !!slug,
+  });
+
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
-    queryKey: ['hotel-rooms', venue?._id, checkIn?.toISOString(), checkOut?.toISOString()],
+    queryKey: ['hotel-rooms', venue?._id, checkIn?.toISOString(), checkOut?.toISOString(), guests],
     queryFn: () =>
       fetchVenueRooms(venue!._id, {
         checkIn: checkIn?.toISOString(),
@@ -503,18 +570,10 @@ export default function HotelDetailPage() {
 
   const allImages = useMemo(() => (venue ? getAllImages(venue) : []), [venue]);
 
-  const filteredRooms = useMemo(
-    () =>
-      roomTypeFilter
-        ? rooms.filter((r) => r.roomType?.toUpperCase() === roomTypeFilter)
-        : rooms,
-    [rooms, roomTypeFilter]
-  );
-
   // ── Group rooms by roomType for premium type-level booking UX ──
   const roomTypeGroups = useMemo<RoomTypeGroup[]>(() => {
     const byType = new Map<string, HotelRoom[]>();
-    for (const r of filteredRooms) {
+    for (const r of rooms) {
       const key = (r.roomType ?? 'STANDARD').toUpperCase();
       const list = byType.get(key) ?? [];
       list.push(r);
@@ -555,7 +614,11 @@ export default function HotelDetailPage() {
         totalCount: sorted.length,
         combinedGallery: Array.from(gallerySet),
         hasVirtualTour: sorted.some(
-          (r) => !!r.hasVirtualTour || !!r.virtualTourUrl || (r.panoramicImages?.length ?? 0) > 0
+          (r) =>
+            !!r.hasVirtualTour ||
+            !!r.virtualTourUrl ||
+            (r.panoramicImages?.length ?? 0) > 0 ||
+            (r.tourScenes?.length ?? 0) > 0
         ),
         aggregatedAmenities: amenityIntersection ?? [],
         hasBalcony: sorted.some((r) => !!r.hasBalcony),
@@ -573,41 +636,41 @@ export default function HotelDetailPage() {
     });
 
     return groups;
-  }, [filteredRooms, roomSort]);
+  }, [rooms, roomSort]);
 
   const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 1;
 
   const hasRooms = rooms.length > 0;
-  const hasVirtualTour =
-    venue?.immersiveType &&
-    venue.immersiveType !== 'none' &&
-    ((venue.immersiveSourceType === 'url' && venue.immersiveUrl) ||
-      (venue.immersiveSourceType === 'upload' && venue.immersiveFile));
 
-  // Maisons d'hôte open on the 360° tab by default (immersive-first)
-  const isMaison = venue?.type === 'MAISON_DHOTE';
   useEffect(() => {
-    if (isMaison && hasVirtualTour) setActiveTab('visite');
-  }, [isMaison, hasVirtualTour]);
+    if (!selectedRoomType) return;
+    const selectedGroup = roomTypeGroups.find((group) => group.roomType === selectedRoomType);
+    const selectedCapacity = selectedGroup
+      ? Math.max(...selectedGroup.rooms.map((room) => room.capacityAdults ?? room.capacity ?? 0))
+      : 0;
+    if (selectedGroup && selectedGroup.availableCount > 0 && selectedCapacity >= guests) return;
 
-  function handleBookDirect(ci: Date, co: Date, g: number) {
-    setCheckIn(ci);
-    setCheckOut(co);
-    setGuests(g);
+    setSelectedRoomType('');
+  }, [roomTypeGroups, guests, selectedRoomType]);
 
-    // Pick the cheapest available room that fits the requested party size,
-    // then open the booking modal directly — ticketing-style flow.
+  function handleBookDirect() {
+    if (!checkIn || !checkOut || !selectedRoomType) {
+      toast.error('Veuillez compléter les dates et choisir une chambre ou une suite.');
+      return;
+    }
+
     const eligible = rooms
       .filter((r) =>
+        (r.roomType ?? 'STANDARD').toUpperCase() === selectedRoomType &&
         r.isReservable &&
         r.status !== 'reserved' &&
         r.status !== 'blocked' &&
-        (r.capacityAdults ?? r.capacity ?? 1) >= g
+        (r.capacityAdults ?? r.capacity ?? 1) >= guests
       )
       .sort((a, b) => a.pricePerNight - b.pricePerNight);
 
     if (eligible.length === 0) {
-      toast.error("Aucune chambre disponible pour cette taille de groupe ou ces dates.");
+      toast.error('Ce type de chambre est indisponible pour ces dates ou ce nombre de voyageurs.');
       setActiveTab('rooms');
       return;
     }
@@ -659,10 +722,16 @@ export default function HotelDetailPage() {
         images={allImages}
         onBack={() => router.back()}
         onOpenGallery={(i) => setLightboxIdx(i)}
+        onOpenTour={() => {
+          setActiveTab('visite');
+          setTimeout(() => {
+            document.getElementById('hotel-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
+        }}
       />
 
       {/* ── Two-column layout ── */}
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6 lg:py-10">
+      <div id="hotel-content" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-4 sm:py-6 lg:py-10">
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 lg:gap-8">
 
           {/* ── Left: Main content ── */}
@@ -672,9 +741,8 @@ export default function HotelDetailPage() {
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
               {(
                 [
-                  { id: 'rooms', label: `Chambres${hasRooms ? ` (${rooms.length})` : ''}` },
-                  ...(hasVirtualTour ? [{ id: 'visite', label: 'Visite 360°' }] : []),
-                  { id: 'overview', label: 'Aperçu' },
+                  { id: 'visite', label: 'Visite 360°' },
+                  { id: 'rooms', label: `Chambres / Suites${hasRooms ? ` (${rooms.length})` : ''}` },
                   { id: 'infos', label: 'Infos pratiques' },
                 ] as { id: string; label: string }[]
               ).map((tab) => (
@@ -702,107 +770,6 @@ export default function HotelDetailPage() {
 
             {/* ── Tab content ── */}
             <AnimatePresence mode="wait">
-              {activeTab === 'overview' && (
-                <motion.div
-                  key="overview"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-7"
-                >
-                  {/* Description */}
-                  {venue.description && (
-                    <div>
-                      <h2 className="mb-3 text-lg font-semibold text-neutral-200">
-                        À propos de l&apos;hôtel
-                      </h2>
-                      <p className="whitespace-pre-wrap leading-relaxed text-neutral-400">
-                        {venue.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Amenities */}
-                  <div>
-                    <h2 className="mb-3 text-lg font-semibold text-neutral-200">
-                      Équipements &amp; Services
-                    </h2>
-                    <HotelAmenitiesGrid
-                      amenities={[
-                        'Wi-Fi gratuit',
-                        'Piscine',
-                        'Parking',
-                        'Spa & bien-être',
-                        'Restaurant gastronomique',
-                        'Bar & lounge',
-                        'Salle de fitness',
-                        'Climatisation',
-                        'Conciergerie',
-                        'Room service 24h',
-                        'Petit-déjeuner buffet',
-                        'Blanchisserie',
-                      ]}
-                    />
-                  </div>
-
-                  {/* Check-in policies */}
-                  <div className="space-y-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
-                    <h2 className="flex items-center gap-2 text-sm font-semibold text-neutral-200">
-                      <Info className="size-4 text-amber-400" />
-                      Politiques de l&apos;établissement
-                    </h2>
-                    <div className="grid gap-4 text-sm sm:grid-cols-2">
-                      <div>
-                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
-                          <Clock className="size-3.5" /> Check-in
-                        </span>
-                        <span className="text-neutral-300">
-                          {venue.checkInPolicy ?? 'À partir de 14h00'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
-                          <Clock className="size-3.5" /> Check-out
-                        </span>
-                        <span className="text-neutral-300">
-                          {venue.checkOutPolicy ?? "Jusqu'à 12h00"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
-                          <Shield className="size-3.5" /> Annulation
-                        </span>
-                        <span className="text-neutral-300">
-                          {venue.cancellationPolicy ?? "Gratuite jusqu'à 24h avant l'arrivée"}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
-                          <Users className="size-3.5" /> Animaux
-                        </span>
-                        <span className="text-neutral-300">Non admis</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Map */}
-                  {(venue.address || venue.city) && (
-                    <div>
-                      <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-neutral-200">
-                        <MapPin className="size-4 text-amber-400" />
-                        Localisation
-                      </h2>
-                      <VenueMap
-                        address={venue.address ?? ''}
-                        city={venue.city ?? ''}
-                        coordinates={venue.coordinates}
-                      />
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
               {/* ── Rooms tab ── */}
               {activeTab === 'rooms' && (
                 <motion.div
@@ -841,7 +808,7 @@ export default function HotelDetailPage() {
                         <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/[0.08] px-2.5 py-0.5">
                           <Video className="size-3 text-amber-400" />
                           <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
-                            Photos & visites 360° par chambre
+                            Visites 360° par chambre
                           </span>
                         </div>
                         <h2 className="font-serif text-xl font-bold text-white sm:text-2xl">
@@ -893,24 +860,12 @@ export default function HotelDetailPage() {
                     <div className="flex flex-col items-center gap-4 py-14 text-center">
                       <BedDouble className="size-12 text-neutral-700" />
                       <h3 className="text-base font-semibold text-neutral-400">
-                        {rooms.length === 0
-                          ? 'Aucune chambre configurée'
-                          : 'Aucune chambre de ce type'}
+                        Aucune chambre configurée
                       </h3>
-                      {rooms.length === 0 ? (
-                        <p className="max-w-xs text-sm text-neutral-600">
-                          Les chambres de cet hôtel ne sont pas encore configurées.
-                          Réservez via le formulaire ou contactez l&apos;hôtel directement.
-                        </p>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setRoomTypeFilter('')}
-                          className="text-sm text-amber-400 hover:underline"
-                        >
-                          Voir tous les types
-                        </button>
-                      )}
+                      <p className="max-w-xs text-sm text-neutral-600">
+                        Les chambres de cet hôtel ne sont pas encore configurées.
+                        Contactez l&apos;hôtel directement pour connaître les disponibilités.
+                      </p>
                     </div>
                   ) : (
                     <AnimatePresence>
@@ -921,7 +876,6 @@ export default function HotelDetailPage() {
                             group={g}
                             nights={nights}
                             onView360={(grp) => setViewerGroup(grp)}
-                            onReserve={(grp) => setSelectedRoom(grp.representativeRoom)}
                           />
                         ))}
                       </div>
@@ -931,7 +885,7 @@ export default function HotelDetailPage() {
               )}
 
               {/* ── Visite 360° ── */}
-              {activeTab === 'visite' && hasVirtualTour && (
+              {activeTab === 'visite' && (
                 <motion.div
                   key="visite"
                   initial={{ opacity: 0, y: 8 }}
@@ -945,12 +899,19 @@ export default function HotelDetailPage() {
                       Visite virtuelle 360°
                     </h2>
                     <p className="text-sm text-neutral-500">
-                      Explorez l&apos;hôtel et ses chambres en immersion complète.
+                      Explorez les espaces de l&apos;hôtel en immersion complète.
                     </p>
                   </div>
 
                   <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30">
-                    {venue.immersiveProvider === 'matterport' && venue.immersiveUrl ? (
+                    {venueTour.scenes.length > 0 ? (
+                      <PanoramaTourViewer
+                        scenes={venueTour.scenes}
+                        hotspots={venueTour.hotspots}
+                        title={`Visite 360 - ${venue.name}`}
+                        className="h-full min-h-0 rounded-none border-0"
+                      />
+                    ) : venue.immersiveProvider === 'matterport' && venue.immersiveUrl ? (
                       <MatterportClientViewer
                         embedUrl={venue.immersiveUrl}
                         placements={[]}
@@ -974,7 +935,17 @@ export default function HotelDetailPage() {
                         className="h-full w-full"
                         allowFullScreen
                       />
-                    ) : null}
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                        <Video className="size-12 text-neutral-700" />
+                        <div>
+                          <p className="font-medium text-neutral-300">Visite 360° indisponible</p>
+                          <p className="mt-1 text-sm text-neutral-600">
+                            L&apos;hôtel n&apos;a pas encore publié sa visite virtuelle.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1014,6 +985,45 @@ export default function HotelDetailPage() {
                     )}
                   </dl>
 
+                  <div className="space-y-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold text-neutral-200">
+                      <Info className="size-4 text-amber-400" />
+                      Politiques de l&apos;établissement
+                    </h2>
+                    <div className="grid gap-4 text-sm sm:grid-cols-2">
+                      <div>
+                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
+                          <Clock className="size-3.5" /> Check-in
+                        </span>
+                        <span className="text-neutral-300">
+                          {venue.checkInPolicy ?? 'À partir de 14h00'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
+                          <Clock className="size-3.5" /> Check-out
+                        </span>
+                        <span className="text-neutral-300">
+                          {venue.checkOutPolicy ?? "Jusqu'à 12h00"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
+                          <Shield className="size-3.5" /> Annulation
+                        </span>
+                        <span className="text-neutral-300">
+                          {venue.cancellationPolicy ?? "Gratuite jusqu'à 24h avant l'arrivée"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="mb-1 flex items-center gap-1.5 text-neutral-600">
+                          <Users className="size-3.5" /> Animaux
+                        </span>
+                        <span className="text-neutral-300">Non admis</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Map */}
                   {(venue.address || venue.city) && (
                     <VenueMap
@@ -1032,8 +1042,47 @@ export default function HotelDetailPage() {
             <div className="lg:sticky lg:top-24">
               <BookingWidget
                 startingPrice={venue.startingPrice ?? venue.priceRangeMin}
+                groups={roomTypeGroups}
+                checkIn={checkIn}
+                checkOut={checkOut}
+                guests={guests}
+                selectedRoomType={selectedRoomType}
+                onCheckInChange={setCheckIn}
+                onCheckOutChange={setCheckOut}
+                onGuestsChange={setGuests}
+                onRoomTypeChange={setSelectedRoomType}
                 onBook={handleBookDirect}
               />
+
+              <section className="mt-5 space-y-6 rounded-3xl border border-white/[0.07] bg-gradient-to-br from-white/[0.035] to-transparent p-5">
+                {venue.description && (
+                  <div>
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+                      <Sparkles className="size-3" />
+                      Aperçu
+                    </div>
+                    <h2 className="mb-3 font-serif text-xl font-bold text-white">
+                      À propos de l&apos;hôtel
+                    </h2>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-400">
+                      {venue.description}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <h2 className="mb-3 text-sm font-semibold text-neutral-200">
+                    Équipements &amp; Services
+                  </h2>
+                  <HotelAmenitiesGrid
+                    amenities={
+                      venue.amenities?.length
+                        ? venue.amenities
+                        : ['Wi-Fi gratuit', 'Parking', 'Climatisation', 'Conciergerie']
+                    }
+                  />
+                </div>
+              </section>
 
               {/* Quick contact */}
               {venue.phone && (
@@ -1074,6 +1123,7 @@ export default function HotelDetailPage() {
           onClose={() => setSelectedRoom(null)}
           initialCheckIn={checkIn ?? undefined}
           initialCheckOut={checkOut ?? undefined}
+          initialGuests={guests}
         />
       )}
 
@@ -1082,49 +1132,7 @@ export default function HotelDetailPage() {
         group={viewerGroup}
         open={!!viewerGroup}
         onClose={() => setViewerGroup(null)}
-        onReserve={(g) => {
-          setViewerGroup(null);
-          setSelectedRoom(g.representativeRoom);
-        }}
       />
-
-      {/* ── Sticky mobile booking bar ── */}
-      {roomTypeGroups.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-[#0B0B0B]/95 px-4 py-3 backdrop-blur-md md:hidden">
-          <div className="flex items-center justify-between gap-3 pb-[max(0px,env(safe-area-inset-bottom))]">
-            <div className="min-w-0">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                À partir de
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="font-serif text-lg font-black text-amber-400">
-                  {(roomTypeGroups[0]?.minPrice ?? 0).toLocaleString('fr-TN')} DT
-                </span>
-                <span className="text-[10px] text-neutral-500">/ nuit</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                // Mobile fast-book: jump to the rooms tab if no dates yet, else book directly
-                if (checkIn && checkOut) {
-                  handleBookDirect(checkIn, checkOut, guests);
-                } else {
-                  setActiveTab('rooms');
-                  setTimeout(() => {
-                    document
-                      .getElementById('rooms-section')
-                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }, 50);
-                }
-              }}
-              className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-95"
-            >
-              Réserver
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

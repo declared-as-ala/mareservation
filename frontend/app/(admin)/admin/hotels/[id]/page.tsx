@@ -12,7 +12,7 @@ import {
   Crown, Eye, DollarSign, TrendingUp, CheckCircle2,
   Clock, XCircle, Upload, Building2, Wifi, Car,
   Waves, Bath, Square, Settings2, ImagePlus, Check,
-  ChevronRight, AlertCircle, RefreshCw, X,
+  ChevronRight, AlertCircle, RefreshCw, X, ScanLine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,7 @@ import {
   type AdminHotelBooking,
 } from '@/lib/api/admin';
 import { RoomEditorModal } from '@/components/admin/hotel/RoomEditorModal';
+import { RoomTourModal } from '@/components/admin/hotel/RoomTourModal';
 import { VirtualTourBuilder } from '@/components/admin/hotel/VirtualTourBuilder';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -70,7 +71,17 @@ function BookingStatusBadge({ status }: { status: string }) {
 
 // ── Room card (in grid) ────────────────────────────────────────────────────────
 
-function RoomGridCard({ room, onEdit, onDelete }: { room: AdminHotelRoom; onEdit: () => void; onDelete: () => void }) {
+function RoomGridCard({
+  room,
+  onEdit,
+  onDelete,
+  onTour,
+}: {
+  room: AdminHotelRoom;
+  onEdit: () => void;
+  onDelete: () => void;
+  onTour: () => void;
+}) {
   const typeLabel = ROOM_TYPE_LABELS[room.roomType] ?? room.roomType;
   return (
     <motion.div
@@ -158,6 +169,9 @@ function RoomGridCard({ room, onEdit, onDelete }: { room: AdminHotelRoom; onEdit
         <div className="flex gap-2 mt-auto pt-2 border-t border-zinc-800">
           <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px] border-zinc-700 text-zinc-400 hover:text-white rounded-lg" onClick={onEdit}>
             <Edit2 className="size-3 mr-1" /> Modifier
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 gap-1 px-2 border-purple-500/30 text-[11px] text-purple-300 hover:border-purple-400/50 hover:bg-purple-500/10 rounded-lg" onClick={onTour}>
+            <ScanLine className="size-3" /> 360
           </Button>
           <Button size="sm" variant="outline" className="h-7 px-2 border-zinc-700 text-red-500/60 hover:text-red-400 hover:border-red-500/30 rounded-lg" onClick={onDelete}>
             <Trash2 className="size-3" />
@@ -392,6 +406,7 @@ function HotelInfoTab({ hotel, onSaved }: { hotel: AdminHotel; onSaved: () => vo
 function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: AdminHotelRoom[]; onRefresh: () => void }) {
   const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null | 'new'>('void' as any);
   const [modalOpen, setModalOpen] = useState(false);
+  const [touringRoom, setTouringRoom] = useState<AdminHotelRoom | null>(null);
 
   const byType = ROOM_TYPE_LABELS;
   const sortedRooms = [...rooms].sort((a, b) => a.pricePerNight - b.pricePerNight);
@@ -469,6 +484,7 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
                 key={room._id}
                 room={room}
                 onEdit={() => { setEditingRoom(room); setModalOpen(true); }}
+                onTour={() => setTouringRoom(room)}
                 onDelete={() => handleDelete(room)}
               />
             ))}
@@ -484,6 +500,21 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
             room={editingRoom === null ? null : (editingRoom as AdminHotelRoom)}
             onClose={() => { setModalOpen(false); setEditingRoom(null); }}
             onSave={handleSave}
+            onOpenTour={(room) => {
+              setModalOpen(false);
+              setEditingRoom(null);
+              setTouringRoom(room);
+            }}
+          />
+        )}
+        {touringRoom && (
+          <RoomTourModal
+            venueId={hotelId}
+            room={touringRoom}
+            onClose={() => {
+              setTouringRoom(null);
+              onRefresh();
+            }}
           />
         )}
       </AnimatePresence>

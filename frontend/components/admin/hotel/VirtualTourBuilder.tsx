@@ -38,6 +38,13 @@ interface PendingHotspot {
   yPercent: number;
 }
 
+function panoramaPosition(position: PendingHotspot) {
+  return {
+    yaw: ((position.xPercent / 100) - 0.5) * Math.PI * 2,
+    pitch: (0.5 - (position.yPercent / 100)) * Math.PI,
+  };
+}
+
 interface VirtualTourBuilderProps {
   venueId: string;
   /** When set, scenes are scoped to this room/suite instead of the venue */
@@ -388,6 +395,7 @@ function AddHotspotModal({
     }
     setSaving(true);
     try {
+      const { yaw, pitch } = panoramaPosition(position);
       const hotspot = await createAdminSceneHotspot({
         venueId: venueId,
         sceneId: activeScene._id,
@@ -395,6 +403,8 @@ function AddHotspotModal({
         xPercent: position.xPercent,
         yPercent: position.yPercent,
         targetSceneId,
+        yaw,
+        pitch,
       });
       onCreated(hotspot);
       toast.success('Hotspot créé.');
@@ -681,7 +691,7 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
                   src={activeScene.image}
                   alt={activeScene.name}
                   fill
-                  className="object-cover"
+                  className="object-fill"
                   draggable={false}
                 />
 
@@ -849,9 +859,16 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
                 imageUrl={activeScene.image}
                 markers={[]}
                 mode="navigate"
-                scenes={scenes.map((s) => ({ _id: s._id, name: s.name, image: s.image }))}
-                activeSceneId={activeScene._id}
-                onSceneChange={(id) => setActiveSceneId(id)}
+                navHotspots={activeHotspots.map((hotspot) => ({
+                  id: hotspot._id,
+                  yaw: hotspot.yaw ?? panoramaPosition(hotspot).yaw,
+                  pitch: hotspot.pitch ?? panoramaPosition(hotspot).pitch,
+                  label: hotspot.label,
+                }))}
+                onNavHotspotClick={(hotspotId) => {
+                  const hotspot = activeHotspots.find((item) => item._id === hotspotId);
+                  if (hotspot) setActiveSceneId(hotspot.targetId);
+                }}
               />
             </div>
           </motion.div>
