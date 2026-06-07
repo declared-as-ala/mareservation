@@ -35,6 +35,7 @@ import { fetchVenueByIdOrSlug, fetchVenueScenes } from '@/lib/api/venues';
 import { fetchVenueRooms, getRoomNights, ROOM_TYPE_LABELS } from '@/lib/api/rooms';
 import type { Venue, HotelRoom } from '@/lib/api/types';
 import { RoomBookingModal } from '@/components/hotel/RoomBookingModal';
+import { BookingReservationModal } from '@/components/hotel/BookingReservationModal';
 import { RoomTypeCard, type RoomTypeGroup } from '@/components/hotel/RoomTypeCard';
 import { RoomTypeViewer } from '@/components/hotel/RoomTypeViewer';
 import { HotelAmenitiesGrid } from '@/components/hotel/HotelAmenities';
@@ -188,7 +189,7 @@ function HotelHero({
   const thumbs = images.slice(1, 5);
 
   return (
-    <section className="relative h-[68vh] min-h-[460px] max-h-[760px] w-full overflow-hidden">
+    <section className="relative h-[50vh] min-h-[320px] md:min-h-[460px] md:h-[68vh] max-h-[760px] w-full overflow-hidden">
       {/* Cover image */}
       {cover ? (
         <Image
@@ -544,6 +545,7 @@ export default function HotelDetailPage() {
   const [viewerGroup, setViewerGroup] = useState<RoomTypeGroup | null>(null);
   const [activeTab, setActiveTab] = useState<'rooms' | 'visite' | 'infos'>('visite');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   const { data: venue, isLoading: venueLoading, error: venueError } = useQuery({
     queryKey: ['hotel', slug],
@@ -682,7 +684,7 @@ export default function HotelDetailPage() {
   if (venueLoading) {
     return (
       <div className="min-h-screen bg-[#080808]">
-        <div className="h-[68vh] min-h-[460px] animate-pulse bg-white/[0.04]" />
+        <div className="h-[50vh] min-h-[320px] md:min-h-[460px] md:h-[68vh] animate-pulse bg-white/[0.04]" />
         <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-2">
@@ -714,7 +716,7 @@ export default function HotelDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] text-neutral-100">
+    <div className="min-h-screen bg-[#080808] text-neutral-100 pb-20 lg:pb-0">
 
       {/* ── Cinematic hero ── */}
       <HotelHero
@@ -818,27 +820,7 @@ export default function HotelDetailPage() {
                           La réservation est <strong className="text-amber-300">par type de chambre</strong>, pas par numéro — l&apos;hôtel vous attribue une chambre disponible à votre arrivée.
                         </p>
                       </div>
-                      <div className="flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] p-1">
-                        {([
-                          { value: 'price', label: 'Prix' },
-                          { value: 'capacity', label: 'Capacité' },
-                          { value: 'surface', label: 'Surface' },
-                        ] as const).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setRoomSort(opt.value)}
-                            className={cn(
-                              'rounded-full px-3 py-1 text-[11px] font-semibold transition-all',
-                              roomSort === opt.value
-                                ? 'bg-amber-400/15 text-amber-300'
-                                : 'text-neutral-500 hover:text-neutral-300'
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
+
                     </div>
                   )}
 
@@ -947,6 +929,36 @@ export default function HotelDetailPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* ── Aperçu under 360 ── */}
+                  {venue.description && (
+                    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-4">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+                        <Sparkles className="size-3" />
+                        Aperçu
+                      </div>
+                      <div>
+                        <h2 className="mb-3 font-serif text-xl font-bold text-white">
+                          À propos de l&apos;hôtel
+                        </h2>
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-400">
+                          {venue.description}
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="mb-3 text-sm font-semibold text-neutral-200">
+                          Équipements &amp; Services
+                        </h3>
+                        <HotelAmenitiesGrid
+                          amenities={
+                            venue.amenities?.length
+                              ? venue.amenities
+                              : ['Wi-Fi gratuit', 'Parking', 'Climatisation', 'Conciergerie']
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -1037,22 +1049,84 @@ export default function HotelDetailPage() {
             </AnimatePresence>
           </div>
 
-          {/* ── Booking widget: top on mobile, sticky right on desktop ── */}
+          {/* ── Booking trigger: compact card on desktop ── */}
           <div className="order-1 lg:order-2 lg:col-span-1">
             <div className="lg:sticky lg:top-24">
-              <BookingWidget
-                startingPrice={venue.startingPrice ?? venue.priceRangeMin}
-                groups={roomTypeGroups}
-                checkIn={checkIn}
-                checkOut={checkOut}
-                guests={guests}
-                selectedRoomType={selectedRoomType}
-                onCheckInChange={setCheckIn}
-                onCheckOutChange={setCheckOut}
-                onGuestsChange={setGuests}
-                onRoomTypeChange={setSelectedRoomType}
-                onBook={handleBookDirect}
-              />
+              {/* Desktop trigger card */}
+              <div className="hidden lg:block overflow-hidden rounded-3xl border border-amber-400/[0.18] bg-gradient-to-br from-[#1a1408] via-[#111111] to-[#0B0B0B] shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
+                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-gradient-to-r from-amber-400/[0.08] to-transparent px-5 py-4">
+                  {(venue.startingPrice ?? venue.priceRangeMin) ? (
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/85">À partir de</span>
+                      <div className="mt-0.5 flex items-baseline gap-1.5">
+                        <span className="font-serif text-2xl font-black text-amber-400">
+                          {(venue.startingPrice ?? venue.priceRangeMin)!.toLocaleString('fr-TN')}
+                        </span>
+                        <span className="text-xs font-bold text-amber-300/80">DT</span>
+                        <span className="text-xs text-neutral-500">/ nuit</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-neutral-300">Réserver votre séjour</span>
+                  )}
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/[0.10] shadow-[0_0_18px_rgba(245,158,11,0.25)]">
+                    <Sparkles className="size-4 text-amber-400" />
+                  </div>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center gap-3 text-sm text-neutral-500">
+                    <CalendarDays className="size-4 text-amber-400/70" />
+                    <span>Sélectionnez vos dates</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-neutral-500">
+                    <Users className="size-4 text-amber-400/70" />
+                    <span>{guests} voyageur{guests > 1 ? 's' : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBookingModalOpen(true)}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40 active:translate-y-0"
+                  >
+                    <Sparkles className="size-4" />
+                    Réserver maintenant
+                  </button>
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] text-neutral-600">
+                    <Shield className="size-3.5 text-emerald-500" />
+                    Annulation gratuite
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile floating bar */}
+              <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
+                <div className="flex items-center justify-between gap-3 border-t border-amber-400/20 bg-[#0D0D0D]/95 backdrop-blur-xl px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+                  <div className="min-w-0">
+                    {(venue.startingPrice ?? venue.priceRangeMin) ? (
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-lg font-black text-amber-400">
+                          {(venue.startingPrice ?? venue.priceRangeMin)!.toLocaleString('fr-TN')}
+                        </span>
+                        <span className="text-xs font-bold text-amber-300/80">DT</span>
+                        <span className="text-[10px] text-neutral-500">/nuit</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-neutral-300">Réserver</span>
+                    )}
+                    <div className="flex items-center gap-2 text-[10px] text-neutral-600">
+                      <Shield className="size-3 text-emerald-500" />
+                      Annulation gratuite
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBookingModalOpen(true)}
+                    className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95"
+                  >
+                    <Sparkles className="size-4" />
+                    Réserver
+                  </button>
+                </div>
+              </div>
 
               <section className="mt-5 space-y-6 rounded-3xl border border-white/[0.07] bg-gradient-to-br from-white/[0.035] to-transparent p-5">
                 {venue.description && (
@@ -1112,6 +1186,23 @@ export default function HotelDetailPage() {
         name={venue.name}
         onClose={() => setLightboxIdx(null)}
         onNavigate={setLightboxIdx}
+      />
+
+      {/* ── Reservation booking modal ── */}
+      <BookingReservationModal
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        startingPrice={venue.startingPrice ?? venue.priceRangeMin}
+        groups={roomTypeGroups}
+        checkIn={checkIn}
+        checkOut={checkOut}
+        guests={guests}
+        selectedRoomType={selectedRoomType}
+        onCheckInChange={setCheckIn}
+        onCheckOutChange={setCheckOut}
+        onGuestsChange={setGuests}
+        onRoomTypeChange={setSelectedRoomType}
+        onBook={handleBookDirect}
       />
 
       {/* ── Room booking modal ── */}

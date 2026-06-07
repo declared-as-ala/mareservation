@@ -78,7 +78,7 @@ export function CinematicVenueHero({
       "relative w-full overflow-hidden transition-all duration-500 ease-in-out",
       isCompact
         ? "h-[25vh] min-h-[160px] max-h-[260px]"
-        : "h-[68vh] min-h-[460px] max-h-[760px]"
+        : "h-[50vh] min-h-[320px] md:min-h-[460px] md:h-[68vh] max-h-[760px]"
     )}>
       {/* Cover */}
       {cover ? (

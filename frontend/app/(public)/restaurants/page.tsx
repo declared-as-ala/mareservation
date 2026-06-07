@@ -2,49 +2,39 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ArrowLeft,
   Search,
   UtensilsCrossed,
-  Clock,
   Users,
   Calendar,
-  Heart,
-  Briefcase,
-  Anchor,
-  Music,
-  Wine,
+  Clock,
+  X,
+  Sparkles,
+  Shield,
 } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { RestaurantCard } from '@/components/cards/RestaurantCard';
 import { cn } from '@/lib/utils';
 
-// ── Cuisines ────────────────────────────────────────────────────────────────
-
-const CUISINES = [
-  { key: 'all', label: 'Toutes' },
-  { key: 'tunisien', label: 'Tunisien' },
-  { key: 'italien', label: 'Italien' },
-  { key: 'japonais', label: 'Japonais' },
-  { key: 'libanais', label: 'Libanais' },
-  { key: 'steakhouse', label: 'Steakhouse' },
-  { key: 'fruits-de-mer', label: 'Fruits de mer' },
-  { key: 'brunch', label: 'Brunch' },
-  { key: 'végé', label: 'Végé' },
-];
-
-const AMBIENCES = [
-  { key: 'romantique', label: 'Romantique', Icon: Heart },
-  { key: 'famille', label: 'En famille', Icon: Users },
-  { key: 'business', label: 'Business', Icon: Briefcase },
-  { key: 'vue-mer', label: 'Vue mer', Icon: Anchor },
-  { key: 'rooftop', label: 'Rooftop', Icon: Wine },
-  { key: 'live-music', label: 'Live music', Icon: Music },
-];
-
 // ── Time slot helpers ───────────────────────────────────────────────────────
 
-const SLOTS = ['12:00', '13:00', '19:00', '20:00', '21:00'];
+const SLOTS = [
+  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '18:00', '18:30', '19:00', '19:30',
+  '20:00', '20:30', '21:00', '21:30', '22:00', '22:30',
+  '23:00', '23:30', '00:00',
+];
+
+const SLOT_GROUPS: { label: string; range: string[] }[] = [
+  { label: 'Matin', range: ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'] },
+  { label: 'Midi', range: ['12:00', '12:30', '13:00', '13:30', '14:00', '14:30'] },
+  { label: 'Soir', range: ['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00', '23:30'] },
+  { label: 'Minuit', range: ['00:00'] },
+];
 
 function todayLabel(): string {
   return new Date().toLocaleDateString('fr-TN', { weekday: 'long', day: '2-digit', month: 'long' });
@@ -54,13 +44,12 @@ function todayLabel(): string {
 
 export default function RestaurantsPage() {
   const [search, setSearch] = useState('');
-  const [cuisine, setCuisine] = useState('all');
-  const [ambience, setAmbience] = useState<string | null>(null);
   const [slot, setSlot] = useState('19:00');
   const [guests, setGuests] = useState(2);
+  const [trouverOpen, setTrouverOpen] = useState(false);
 
   const { data: venues = [], isLoading } = useQuery({
-    queryKey: ['restaurants', search, cuisine, ambience],
+    queryKey: ['restaurants', search],
     queryFn: () =>
       fetchVenues({
         type: 'RESTAURANT',
@@ -69,19 +58,9 @@ export default function RestaurantsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Client-side filter by cuisine + ambience using amenities[]
-  const filtered = useMemo(() => {
-    return venues.filter((v) => {
-      const tags = (v.amenities ?? []).map((t) => t.toLowerCase());
-      if (cuisine !== 'all' && !tags.includes(cuisine)) return false;
-      if (ambience && !tags.includes(ambience)) return false;
-      return true;
-    });
-  }, [venues, cuisine, ambience]);
-
   // Split: top of result list = "Réserver ce soir" rail (first 3 with virtual tour)
-  const featuredSlot = filtered.filter((v) => v.hasVirtualTour).slice(0, 3);
-  const rest = filtered.filter((v) => !featuredSlot.includes(v));
+  const featuredSlot = venues.filter((v) => v.hasVirtualTour).slice(0, 3);
+  const rest = venues.filter((v) => !featuredSlot.includes(v));
 
   return (
     <div className="min-h-screen bg-[#0B0B0C] text-white pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -91,6 +70,18 @@ export default function RestaurantsPage() {
         <div aria-hidden className="pointer-events-none absolute -left-16 bottom-0 h-52 w-52 rounded-full bg-amber-600/[0.06] blur-[90px]" />
 
         <div className="relative mx-auto max-w-7xl">
+          {/* Back button — on its own row so it never overlaps */}
+          <div className="mb-4 flex">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md transition-all hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-400"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Retour
+            </button>
+          </div>
+
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/[0.08] px-2.5 py-1">
             <UtensilsCrossed className="size-3 text-amber-400" />
             <span className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300">Restaurants</span>
@@ -107,7 +98,7 @@ export default function RestaurantsPage() {
           </p>
 
           {/* Booking strip */}
-          <div className="mt-6 grid gap-2 rounded-3xl border border-white/[0.07] bg-[#111111] p-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center sm:gap-2 sm:p-2">
+          <div className="mt-6 flex flex-col gap-2 rounded-3xl border border-white/[0.07] bg-[#111111] p-3 sm:flex-row sm:items-center sm:flex-wrap sm:p-2">
             {/* Date pill */}
             <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] px-3 py-2.5">
               <Calendar className="size-4 shrink-0 text-amber-400" />
@@ -144,22 +135,23 @@ export default function RestaurantsPage() {
               </div>
             </div>
 
-            {/* Slots */}
-            <div className="rounded-2xl bg-white/[0.03] p-2 sm:px-2 sm:py-2.5">
-              <div className="mb-1 px-1 text-[9px] font-bold uppercase tracking-wider text-white/40">
-                Créneau
+            {/* Slots — horizontal carousel */}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="flex items-center gap-2 mb-1.5 px-1">
+                <Clock className="size-3 text-amber-400/70" />
+                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">Créneau</span>
               </div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory -mx-1 px-1">
                 {SLOTS.map((s) => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setSlot(s)}
                     className={cn(
-                      'rounded-full px-2.5 py-1 text-[11px] font-bold transition-all',
+                      'snap-start shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all duration-150',
                       slot === s
-                        ? 'bg-amber-400 text-black shadow-[0_4px_16px_rgba(245,158,11,0.32)]'
-                        : 'bg-white/[0.04] text-white/70 hover:bg-white/[0.08]'
+                        ? 'border-amber-400/60 bg-amber-400/15 text-amber-300 shadow-[0_2px_12px_rgba(245,158,11,0.25)]'
+                        : 'border-white/[0.07] bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white/90'
                     )}
                   >
                     {s}
@@ -171,6 +163,7 @@ export default function RestaurantsPage() {
             {/* CTA */}
             <button
               type="button"
+              onClick={() => setTrouverOpen(true)}
               className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all hover:-translate-y-0.5 active:scale-95"
             >
               <Search className="size-4" />
@@ -187,53 +180,6 @@ export default function RestaurantsPage() {
               placeholder="Rechercher un restaurant, une ville…"
               className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-600 focus:outline-none"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Cuisine filters ── */}
-      <section className="border-b border-white/[0.06] bg-[#0B0B0C] px-4 py-4 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-            {CUISINES.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setCuisine(c.key)}
-                className={cn(
-                  'shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all',
-                  cuisine === c.key
-                    ? 'border-amber-400/55 bg-amber-400/[0.10] text-amber-300'
-                    : 'border-white/[0.08] bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white'
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Ambience tags ── */}
-      <section className="border-b border-white/[0.06] bg-[#0B0B0C] px-4 py-4 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
-            {AMBIENCES.map(({ key, label, Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setAmbience((a) => (a === key ? null : key))}
-                className={cn(
-                  'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-all',
-                  ambience === key
-                    ? 'border-amber-400/55 bg-amber-400/[0.10] text-amber-300'
-                    : 'border-white/[0.08] bg-white/[0.03] text-white/70 hover:border-white/20 hover:text-white'
-                )}
-              >
-                <Icon className="size-3.5" />
-                {label}
-              </button>
-            ))}
           </div>
         </div>
       </section>
@@ -263,7 +209,7 @@ export default function RestaurantsPage() {
 
           {/* Main grid */}
           <h2 className="mb-4 font-serif text-lg font-bold text-white sm:text-xl">
-            Tous les restaurants {cuisine !== 'all' && `· ${CUISINES.find((c) => c.key === cuisine)?.label}`}
+            Tous les restaurants
           </h2>
           {isLoading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -286,11 +232,7 @@ export default function RestaurantsPage() {
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  setCuisine('all');
-                  setAmbience(null);
-                  setSearch('');
-                }}
+                onClick={() => setSearch('')}
                 className="text-sm font-semibold text-amber-400 hover:underline"
               >
                 Réinitialiser
@@ -305,6 +247,60 @@ export default function RestaurantsPage() {
           )}
         </div>
       </section>
+
+      {/* ── Trouver modal ── */}
+      <AnimatePresence>
+        {trouverOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setTrouverOpen(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.97 }}
+              transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative z-10 w-full max-w-lg max-h-[92dvh] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-white/[0.08] bg-[#0D0D0D] shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/[0.06]">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-amber-400 font-semibold mb-0.5">
+                    Trouver une table
+                  </div>
+                  <p className="text-sm text-neutral-500">
+                    {todayLabel()} · {guests} pers. · {slot}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTrouverOpen(false)}
+                  aria-label="Fermer"
+                  className="shrink-0 flex size-8 items-center justify-center rounded-full border border-white/[0.08] text-neutral-500 hover:text-white hover:border-white/20 transition-all"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+                {venues.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-10 text-center">
+                    <UtensilsCrossed className="size-10 text-neutral-700" />
+                    <p className="text-sm text-neutral-500">Aucun restaurant trouvé</p>
+                  </div>
+                ) : (
+                  venues.map((v) => (
+                    <RestaurantCard key={v._id} venue={v as Venue & { rating?: number }} />
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

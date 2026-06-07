@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,16 +11,12 @@ import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import {
   createReservation,
-  createReservationHold,
-  fetchTableAvailabilityTimeline,
-  releaseReservationHold,
-  type TableAvailabilityTimeline,
 } from '@/lib/api/reservations';
 import { toast } from 'sonner';
 import {
   Users, Crown, Calendar, Clock, Phone, Loader2,
   UtensilsCrossed, CheckCircle2, ArrowLeft, ArrowRight,
-  Minus, Plus, ShoppingCart, CreditCard, X, Timer,
+  Minus, Plus, ShoppingCart, CreditCard, X,
   MapPin, Star, ChefHat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -34,7 +30,12 @@ const CATEGORY_LABELS: Record<MenuCategory, string> = {
 const CATEGORY_ORDER: MenuCategory[] = ['entree', 'plat', 'dessert', 'boisson', 'autre'];
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
-function buildIso(date: string, time: string): string { return new Date(`${date}T${time}:00`).toISOString(); }
+function buildIso(date: string, time: string): string {
+  if (!date || !time) return new Date().toISOString();
+  const d = new Date(`${date}T${time}:00`);
+  if (isNaN(d.getTime())) return new Date().toISOString();
+  return d.toISOString();
+}
 function splitFullName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return { firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') || (parts[0] ?? '') };
@@ -68,7 +69,8 @@ const TIME_SLOTS = [
   '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
   '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
-  '20:00', '20:30', '21:00', '21:30', '22:00',
+  '20:00', '20:30', '21:00', '21:30', '22:00', '22:30',
+  '23:00', '23:30', '00:00',
 ];
 
 const STEPS = [
@@ -89,85 +91,6 @@ function getDayStrip(count = 14): { label: string; short: string; value: string;
     const short = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     return { label: label.charAt(0).toUpperCase() + label.slice(1, 3), short, value, day: d.getDate() };
   });
-}
-
-// ── Hold timer ─────────────────────────────────────────────────────────────
-
-function HoldTimer({ seconds }: { seconds: number }) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  const pct = Math.min(100, (seconds / 600) * 100);
-  const urgent = seconds < 120;
-
-  return (
-    <div className={cn(
-      'flex items-center gap-2.5 rounded-xl border px-3 py-2 text-xs font-medium',
-      urgent
-        ? 'border-red-500/30 bg-red-500/5 text-red-400'
-        : 'border-amber-400/20 bg-amber-400/5 text-amber-400'
-    )}>
-      <Timer className="size-3.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between mb-1">
-          <span>Table réservée pour vous</span>
-          <span className="tabular-nums font-bold">
-            {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-          </span>
-        </div>
-        <div className="h-1 rounded-full bg-current/20 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full bg-current"
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Timeline slots (step 0 only — shows taken slots as reference) ─────────────────
-
-function TimelineSlots({
-  timeline,
-  loading,
-  error,
-}: {
-  timeline: TableAvailabilityTimeline | undefined;
-  loading: boolean;
-  error: boolean;
-}) {
-  if (error) return (
-    <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/20 rounded-xl px-3 py-2">
-      Impossible de charger les créneaux pour cette date.
-    </p>
-  );
-
-  if (loading || !timeline?.slots?.length) return (
-    <div className="flex gap-2 flex-wrap">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-9 w-16 rounded-xl bg-white/[0.04] animate-pulse" />
-      ))}
-    </div>
-  );
-
-  const taken = timeline.slots.filter((s) => !s.available);
-  if (taken.length === 0) return (
-    <p className="text-xs text-emerald-400/70 flex items-center gap-1.5">
-      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-      Tous les créneaux sont disponibles
-    </p>
-  );
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {taken.map((slot) => (
-        <span key={`t-${slot.time}`} className="rounded-lg border border-red-500/20 bg-red-500/8 px-2 py-1 text-[11px] text-red-400/60 line-through">
-          {slot.time.slice(0, 5)}
-        </span>
-      ))}
-    </div>
-  );
 }
 
 // ── Simple time slot picker ───────────────────────────────────────────────────
@@ -368,13 +291,6 @@ export function StepReservationModal({
   const [orderMode, setOrderMode] = useState<'table_only' | 'with_menu'>('table_only');
   const [menuQty, setMenuQty] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
-  const [holdId, setHoldId] = useState<string | null>(null);
-  const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(null);
-  const [holdError, setHoldError] = useState<string | null>(null);
-  const [holdTick, setHoldTick] = useState(Date.now());
-  const [persistHold, setPersistHold] = useState(false);
-  const holdIdRef = useRef<string | null>(null);
-  const persistHoldRef = useRef(false);
 
   // Reset on open
   useEffect(() => {
@@ -389,16 +305,7 @@ export function StepReservationModal({
     setMenuQty({});
     setStep(0);
     setLoading(false);
-    setHoldId(null);
-    setHoldExpiresAt(null);
-    setHoldError(null);
-    setPersistHold(false);
-    holdIdRef.current = null;
-    persistHoldRef.current = false;
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => { holdIdRef.current = holdId; }, [holdId]);
-  useEffect(() => { persistHoldRef.current = persistHold; }, [persistHold]);
 
   const { data: menuData = [] } = useQuery({
     queryKey: ['venue-menu', venue._id],
@@ -407,76 +314,8 @@ export function StepReservationModal({
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: timeline, isLoading: timelineLoading, isError: timelineError } = useQuery({
-    queryKey: ['table-availability-timeline', placement.table._id, selectedDate],
-    queryFn: () => fetchTableAvailabilityTimeline(placement.table._id, selectedDate),
-    enabled: open && !!placement.table?._id,
-    staleTime: 20 * 1000,
-  });
-
-  useEffect(() => {
-    if (timelineError) {
-      setSelectedTime('');
-      return;
-    }
-
-    if (!timeline?.slots?.length) return;
-    const current = timeline.slots.find((slot) => slot.time === selectedTime);
-    if (current?.available) return;
-    const firstAvailable = timeline.slots.find((slot) => slot.available);
-    if (firstAvailable) setSelectedTime(firstAvailable.time);
-  }, [timeline, selectedTime, timelineError]);
-
   const startAtIso = buildIso(selectedDate, selectedTime);
   const endAtIso = new Date(new Date(startAtIso).getTime() + 2 * 60 * 60 * 1000).toISOString();
-  const holdSecondsLeft = holdExpiresAt
-    ? Math.max(0, Math.floor((new Date(holdExpiresAt).getTime() - holdTick) / 1000))
-    : null;
-
-  useEffect(() => {
-    if (!open || !holdExpiresAt) return;
-    const timer = window.setInterval(() => setHoldTick(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [open, holdExpiresAt]);
-
-  useEffect(() => {
-    if (!open || !user || !placement.table?._id) return;
-    let cancelled = false;
-    setHoldError(null);
-
-    async function syncHold() {
-      try {
-        const hold = await createReservationHold({
-          venueId: venue._id,
-          tableId: placement.table._id,
-          startsAt: startAtIso,
-          endsAt: endAtIso,
-          peopleCount: partySize,
-        });
-        if (cancelled) { void releaseReservationHold(hold._id).catch(() => undefined); return; }
-        if (holdIdRef.current && holdIdRef.current !== hold._id) {
-          void releaseReservationHold(holdIdRef.current).catch(() => undefined);
-        }
-        setHoldId(hold._id);
-        setHoldExpiresAt(hold.expiresAt);
-        setHoldTick(Date.now());
-      } catch (error) {
-        if (!cancelled) {
-          setHoldId(null);
-          setHoldExpiresAt(null);
-          setHoldError(error instanceof Error ? error.message : `Impossible de maintenir cette ${reservableLabel}.`);
-        }
-      }
-    }
-
-    void syncHold();
-    return () => {
-      cancelled = true;
-      if (holdIdRef.current && !persistHoldRef.current) {
-        void releaseReservationHold(holdIdRef.current).catch(() => undefined);
-      }
-    };
-  }, [open, user, venue._id, placement.table, startAtIso, endAtIso, partySize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const menuTotal = menuData.reduce((acc, item) => acc + (menuQty[item._id] ?? 0) * item.price, 0);
   const selectedMenuItems = menuData
@@ -495,18 +334,17 @@ export function StepReservationModal({
   const canProceed = useMemo(() => {
     switch (step) {
       case 0: return isAvailable;
-      case 1: return partySize >= 1 && partySize <= maxCapacity && !!selectedTime && !timelineError;
+      case 1: return partySize >= 1 && partySize <= maxCapacity && !!selectedTime;
       case 2: return orderMode !== 'with_menu' || menuMeetsMinimum;
       case 3: return true;
       default: return false;
     }
-  }, [step, isAvailable, partySize, maxCapacity, orderMode, menuMeetsMinimum, selectedTime, timelineError]);
+  }, [step, isAvailable, partySize, maxCapacity, orderMode, menuMeetsMinimum, selectedTime]);
 
   const nextStep = () => { if (canProceed && step < STEPS_COUNT - 1) setStep((s) => s + 1); };
   const prevStep = () => { if (step > 0) setStep((s) => s - 1); };
 
   const handleAddToCart = () => {
-    setPersistHold(true);
     const base = {
       id: `venue-${venue._id}-table-${placement.table._id}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type: (venue.type === 'HOTEL' ? 'venue_room' : 'venue_table') as 'venue_room' | 'venue_table',
@@ -520,8 +358,6 @@ export function StepReservationModal({
       venueId: venue._id,
       tableId: placement.table._id,
       slug: venue.slug,
-      holdId: holdId ?? undefined,
-      holdExpiresAt: holdExpiresAt ?? undefined,
     };
     if (orderMode === 'with_menu') {
       addItem({ ...base, price: menuTotal, orderType: 'with_menu', menuItems: selectedMenuItems, menuTotal });
@@ -547,10 +383,8 @@ export function StepReservationModal({
     }
     if (!guestPhone.trim()) { toast.error('Numéro de téléphone requis.'); return; }
     if (orderMode === 'with_menu' && !menuMeetsMinimum) { toast.error(`Minimum ${minimumSpend} DT requis.`); return; }
-    if (holdSecondsLeft !== null && holdSecondsLeft <= 0) { toast.error('Le temps de maintien a expiré. Relancez la réservation.'); return; }
     setLoading(true);
     try {
-      setPersistHold(true);
       const { firstName, lastName } = splitFullName(user.fullName);
       const result = await createReservation({
         venueId: venue._id, bookingType: 'TABLE', tableId: placement.table._id,
@@ -635,28 +469,20 @@ export function StepReservationModal({
               </div>
             )}
 
-            {holdError && (
-              <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm text-amber-400">
-                {holdError}
-              </div>
-            )}
-
-            {holdSecondsLeft !== null && holdSecondsLeft > 0 && (
-              <HoldTimer seconds={holdSecondsLeft} />
-            )}
-
-            {/* Live availability for today */}
+            {/* Available slots */}
             <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                  Créneaux — {formatDate(selectedDate)}
+                  Créneaux disponibles — {formatDate(selectedDate)}
                 </h4>
               </div>
-              <TimelineSlots
-                timeline={timeline}
-                loading={timelineLoading}
-                error={timelineError}
-              />
+              <div className="flex flex-wrap gap-1.5">
+                {TIME_SLOTS.map((time) => (
+                  <span key={time} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-400">
+                    {time}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -664,11 +490,7 @@ export function StepReservationModal({
       // ── STEP 1: Date, time & party size ───────────────────────────────────
       case 1: {
         const dayStrip = getDayStrip(14);
-        const slots = timelineError
-          ? []
-          : timeline?.slots?.length
-            ? timeline.slots.map((s) => ({ time: s.time, available: s.available }))
-            : TIME_SLOTS.map((time) => ({ time, available: true }));
+        const slots = TIME_SLOTS.map((time) => ({ time, available: true }));
         return (
           <div className="space-y-5">
 
@@ -716,7 +538,6 @@ export function StepReservationModal({
                 slots={slots}
                 selectedTime={selectedTime}
                 onSelect={setSelectedTime}
-                emptyMessage={timelineError ? 'Impossible de charger les créneaux pour cette date.' : undefined}
               />
             </div>
 
@@ -983,10 +804,6 @@ export function StepReservationModal({
                 </div>
               ) : null}
             </div>
-
-            {holdSecondsLeft !== null && holdSecondsLeft > 0 && (
-              <HoldTimer seconds={holdSecondsLeft} />
-            )}
 
             {!user && (
               <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-xs text-amber-300">

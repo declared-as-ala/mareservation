@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  ArrowLeft,
   Building2,
   Search,
   SlidersHorizontal,
@@ -425,6 +426,18 @@ export default function HotelsPage() {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 text-center">
+          {/* Back button */}
+          <div className="absolute left-4 top-6 sm:left-8 sm:top-8">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md transition-all hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-400"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Retour
+            </button>
+          </div>
+
           {/* Pre-heading */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}

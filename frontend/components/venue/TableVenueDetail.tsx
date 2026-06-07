@@ -13,9 +13,7 @@ import {
   Phone,
   Clock,
   ArrowLeft,
-  ArrowRight,
   Star,
-  ScanEye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchVenueByIdOrSlug } from '@/lib/api/venues';
@@ -96,7 +94,7 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#080808]">
-        <div className="h-[68vh] min-h-[460px] animate-pulse bg-white/[0.04]" />
+        <div className="h-[50vh] min-h-[320px] md:min-h-[460px] md:h-[68vh] animate-pulse bg-white/[0.04]" />
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-8 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             <div className="h-8 w-2/3 animate-pulse rounded bg-white/[0.04]" />
@@ -126,7 +124,7 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] text-neutral-100">
+    <div className="min-h-screen bg-[#080808] text-neutral-100 pb-20 lg:pb-0">
 
       {/* ── Cinematic hero ── */}
       <CinematicVenueHero
@@ -145,34 +143,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
       {/* ── Main content ── */}
       <div className="mx-auto max-w-5xl px-4 py-8 lg:py-10">
         <div className="space-y-8">
-
-            {/* Explorer le lieu - Interactive Banner */}
-            <div className="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-400/[0.02] to-amber-500/[0.05] p-5 shadow-lg backdrop-blur-sm">
-              <div className="absolute top-0 right-0 -z-10 translate-x-12 -translate-y-12 h-36 w-36 rounded-full bg-amber-400/[0.04] blur-[40px]" />
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/35 bg-amber-400/10 text-amber-400 shadow-lg shadow-amber-400/5">
-                    <ScanEye className="size-6 animate-pulse" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-neutral-100">Explorer le lieu</h2>
-                    <p className="text-xs text-neutral-400 mt-1 leading-relaxed max-w-md">
-                      Plongez dans l&apos;ambiance unique de notre établissement en immersion 360° et réservez votre table préférée directement sur plan.
-                    </p>
-                  </div>
-                </div>
-                {category !== 'RESTAURANT' && (
-                  <button
-                    type="button"
-                    onClick={goToReserver}
-                    className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-extrabold px-5 py-3 transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-amber-400/10 active:translate-y-0"
-                  >
-                    Découvrir en 360°
-                    <ArrowRight className="size-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
 
             {/* Tabs */}
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
