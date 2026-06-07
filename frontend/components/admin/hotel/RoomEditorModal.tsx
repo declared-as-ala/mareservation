@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import {
-  X, BedDouble, Users, Square, Bath, DollarSign,
+  X, BedDouble, DollarSign,
   Upload, Loader2, Plus, Trash2, Crown, Eye, Wind,
   Wifi, Car, Waves, Sparkles, Coffee, Check,
-  ScanLine, Navigation, ImagePlus,
+  ImagePlus, Info, Image as ImageIcon, Compass, SlidersHorizontal,
+  RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +19,11 @@ import { uploadImageFile } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AdminHotelRoom } from '@/lib/api/admin';
+
+const PanoramaEngine = dynamic(
+  () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
 
 const ROOM_TYPES = [
   { value: 'STANDARD', label: 'Chambre Standard' },
@@ -37,7 +44,7 @@ const BATHROOM_TYPES = [
   'Salle de bain privée',
   'Salle de bain avec baignoire',
   'Salle de bain avec jacuzzi',
-  'Douche à l\'italienne',
+  "Douche à l'italienne",
   'Salle de bain de luxe',
   'Deux salles de bain',
 ];
@@ -59,17 +66,27 @@ const COMMON_AMENITIES = [
   { key: 'Machine Nespresso', icon: Coffee },
 ];
 
+type TabKey = 'infos' | 'photos' | 'pano' | 'options';
+
+const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: 'infos', label: 'Infos', icon: Info },
+  { key: 'photos', label: 'Photos', icon: ImageIcon },
+  { key: 'pano', label: 'Vue 360°', icon: Compass },
+  { key: 'options', label: 'Options', icon: SlidersHorizontal },
+];
+
 interface RoomEditorModalProps {
   hotelId: string;
   room?: AdminHotelRoom | null;
   onClose: () => void;
   onSave: (payload: Partial<AdminHotelRoom>, isNew: boolean) => Promise<void>;
-  /** Called when user wants to manage the virtual tour for this room */
+  /** @deprecated multi-scene tour builder — 360 is now managed inline in the Vue 360° tab */
   onOpenTour?: (room: AdminHotelRoom) => void;
 }
 
-export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: RoomEditorModalProps) {
+export function RoomEditorModal({ room, onClose, onSave }: RoomEditorModalProps) {
   const isNew = !room;
+  const [tab, setTab] = useState<TabKey>('infos');
 
   const [form, setForm] = useState<Partial<AdminHotelRoom>>({
     roomNumber: room?.roomNumber ?? undefined,
@@ -96,12 +113,14 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
   });
 
   const [panoramicUploading, setPanoramicUploading] = useState(false);
-  const [show360Picker, setShow360Picker] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
-
   const [customAmenity, setCustomAmenity] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewPano, setPreviewPano] = useState<string | null>(null);
+
+  const panoCount = (form.panoramicImages ?? []).length;
+  const photoCount = (form.gallery ?? []).length;
 
   function toggleAmenity(key: string) {
     setForm((f) => ({
@@ -131,22 +150,40 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
     }
   }
 
-  async function uploadPanoramic(file: File) {
+  async function uploadPanoramic(files: FileList | File[]) {
     setPanoramicUploading(true);
     try {
-      const url = await uploadImageFile(file);
-      setForm((f) => ({ ...f, panoramicImages: [...(f.panoramicImages ?? []), url] }));
-      toast.success('Image 360° ajoutée.');
+      const arr = Array.from(files);
+      const urls = await Promise.all(arr.map((f) => uploadImageFile(f)));
+      setForm((f) => ({
+        ...f,
+        panoramicImages: [...(f.panoramicImages ?? []), ...urls],
+        hasVirtualTour: true,
+      }));
+      toast.success(`${urls.length} vue 360° ajoutée${urls.length > 1 ? 's' : ''}.`);
     } catch {
-      toast.error("Erreur lors de l'upload.");
+      toast.error("Erreur lors de l'upload 360°.");
     } finally {
       setPanoramicUploading(false);
-      setShow360Picker(false);
     }
   }
 
   function removePanoramic(url: string) {
-    setForm((f) => ({ ...f, panoramicImages: (f.panoramicImages ?? []).filter((u) => u !== url) }));
+    setForm((f) => {
+      const next = (f.panoramicImages ?? []).filter((u) => u !== url);
+      return { ...f, panoramicImages: next, hasVirtualTour: next.length > 0 };
+    });
+  }
+
+  function movePanoramic(url: string, dir: -1 | 1) {
+    setForm((f) => {
+      const list = [...(f.panoramicImages ?? [])];
+      const i = list.indexOf(url);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= list.length) return f;
+      [list[i], list[j]] = [list[j], list[i]];
+      return { ...f, panoramicImages: list };
+    });
   }
 
   async function uploadGalleryFiles(files: FileList | File[]) {
@@ -180,7 +217,8 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
 
   async function handleSave() {
     if (!form.roomNumber || !form.roomType || !form.capacity || !form.pricePerNight) {
-      toast.error('Numéro, type, capacité et prix requis.');
+      toast.error('Numéro, type, capacité et prix requis. (onglet Infos)');
+      setTab('infos');
       return;
     }
     setSaving(true);
@@ -199,7 +237,7 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4"
       onClick={onClose}
     >
       <motion.div
@@ -207,471 +245,484 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave, onOpenTour }: 
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+        className="flex w-full max-w-2xl max-h-[94vh] flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-sm px-6 py-4">
-          <div>
-            <h2 className="text-base font-bold text-white">
-              {isNew ? 'Nouvelle chambre' : `Modifier — ${room?.name || `Chambre ${room?.roomNumber}`}`}
+        <div className="flex items-center justify-between border-b border-zinc-800 bg-gradient-to-r from-amber-500/[0.06] to-transparent px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold text-white">
+              {isNew ? 'Nouvelle chambre' : `${room?.name || `Chambre ${room?.roomNumber}`}`}
             </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              {isNew ? 'Remplissez les informations de la chambre.' : 'Modifiez les informations ci-dessous.'}
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {isNew ? 'Renseignez les informations puis ajoutez photos et vues 360°.' : 'Modifiez les détails, photos et expériences 360°.'}
             </p>
           </div>
-          <button onClick={onClose} className="flex size-8 items-center justify-center rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+          >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Cover image */}
-          <div>
-            <Label className="text-zinc-300 text-xs font-semibold uppercase tracking-wider mb-3 block">Photo principale</Label>
-            <div className="relative h-40 w-full rounded-xl overflow-hidden border-2 border-dashed border-zinc-700 bg-zinc-900 hover:border-[#D4AF37]/40 transition-colors group cursor-pointer"
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) uploadCover(file);
-                };
-                input.click();
-              }}
-            >
-              {form.coverImage ? (
-                <>
-                  <Image src={form.coverImage} alt="cover" fill className="object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Upload className="size-6 text-white" />
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-full items-center justify-center gap-2 text-zinc-500">
-                  {uploadingCover ? <Loader2 className="size-5 animate-spin" /> : <Upload className="size-5" />}
-                  <span className="text-sm">{uploadingCover ? 'Upload en cours...' : 'Cliquer pour uploader'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Gallery photos */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-zinc-300 text-xs font-semibold uppercase tracking-wider">
-                Galerie photo ({(form.gallery ?? []).length})
-              </Label>
-              <label className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) uploadGalleryFiles(files);
-                    e.currentTarget.value = '';
-                  }}
-                />
-                {galleryUploading ? (
-                  <><Loader2 className="size-3.5 animate-spin" /> Upload…</>
-                ) : (
-                  <><Plus className="size-3.5" /> Ajouter des photos</>
+        {/* Tab bar */}
+        <div className="flex shrink-0 gap-1 border-b border-zinc-800 px-3 sm:px-4">
+          {TABS.map(({ key, label, icon: Icon }) => {
+            const active = tab === key;
+            const badge = key === 'photos' ? photoCount : key === 'pano' ? panoCount : 0;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={cn(
+                  'relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-semibold transition-colors',
+                  active ? 'text-amber-400' : 'text-zinc-500 hover:text-zinc-300'
                 )}
-              </label>
-            </div>
-            {(form.gallery ?? []).length === 0 ? (
-              <label className="flex flex-col items-center justify-center gap-2 h-28 w-full rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900 hover:border-amber-400/40 transition-colors cursor-pointer text-zinc-500">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) uploadGalleryFiles(files);
-                    e.currentTarget.value = '';
-                  }}
-                />
-                <ImagePlus className="size-5" />
-                <span className="text-xs">Glisser-déposer ou cliquer pour ajouter plusieurs photos</span>
-              </label>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {(form.gallery ?? []).map((url, idx) => (
-                  <div key={url} className="relative aspect-square rounded-lg overflow-hidden group border border-zinc-700">
-                    <Image src={url} alt={`Photo ${idx + 1}`} fill className="object-cover" sizes="120px" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col">
-                      <div className="flex justify-end p-1">
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryImage(url)}
-                          className="size-6 rounded-full bg-red-500/90 hover:bg-red-500 flex items-center justify-center"
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 className="size-3 text-white" />
-                        </button>
-                      </div>
-                      <div className="mt-auto flex items-center justify-between p-1">
-                        <button
-                          type="button"
-                          onClick={() => moveGalleryImage(url, -1)}
-                          disabled={idx === 0}
-                          className="size-6 rounded-full bg-black/70 text-white hover:bg-black disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                          aria-label="Avancer"
-                        >
-                          ‹
-                        </button>
-                        <span className="text-[10px] font-bold text-white bg-black/70 rounded px-1.5 py-0.5">
-                          {idx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => moveGalleryImage(url, 1)}
-                          disabled={idx === (form.gallery ?? []).length - 1}
-                          className="size-6 rounded-full bg-black/70 text-white hover:bg-black disabled:opacity-30 flex items-center justify-center text-xs font-bold"
-                          aria-label="Reculer"
-                        >
-                          ›
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="mt-2 text-[11px] text-zinc-500">
-              La première photo de la galerie apparaîtra en grand sur la page chambre côté client.
-            </p>
-          </div>
-
-          {/* Basic info grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">N° chambre *</Label>
-              <Input
-                type="number"
-                value={form.roomNumber ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, roomNumber: parseInt(e.target.value) || undefined }))}
-                placeholder="101"
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl"
-              />
-            </div>
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Nom personnalisé</Label>
-              <Input
-                value={form.name ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Suite Royale"
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Type & Bed */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Type de chambre *</Label>
-              <select
-                value={form.roomType ?? 'STANDARD'}
-                onChange={(e) => setForm((f) => ({ ...f, roomType: e.target.value }))}
-                className="w-full h-10 rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none focus:border-[#D4AF37]/50"
               >
-                {ROOM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Type de lit</Label>
-              <select
-                value={form.bedType ?? 'King'}
-                onChange={(e) => setForm((f) => ({ ...f, bedType: e.target.value }))}
-                className="w-full h-10 rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none"
-              >
-                {BED_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Capacity & Surface */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Adultes *</Label>
-              <Input
-                type="number" min={1} max={10}
-                value={form.capacityAdults ?? 2}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value) || 1;
-                  setForm((f) => ({ ...f, capacityAdults: v, capacity: v + (f.capacityChildren ?? 0) }));
-                }}
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl"
-              />
-            </div>
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Enfants</Label>
-              <Input
-                type="number" min={0} max={6}
-                value={form.capacityChildren ?? 0}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value) || 0;
-                  setForm((f) => ({ ...f, capacityChildren: v, capacity: (f.capacityAdults ?? 2) + v }));
-                }}
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl"
-              />
-            </div>
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Surface (m²)</Label>
-              <Input
-                type="number" min={1}
-                value={form.surface ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, surface: parseInt(e.target.value) || undefined }))}
-                placeholder="35"
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl"
-              />
-            </div>
-          </div>
-
-          {/* Price */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Prix / nuit (DT) *</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-zinc-500" />
-                <Input
-                  type="number" min={0}
-                  value={form.pricePerNight ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, pricePerNight: parseFloat(e.target.value) || 0 }))}
-                  placeholder="150"
-                  className="pl-8 bg-zinc-900 border-zinc-700 text-white rounded-xl"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-zinc-400 text-xs mb-1.5 block">Salle de bain</Label>
-              <select
-                value={form.bathroomType ?? ''}
-                onChange={(e) => setForm((f) => ({ ...f, bathroomType: e.target.value }))}
-                className="w-full h-10 rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none"
-              >
-                <option value="">Sélectionner...</option>
-                {BATHROOM_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <Label className="text-zinc-400 text-xs mb-1.5 block">Description</Label>
-            <textarea
-              value={form.description ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              rows={3}
-              placeholder="Décrivez la chambre, sa vue, ses particularités..."
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-600 focus:outline-none focus:border-[#D4AF37]/50 resize-none"
-            />
-          </div>
-
-          {/* Amenities */}
-          <div>
-            <Label className="text-zinc-300 text-xs font-semibold uppercase tracking-wider mb-3 block">Équipements</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-              {COMMON_AMENITIES.map(({ key }) => {
-                const active = form.amenities?.includes(key);
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => toggleAmenity(key)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-left transition-all',
-                      active
-                        ? 'border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#D4AF37]'
-                        : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
-                    )}
-                  >
-                    <div className={cn('flex size-4 items-center justify-center rounded-sm border', active ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-600')}>
-                      {active && <Check className="size-2.5 text-black" />}
-                    </div>
-                    {key}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Custom amenity */}
-            <div className="flex gap-2">
-              <Input
-                value={customAmenity}
-                onChange={(e) => setCustomAmenity(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addCustomAmenity()}
-                placeholder="Ajouter un équipement personnalisé..."
-                className="bg-zinc-900 border-zinc-700 text-white rounded-xl text-sm"
-              />
-              <Button type="button" onClick={addCustomAmenity} size="sm" variant="outline" className="border-zinc-700 rounded-xl">
-                <Plus className="size-4" />
-              </Button>
-            </div>
-            {/* Extra amenities */}
-            {(form.amenities ?? []).filter((a) => !COMMON_AMENITIES.find((c) => c.key === a)).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {(form.amenities ?? []).filter((a) => !COMMON_AMENITIES.find((c) => c.key === a)).map((a) => (
-                  <span key={a} className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300">
-                    {a}
-                    <button onClick={() => toggleAmenity(a)} className="text-zinc-500 hover:text-red-400">
-                      <X className="size-3" />
-                    </button>
+                <Icon className="size-4" />
+                {label}
+                {badge > 0 && (
+                  <span className={cn(
+                    'ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold',
+                    active ? 'bg-amber-400 text-black' : 'bg-zinc-800 text-zinc-400'
+                  )}>
+                    {badge}
                   </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Toggles */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 divide-y divide-zinc-800">
-            {[
-              { key: 'isVip', label: 'Chambre VIP / Premium', desc: 'Badge VIP affiché sur la carte', icon: Crown },
-              { key: 'hasBalcony', label: 'Balcon ou terrasse', desc: 'Vue extérieure privée', icon: Eye },
-              { key: 'isReservable', label: 'Réservable en ligne', desc: 'Les clients peuvent réserver cette chambre', icon: Check },
-              { key: 'isActive', label: 'Chambre active', desc: 'Visible dans le catalogue', icon: Check },
-            ].map(({ key, label, desc, icon: Icon }) => (
-              <div key={key} className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <Icon className="size-4 text-zinc-500" />
-                  <div>
-                    <p className="text-sm font-medium text-zinc-200">{label}</p>
-                    <p className="text-xs text-zinc-500">{desc}</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={!!form[key as keyof typeof form]}
-                  onCheckedChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
-                />
-              </div>
-            ))}
-          </div>
+                )}
+                {active && (
+                  <motion.span
+                    layoutId="room-tab-underline"
+                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-amber-400"
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Expériences 360° (only for saved rooms) ─────────── */}
-        {!isNew && room && (
-          <div className="px-6 pb-4 space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <ScanLine className="size-4 text-amber-400" />
-              <h3 className="text-sm font-semibold text-zinc-100">Expériences 360°</h3>
-            </div>
-            <p className="text-xs text-zinc-500">
-              Ajoutez des images panoramiques ou créez une visite virtuelle connectée pour cette chambre.
-            </p>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+          {/* ── INFOS ── */}
+          {tab === 'infos' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">N° chambre *</Label>
+                  <Input
+                    type="number"
+                    value={form.roomNumber ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, roomNumber: parseInt(e.target.value) || undefined }))}
+                    placeholder="101"
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Nom personnalisé</Label>
+                  <Input
+                    value={form.name ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Suite Royale"
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+                  />
+                </div>
+              </div>
 
-            {/* Existing panoramic images */}
-            {(form.panoramicImages ?? []).length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
-                {(form.panoramicImages ?? []).map((url) => (
-                  <div key={url} className="relative aspect-[2/1] rounded-lg overflow-hidden group border border-zinc-700">
-                    <Image src={url} alt="360°" fill className="object-cover" sizes="120px" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Type de chambre *</Label>
+                  <select
+                    value={form.roomType ?? 'STANDARD'}
+                    onChange={(e) => setForm((f) => ({ ...f, roomType: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:border-[#D4AF37]/50 focus:outline-none"
+                  >
+                    {ROOM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Type de lit</Label>
+                  <select
+                    value={form.bedType ?? 'King'}
+                    onChange={(e) => setForm((f) => ({ ...f, bedType: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none"
+                  >
+                    {BED_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Adultes *</Label>
+                  <Input
+                    type="number" min={1} max={10}
+                    value={form.capacityAdults ?? 2}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 1;
+                      setForm((f) => ({ ...f, capacityAdults: v, capacity: v + (f.capacityChildren ?? 0) }));
+                    }}
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Enfants</Label>
+                  <Input
+                    type="number" min={0} max={6}
+                    value={form.capacityChildren ?? 0}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value) || 0;
+                      setForm((f) => ({ ...f, capacityChildren: v, capacity: (f.capacityAdults ?? 2) + v }));
+                    }}
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Surface (m²)</Label>
+                  <Input
+                    type="number" min={1}
+                    value={form.surface ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, surface: parseInt(e.target.value) || undefined }))}
+                    placeholder="35"
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Prix / nuit (DT) *</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-zinc-500" />
+                    <Input
+                      type="number" min={0}
+                      value={form.pricePerNight ?? ''}
+                      onChange={(e) => setForm((f) => ({ ...f, pricePerNight: parseFloat(e.target.value) || 0 }))}
+                      placeholder="150"
+                      className="rounded-xl border-zinc-700 bg-zinc-900 pl-8 text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-400">Salle de bain</Label>
+                  <select
+                    value={form.bathroomType ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, bathroomType: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-300 focus:outline-none"
+                  >
+                    <option value="">Sélectionner...</option>
+                    {BATHROOM_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-1.5 block text-xs text-zinc-400">Description</Label>
+                <textarea
+                  value={form.description ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  rows={3}
+                  placeholder="Décrivez la chambre, sa vue, ses particularités..."
+                  className="w-full resize-none rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-600 focus:border-[#D4AF37]/50 focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── PHOTOS ── */}
+          {tab === 'photos' && (
+            <div className="space-y-6">
+              {/* Cover */}
+              <div>
+                <Label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-300">Photo principale</Label>
+                <div
+                  className="group relative h-44 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900 transition-colors hover:border-[#D4AF37]/40"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) uploadCover(file);
+                    };
+                    input.click();
+                  }}
+                >
+                  {form.coverImage ? (
+                    <>
+                      <Image src={form.coverImage} alt="cover" fill className="object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white">
+                          <Upload className="size-3.5" /> Changer
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex h-full items-center justify-center gap-2 text-zinc-500">
+                      {uploadingCover ? <Loader2 className="size-5 animate-spin" /> : <Upload className="size-5" />}
+                      <span className="text-sm">{uploadingCover ? 'Upload en cours...' : 'Cliquer pour uploader'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gallery */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                    Galerie photo ({photoCount})
+                  </Label>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300">
+                    <input
+                      type="file" accept="image/*" multiple className="hidden"
+                      onChange={(e) => { const files = e.target.files; if (files?.length) uploadGalleryFiles(files); e.currentTarget.value = ''; }}
+                    />
+                    {galleryUploading ? <><Loader2 className="size-3.5 animate-spin" /> Upload…</> : <><Plus className="size-3.5" /> Ajouter</>}
+                  </label>
+                </div>
+                {photoCount === 0 ? (
+                  <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900 text-zinc-500 transition-colors hover:border-amber-400/40">
+                    <input
+                      type="file" accept="image/*" multiple className="hidden"
+                      onChange={(e) => { const files = e.target.files; if (files?.length) uploadGalleryFiles(files); e.currentTarget.value = ''; }}
+                    />
+                    <ImagePlus className="size-5" />
+                    <span className="text-xs">Cliquer pour ajouter plusieurs photos</span>
+                  </label>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {(form.gallery ?? []).map((url, idx) => (
+                      <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-700">
+                        <Image src={url} alt={`Photo ${idx + 1}`} fill className="object-cover" sizes="120px" />
+                        <div className="absolute inset-0 flex flex-col bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                          <div className="flex justify-end p-1">
+                            <button type="button" onClick={() => removeGalleryImage(url)} className="flex size-6 items-center justify-center rounded-full bg-red-500/90 hover:bg-red-500" aria-label="Supprimer">
+                              <Trash2 className="size-3 text-white" />
+                            </button>
+                          </div>
+                          <div className="mt-auto flex items-center justify-between p-1">
+                            <button type="button" onClick={() => moveGalleryImage(url, -1)} disabled={idx === 0} className="flex size-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white hover:bg-black disabled:opacity-30">‹</button>
+                            <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">{idx + 1}</span>
+                            <button type="button" onClick={() => moveGalleryImage(url, 1)} disabled={idx === photoCount - 1} className="flex size-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white hover:bg-black disabled:opacity-30">›</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-2 text-[11px] text-zinc-500">
+                  La première photo apparaît en grand sur la carte chambre côté client.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── VUE 360° ── */}
+          {tab === 'pano' && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-4">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/15">
+                  <Compass className="size-4 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-amber-200">Vues immersives 360°</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
+                    Uploadez des images <strong className="text-zinc-300">équirectangulaires (ratio 2:1)</strong>.
+                    Le client pourra tourner la vue à 360° directement sur la page de la chambre.
+                  </p>
+                </div>
+              </div>
+
+              {/* Big upload zone */}
+              <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400/30 bg-amber-400/[0.04] text-amber-300/80 transition-colors hover:border-amber-400/60 hover:bg-amber-400/[0.08]">
+                <input
+                  type="file" accept="image/*" multiple className="hidden"
+                  onChange={(e) => { const files = e.target.files; if (files?.length) uploadPanoramic(files); e.currentTarget.value = ''; }}
+                />
+                {panoramicUploading ? (
+                  <><Loader2 className="size-6 animate-spin" /><span className="text-sm font-semibold">Upload 360° en cours…</span></>
+                ) : (
+                  <>
+                    <RotateCw className="size-6" />
+                    <span className="text-sm font-semibold">Ajouter une ou plusieurs vues 360°</span>
+                    <span className="text-[11px] text-amber-300/50">JPG / PNG · équirectangulaire 2:1</span>
+                  </>
+                )}
+              </label>
+
+              {/* Existing panoramas with live preview */}
+              {panoCount > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                    {panoCount} vue{panoCount > 1 ? 's' : ''} 360° · ordre d&apos;affichage
+                  </p>
+                  {(form.panoramicImages ?? []).map((url, idx) => (
+                    <div key={url} className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
+                      {/* Live rotatable preview */}
+                      <div className="relative h-48 w-full bg-black">
+                        {previewPano === url ? (
+                          <PanoramaEngine
+                            imageUrl={url}
+                            markers={[]}
+                            mode="navigate"
+                            scenes={[]}
+                            activeSceneId={null}
+                            onSceneChange={() => undefined}
+                            onMarkerClick={() => undefined}
+                          />
+                        ) : (
+                          <>
+                            <Image src={url} alt={`360° ${idx + 1}`} fill className="object-cover" sizes="480px" />
+                            <button
+                              type="button"
+                              onClick={() => setPreviewPano(url)}
+                              className="absolute inset-0 flex items-center justify-center bg-black/35 transition-colors hover:bg-black/50"
+                            >
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-[12px] font-black text-black shadow-lg">
+                                <RotateCw className="size-3.5" /> Tester la rotation 360°
+                              </span>
+                            </button>
+                          </>
+                        )}
+                        <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-300">
+                          Scène {idx + 1}
+                        </div>
+                        {previewPano === url && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewPano(null)}
+                            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white hover:bg-black"
+                            aria-label="Arrêter l'aperçu"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      {/* Row actions */}
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => movePanoramic(url, -1)} disabled={idx === 0} className="flex size-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30">↑</button>
+                          <button type="button" onClick={() => movePanoramic(url, 1)} disabled={idx === panoCount - 1} className="flex size-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30">↓</button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePanoramic(url)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition-colors hover:bg-red-500/20"
+                        >
+                          <Trash2 className="size-3.5" /> Retirer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {panoCount === 0 && !panoramicUploading && (
+                <p className="text-center text-xs text-zinc-600">
+                  Aucune vue 360° pour cette chambre. Les clients ne verront que les photos.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── OPTIONS ── */}
+          {tab === 'options' && (
+            <div className="space-y-6">
+              {/* Amenities */}
+              <div>
+                <Label className="mb-3 block text-xs font-semibold uppercase tracking-wider text-zinc-300">Équipements</Label>
+                <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {COMMON_AMENITIES.map(({ key }) => {
+                    const active = form.amenities?.includes(key);
+                    return (
                       <button
+                        key={key}
                         type="button"
-                        onClick={() => removePanoramic(url)}
-                        className="size-7 rounded-full bg-red-500/90 flex items-center justify-center"
+                        onClick={() => toggleAmenity(key)}
+                        className={cn(
+                          'flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-all',
+                          active
+                            ? 'border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#D4AF37]'
+                            : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
+                        )}
                       >
-                        <Trash2 className="size-3.5 text-white" />
+                        <div className={cn('flex size-4 items-center justify-center rounded-sm border', active ? 'border-[#D4AF37] bg-[#D4AF37]' : 'border-zinc-600')}>
+                          {active && <Check className="size-2.5 text-black" />}
+                        </div>
+                        {key}
                       </button>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={customAmenity}
+                    onChange={(e) => setCustomAmenity(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addCustomAmenity()}
+                    placeholder="Ajouter un équipement personnalisé..."
+                    className="rounded-xl border-zinc-700 bg-zinc-900 text-sm text-white"
+                  />
+                  <Button type="button" onClick={addCustomAmenity} size="sm" variant="outline" className="rounded-xl border-zinc-700">
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+                {(form.amenities ?? []).filter((a) => !COMMON_AMENITIES.find((c) => c.key === a)).length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(form.amenities ?? []).filter((a) => !COMMON_AMENITIES.find((c) => c.key === a)).map((a) => (
+                      <span key={a} className="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300">
+                        {a}
+                        <button onClick={() => toggleAmenity(a)} className="text-zinc-500 hover:text-red-400"><X className="size-3" /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Toggles */}
+              <div className="divide-y divide-zinc-800 rounded-2xl border border-zinc-800 bg-zinc-900/50">
+                {[
+                  { key: 'isVip', label: 'Chambre VIP / Premium', desc: 'Badge VIP affiché sur la carte', icon: Crown },
+                  { key: 'hasBalcony', label: 'Balcon ou terrasse', desc: 'Vue extérieure privée', icon: Eye },
+                  { key: 'isReservable', label: 'Réservable en ligne', desc: 'Les clients peuvent réserver cette chambre', icon: Check },
+                  { key: 'isActive', label: 'Chambre active', desc: 'Visible dans le catalogue', icon: BedDouble },
+                ].map(({ key, label, desc, icon: Icon }) => (
+                  <div key={key} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Icon className="size-4 text-zinc-500" />
+                      <div>
+                        <p className="text-sm font-medium text-zinc-200">{label}</p>
+                        <p className="text-xs text-zinc-500">{desc}</p>
+                      </div>
                     </div>
-                    <div className="absolute top-1 left-1 rounded px-1 py-0.5 bg-black/60 text-[9px] font-bold text-amber-300 uppercase tracking-wide">
-                      360°
-                    </div>
+                    <Switch
+                      checked={!!form[key as keyof typeof form]}
+                      onCheckedChange={(v) => setForm((f) => ({ ...f, [key]: v }))}
+                    />
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Picker or action buttons */}
-            {show360Picker ? (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden divide-y divide-zinc-800">
-                {/* Option 1: single 360° image */}
-                <label className="flex items-start gap-3 p-4 cursor-pointer hover:bg-zinc-800/50 transition-colors group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPanoramic(f); }}
-                  />
-                  <div className="mt-0.5 size-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0 group-hover:bg-amber-400/20 transition-colors">
-                    {panoramicUploading ? <Loader2 className="size-4 text-amber-400 animate-spin" /> : <ImagePlus className="size-4 text-amber-400" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-zinc-100">Image 360° simple</p>
-                    <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
-                      Ajoutez une seule image panoramique que le client peut explorer en tournant la vue.
-                    </p>
-                  </div>
-                </label>
-
-                {/* Option 2: virtual tour */}
-                <button
-                  type="button"
-                  onClick={() => { setShow360Picker(false); onOpenTour?.(room); }}
-                  className="w-full flex items-start gap-3 p-4 cursor-pointer hover:bg-zinc-800/50 transition-colors text-left group"
-                >
-                  <div className="mt-0.5 size-9 rounded-xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center shrink-0 group-hover:bg-amber-400/20 transition-colors">
-                    <Navigation className="size-4 text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-zinc-100">Visite virtuelle</p>
-                    <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
-                      Créez une expérience composée de plusieurs images 360° connectées entre elles.
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShow360Picker(false)}
-                  className="w-full py-2.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                  Annuler
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShow360Picker(true)}
-                  className="gap-1.5 rounded-lg border-zinc-700 text-zinc-300 hover:border-amber-400/40 hover:text-amber-300 text-xs"
-                >
-                  <Plus className="size-3.5" /> Ajouter une expérience 360°
-                </Button>
-                {onOpenTour && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onOpenTour(room)}
-                    className="gap-1.5 rounded-lg text-zinc-400 hover:text-amber-300 text-xs"
-                  >
-                    <ScanLine className="size-3.5" />
-                    {(room.hasVirtualTour) ? 'Gérer la visite' : 'Créer visite virtuelle'}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur-sm px-6 py-4">
-          <Button variant="outline" onClick={onClose} className="border-zinc-700 text-zinc-400 rounded-xl">
-            Annuler
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl px-6 shadow-lg shadow-[#D4AF37]/20"
-          >
-            {saving ? <><Loader2 className="size-4 mr-2 animate-spin" /> Sauvegarde...</> : isNew ? 'Créer la chambre' : 'Enregistrer les modifications'}
-          </Button>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-zinc-800 bg-zinc-950 px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+            <span className="inline-flex items-center gap-1"><ImageIcon className="size-3.5" /> {photoCount}</span>
+            <span className="inline-flex items-center gap-1 text-amber-400/80"><Compass className="size-3.5" /> {panoCount}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={onClose} className="rounded-xl border-zinc-700 text-zinc-400">
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl bg-[#D4AF37] px-6 font-semibold text-black shadow-lg shadow-[#D4AF37]/20 hover:bg-[#c9a227]"
+            >
+              {saving ? <><Loader2 className="mr-2 size-4 animate-spin" /> Sauvegarde...</> : isNew ? 'Créer la chambre' : 'Enregistrer'}
+            </Button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
