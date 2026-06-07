@@ -34,6 +34,11 @@ type AuthState = {
   clearAll: () => void;
   /** Validate the current session by calling /me. Returns user or null. */
   fetchMe: () => Promise<User | null>;
+  /**
+   * Silently rotate the access token via /auth/refresh. Never clears the
+   * session on failure — used for proactive keep-alive while editing.
+   */
+  refreshSession: () => Promise<boolean>;
 };
 
 type MeResponse = {
@@ -216,6 +221,37 @@ export const useAuthStore = create<AuthState>()(
             });
             return null;
           }
+        }
+      },
+
+      refreshSession: async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
+            method: 'POST',
+            headers: authHeaders(),
+            credentials: 'include',
+          });
+          if (!res.ok) return false;
+          const data = (await res.json().catch(() => null)) as
+            | { accessToken?: string; user?: MeResponse }
+            | null;
+          if (data?.accessToken) {
+            set({ accessToken: data.accessToken });
+          }
+          if (data?.user && (data.user.id || data.user._id)) {
+            const u = mapUser(data.user);
+            set({
+              user: u,
+              authStatus: 'authenticated',
+              isAuthenticated: true,
+              role: u.role,
+              isVerified: Boolean(u.emailVerified),
+            });
+          }
+          return true;
+        } catch {
+          // Silent — never tear down the session on a keep-alive failure.
+          return false;
         }
       },
     }),

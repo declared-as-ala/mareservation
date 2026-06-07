@@ -40,7 +40,7 @@ export function useAuth(): AuthContextValue {
  * and make routing / UI decisions based on the single source of truth.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user, isResolving, hasHydrated, fetchMe, authStatus, isAuthenticated, role, isVerified } = useAuthStore();
+  const { user, isResolving, hasHydrated, fetchMe, refreshSession, authStatus, isAuthenticated, role, isVerified } = useAuthStore();
   const bootstrapped = useRef(false);
   const [ready, setReady] = useState(false);
 
@@ -65,6 +65,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchMe().finally(() => setReady(true));
     }
   }, [hasHydrated, user, fetchMe]);
+
+  // ── Proactive silent refresh ──────────────────────────────────────────
+  // Keeps the access token + refresh cookie rotating while the user is
+  // active, so long admin/owner editing sessions never get bounced. Fires:
+  //   • every 10 minutes on an interval
+  //   • whenever the tab regains focus / becomes visible
+  // All silent — never redirects, never toasts.
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled || document.hidden) return;
+      void refreshSession();
+    };
+
+    const interval = setInterval(tick, 10 * 60 * 1000); // 10 min
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') tick();
+    }
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', tick);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user, refreshSession]);
 
   const isLoading = !ready || isResolving;
 

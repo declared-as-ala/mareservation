@@ -19,9 +19,34 @@ const loginLimiter = rateLimit({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || process.env.JWT_SECRET || JWT_SECRET;
-const ACCESS_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
-const REFRESH_EXPIRY_DAYS = 7;
+// Access token is the primary auth channel (sent as a Bearer header that
+// survives cross-port deployments where httpOnly cookies are fragile). Keep
+// it long-lived by default so admins/owners are never bounced mid-edit;
+// silent refresh on the client keeps it rotating. Override via env if needed.
+const ACCESS_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '7d';
+const REFRESH_EXPIRY_DAYS = Number(process.env.REFRESH_TOKEN_EXPIRY_DAYS || 30);
 const COOKIE_NAME = 'refreshToken';
+
+/** Convert a jwt-style duration string (e.g. "7d", "15m", "900s") to seconds. */
+function expiryToSeconds(v: string): number {
+  const m = /^(\d+)\s*([smhd])?$/.exec(String(v).trim());
+  if (!m) return 7 * 24 * 60 * 60;
+  const n = parseInt(m[1], 10);
+  switch (m[2]) {
+    case 's': return n;
+    case 'm': return n * 60;
+    case 'h': return n * 3600;
+    case 'd': return n * 86400;
+    default: return n; // bare number = seconds
+  }
+}
+const ACCESS_EXPIRY_SECONDS = expiryToSeconds(ACCESS_EXPIRY);
+
+// Cookie security is opt-in via env so the refresh cookie also works over
+// plain HTTP deployments (a `secure` cookie is silently dropped over HTTP).
+// Set COOKIE_SECURE=true once the site is served over HTTPS.
+const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
+const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE as 'lax' | 'strict' | 'none') || 'lax';
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -31,15 +56,15 @@ function setRefreshCookie(res: Response, token: string) {
   const maxAge = REFRESH_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAMESITE,
     maxAge,
-    path: '/api',
+    path: '/',
   });
 }
 
 function clearRefreshCookie(res: Response) {
-  res.clearCookie(COOKIE_NAME, { path: '/api' });
+  res.clearCookie(COOKIE_NAME, { path: '/' });
 }
 
 // POST /api/auth/register and POST /api/auth/signup (body.name accepted as fullName)
@@ -99,7 +124,7 @@ router.post(['/register', '/signup'], async (req, res) => {
     res.status(201).json({
       message: 'Compte créé avec succès',
       accessToken,
-      expiresIn: 900, // 15 min in seconds
+      expiresIn: ACCESS_EXPIRY_SECONDS,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -147,7 +172,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       message: 'Connexion réussie',
       accessToken,
-      expiresIn: 900,
+      expiresIn: ACCESS_EXPIRY_SECONDS,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -201,7 +226,7 @@ router.post('/refresh', async (req, res) => {
 
     res.json({
       accessToken,
-      expiresIn: 900,
+      expiresIn: ACCESS_EXPIRY_SECONDS,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -234,8 +259,9 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// POST /api/auth/logout
-router.post('/logout', authenticate, async (req: AuthRequest, res) => {
+// POST /api/auth/logout — no auth required so an expired session can still
+// be cleanly torn down (deletes the refresh token by its cookie value).
+router.post('/logout', async (req: AuthRequest, res) => {
   try {
     const token = req.cookies?.[COOKIE_NAME];
     if (token) {
