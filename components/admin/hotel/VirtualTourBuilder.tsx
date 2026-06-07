@@ -13,6 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { uploadImageFile } from '@/lib/api/client';
+import dynamic from 'next/dynamic';
+const PanoramaEngine = dynamic(
+  () => import('@/components/immersive/PanoramaEngine'),
+  { ssr: false }
+);
 import {
   createAdminVenueScene,
   updateAdminVenueScene,
@@ -509,6 +514,7 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
   const [mode, setMode] = useState<BuilderMode>('view');
   const [pendingHotspot, setPendingHotspot] = useState<PendingHotspot | null>(null);
   const [showAddScene, setShowAddScene] = useState(false);
+  const [show360Preview, setShow360Preview] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   const activeScene = scenes.find((s) => s._id === activeSceneId);
@@ -687,6 +693,19 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
                   </span>
                 </div>
 
+                {/* Aperçu 360° — rotatable preview matching the public viewer */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShow360Preview(true);
+                  }}
+                  className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/55 bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-black shadow-[0_4px_14px_rgba(245,158,11,0.45)] transition-all hover:scale-105"
+                >
+                  <Layers className="size-3.5" />
+                  Aperçu 360°
+                </button>
+
                 {/* Hotspot overlays */}
                 {activeHotspots.map((h) => (
                   <HotspotDot
@@ -801,6 +820,41 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
               setMode('view');
             }}
           />
+        )}
+        {show360Preview && activeScene && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col bg-black"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-black/85 px-5 py-3 backdrop-blur-md">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-300">
+                  Aperçu 360° admin
+                </p>
+                <p className="text-sm font-semibold text-white">{activeScene.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShow360Preview(false)}
+                aria-label="Fermer l'aperçu"
+                className="flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/[0.05] text-white transition-all hover:border-white/30 hover:bg-white/[0.12]"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="relative flex-1 overflow-hidden bg-black">
+              <PanoramaEngine
+                imageUrl={activeScene.image}
+                markers={[]}
+                mode="navigate"
+                scenes={scenes.map((s) => ({ _id: s._id, name: s.name, image: s.image }))}
+                activeSceneId={activeScene._id}
+                onSceneChange={(id) => setActiveSceneId(id)}
+              />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
