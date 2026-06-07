@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { API_BASE } from '@/lib/api/base-url';
 
 export type CartItemType = 'venue_table' | 'venue_room' | 'venue_coworking' | 'event_ticket';
 
@@ -45,8 +46,6 @@ export interface CartItem {
 
 /** Cart items expire after 24 hours (in milliseconds). */
 const CART_EXPIRY_MS = 24 * 60 * 60 * 1000;
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
-
 function releaseHold(holdId?: string) {
   if (!holdId) return;
   void fetch(`${API_BASE}/api/v1/reservations/holds/${holdId}`, {

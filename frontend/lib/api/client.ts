@@ -9,8 +9,7 @@
 import { useAuthStore } from '@/stores/auth';
 import { isProtectedPath } from '@/lib/auth/redirect';
 import { refreshAuthSession } from './auth-session';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
+import { API_BASE } from './base-url';
 
 export type ApiResponse<T = unknown> = {
   success: boolean;

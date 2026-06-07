@@ -1,4 +1,5 @@
 import { api, apiGetRaw } from './client';
+import { API_BASE } from './base-url';
 
 export type PaymentOption = 'online' | 'deposit' | 'pay_at_hotel';
 
@@ -96,6 +97,5 @@ export async function fetchHotelTicket(reservationId: string): Promise<any> {
 }
 
 export function getCalendarIcsUrl(reservationId: string): string {
-  const base = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
-  return `${base}/api/v1/hotel-checkout/calendar/${reservationId}.ics`;
+  return `${API_BASE}/api/v1/hotel-checkout/calendar/${reservationId}.ics`;
 }

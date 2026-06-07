@@ -1,7 +1,6 @@
 import { apiGetRaw, apiPostRaw, api } from './client';
 import type { Venue, TablePlacement } from './types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
+import { API_BASE } from './base-url';
 
 export interface VenuesQuery {
   type?: string;

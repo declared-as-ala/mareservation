@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDefaultRedirectForRole, isOwnerRole, resolvePostLoginRedirect, sanitizeReturnTo } from '@/lib/auth/redirect';
+import { API_BASE } from '@/lib/api/base-url';
 
 // ── Cookie-based JWT decode (no secret needed for expiry check) ──
 
@@ -53,10 +54,9 @@ function isTokenValid(cookieValue: string | undefined): boolean {
  * readable by frontend middleware, so auth is handled client-side.
  */
 function canUseEdgeCookieAuth(request: NextRequest): boolean {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return true;
+  if (!API_BASE) return true;
   try {
-    return new URL(apiUrl).origin === request.nextUrl.origin;
+    return new URL(API_BASE).origin === request.nextUrl.origin;
   } catch {
     return true;
   }

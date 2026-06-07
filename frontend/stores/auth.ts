@@ -3,8 +3,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { refreshAuthSession } from '@/lib/api/auth-session';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://mareservtaion-backend.vercel.app';
+import { API_BASE } from '@/lib/api/base-url';
 
 export type User = {
   id: string;
