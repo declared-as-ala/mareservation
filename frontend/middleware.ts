@@ -49,16 +49,29 @@ function isTokenValid(cookieValue: string | undefined): boolean {
 }
 
 /**
- * Frontend and backend can live on different origins, including the same host
- * on different ports. In that setup, backend auth cookies are not reliably
- * readable by frontend middleware, so auth is handled client-side.
+ * Edge cookie auth is only viable when the access token actually lives in a
+ * cookie the middleware can read on the frontend origin.
+ *
+ * This app authenticates with a **Bearer token kept in localStorage** (the
+ * backend only sets an httpOnly *refresh* cookie, never a readable
+ * `accessToken` cookie). The edge therefore can never see a valid token, so
+ * enforcing cookie auth here would bounce every /admin and /owner hit to
+ * /login — an infinite loop, since the real session lives client-side.
+ *
+ * Protection is handled instead by:
+ *   • client guards (AdminLayout / owner layouts read the auth store), and
+ *   • the backend, which enforces requireAdmin / requireOwner on every route.
+ *
+ * So edge enforcement is OFF unless explicitly opted in (cookie-based setups)
+ * AND the API is same-origin.
  */
 function canUseEdgeCookieAuth(request: NextRequest): boolean {
-  if (!API_BASE) return true;
+  if (process.env.NEXT_PUBLIC_EDGE_COOKIE_AUTH !== 'true') return false;
+  if (!API_BASE) return false;
   try {
     return new URL(API_BASE).origin === request.nextUrl.origin;
   } catch {
-    return true;
+    return false;
   }
 }
 

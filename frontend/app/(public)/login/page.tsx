@@ -111,6 +111,10 @@ function LoginForm() {
     ) : isAuthenticated ? (
       <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-950 to-black" />
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <Loader2 className="size-7 animate-spin text-amber-400" />
+          <p className="text-sm text-zinc-400">Connexion réussie — redirection…</p>
+        </div>
       </div>
     ) : (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">

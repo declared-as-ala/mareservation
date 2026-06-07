@@ -492,12 +492,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Redirect non-ADMIN once auth is resolved.
+  // Once auth is resolved: send guests to login (with returnTo) and
+  // non-admins to /unauthorized. Edge middleware no longer guards these
+  // routes (auth is a client-side Bearer token), so the layout does it.
   useEffect(() => {
-    if (!isLoading && user && user.role !== 'ADMIN') {
+    if (isLoading) return;
+    if (!user) {
+      router.replace(`/login?returnTo=${encodeURIComponent(pathname || '/admin/dashboard')}`);
+    } else if (user.role !== 'ADMIN') {
       router.replace('/unauthorized');
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user, router, pathname]);
 
   // Close mobile menu on route change.
   useEffect(() => {
