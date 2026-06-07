@@ -194,7 +194,93 @@ function EventTicketView({ reservation }: { reservation: Reservation }) {
   }
 
   const printTicket = () => {
-    window.print();
+    const p = window.open('', '_blank', 'width=800,height=900');
+    if (!p) { window.print(); return; }
+    p.document.write(`<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Ma Reservation – ${eventName}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
+.ticket{max-width:700px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12)}
+.ticket-top{background:linear-gradient(135deg,#0a0a1a 0%,#1a1a2e 50%,#16213e 100%);padding:24px 32px 20px;text-align:center;position:relative;overflow:hidden}
+.ticket-top::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 20%,rgba(212,175,55,.08) 0%,transparent 60%)}
+.ticket-top .brand{font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#d4af37;margin-bottom:12px;position:relative}
+.ticket-top h1{font-size:26px;font-weight:900;color:#fff;margin-bottom:4px;position:relative;line-height:1.2}
+.ticket-top .sub{font-size:13px;color:rgba(255,255,255,.55);position:relative}
+.ticket-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);border-radius:999px;padding:4px 14px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#d4af37;margin-bottom:10px;position:relative}
+.ticket-body{padding:28px 32px}
+.ticket-event-img{width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:20px;display:block;background:#e5e7eb}
+.event-name{font-size:22px;font-weight:800;color:#111;margin-bottom:4px}
+.event-meta{font-size:13px;color:#6b7280;margin-bottom:20px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.info-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px}
+.info-item.full{grid-column:1/-1}
+.info-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin-bottom:4px}
+.info-value{font-size:14px;font-weight:700;color:#111}
+.info-value.mono{font-family:'Courier New',monospace;letter-spacing:.12em;color:#d97706}
+.price-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#374151}
+.price-row.total{border-top:2px solid #e5e7eb;margin-top:6px;padding-top:10px;font-size:16px;font-weight:800;color:#111}
+.qr-section{text-align:center;margin-top:16px;padding-top:16px;border-top:1px dashed #d1d5db}
+.qr-section img{width:140px;height:140px;border-radius:10px}
+.qr-section .ref{font-family:'Courier New',monospace;font-size:18px;font-weight:900;letter-spacing:.14em;color:#d97706;margin-top:8px}
+.qr-section .hint{font-size:11px;color:#9ca3af;margin-top:6px}
+.ticket-footer{background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;font-size:11px;color:#9ca3af}
+.ticket-footer strong{color:#374151}
+@media print{body{background:#fff;padding:0;display:block}.ticket{box-shadow:none;border:1px solid #d1d5db;border-radius:12px;max-width:100%}@page{margin:8mm;size:A4 portrait}}
+</style>
+</head>
+<body>
+<div class="ticket">
+  <div class="ticket-top">
+    <div class="brand">&#9670; Ma Reservation</div>
+    <div class="ticket-badge">&#10003; Ticket confirmé</div>
+    <h1>${eventName}</h1>
+    <p class="sub">${ticketLabel} &middot; ${quantity} billet${quantity > 1 ? 's' : ''}</p>
+  </div>
+  <div class="ticket-body">
+    ${eventImage ? `<img class="ticket-event-img" src="${eventImage}" alt="${eventName}"/>` : ''}
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Lieu</div>
+        <div class="info-value">${venueName}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Type</div>
+        <div class="info-value">${ticketLabel}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Date</div>
+        <div class="info-value">${formatDate(start)}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Horaire</div>
+        <div class="info-value">${formatTimeRange(start, end)}</div>
+      </div>
+      ${venueLine ? `<div class="info-item"><div class="info-label">Adresse</div><div class="info-value">${venueLine}</div></div>` : ''}
+      ${reservation.customerFirstName || reservation.customerLastName ? `<div class="info-item"><div class="info-label">Client</div><div class="info-value">${[reservation.customerFirstName, reservation.customerLastName].filter(Boolean).join(' ')}</div></div>` : ''}
+      ${reservation.partySize != null ? `<div class="info-item"><div class="info-label">Quantité</div><div class="info-value">${reservation.partySize} billet${reservation.partySize > 1 ? 's' : ''}</div></div>` : ''}
+      ${tableName ? `<div class="info-item"><div class="info-label">Table</div><div class="info-value">${tableName}</div></div>` : ''}
+    </div>
+    <div class="price-row"><span>Sous-total billets</span><span>${formatMoney(subtotal ?? total ?? 0)}</span></div>
+    ${serviceFee != null ? `<div class="price-row"><span>Frais service</span><span>${formatMoney(serviceFee)}</span></div>` : ''}
+    <div class="price-row total"><span>Total payé</span><span>${formatMoney(total ?? 0)}</span></div>
+    <div class="qr-section">
+      ${reservation.qrCodeImageUrl ? `<img src="${reservation.qrCodeImageUrl}" alt="QR Code"/>` : `<div style="width:140px;height:140px;margin:0 auto;background:#f3f4f6;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;letter-spacing:.2em;color:#9ca3af;font-family:'Courier New',monospace">${code.slice(0,4)}</div>`}
+      <div class="ref">${code}</div>
+      <div class="hint">Présentez ce QR code à l'entrée. Une pièce d'identité peut être demandée.</div>
+    </div>
+  </div>
+  <div class="ticket-footer">
+    <strong>Ma Reservation</strong> &mdash; Réservation de tables, salles et événements &nbsp;|&nbsp; ma-reservation.tn
+  </div>
+</div>
+<script>window.onload=function(){window.print();setTimeout(()=>window.close(),800)}<\/script>
+</body>
+</html>`);
+    p.document.close();
   };
 
   return (

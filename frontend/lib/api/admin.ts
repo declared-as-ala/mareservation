@@ -202,6 +202,18 @@ export async function inviteAdminOwner(payload: {
   return apiPostRaw('/admin/owners/invite', payload);
 }
 
+export type AdminEventTicketType = {
+  _id?: string;
+  name: string;
+  price: number;
+  capacity: number;
+  sold?: number;
+  salesStartAt?: string;
+  salesEndAt?: string;
+  maxPerOrder?: number;
+  isActive?: boolean;
+};
+
 export type AdminEventPayload = {
   venueId?: string;
   title?: string;
@@ -211,8 +223,13 @@ export type AdminEventPayload = {
   endsAt?: string;
   coverImage?: string;
   afficheImageUrl?: string;
+  galleryUrls?: string[];
+  panoramicImages?: string[];
+  virtualTourUrl?: string;
+  hasVirtualTour?: boolean;
   isPublished?: boolean;
   isVedette?: boolean;
+  ticketTypes?: AdminEventTicketType[];
 };
 
 export async function updateAdminEvent(id: string, payload: AdminEventPayload) {
@@ -221,6 +238,10 @@ export async function updateAdminEvent(id: string, payload: AdminEventPayload) {
 
 export async function createAdminEvent(payload: AdminEventPayload & { venueId: string; title: string; startAt: string }) {
   return apiPostRaw<{ _id: string }>('/admin/events', payload);
+}
+
+export async function deleteAdminEvent(id: string) {
+  return apiDeleteRaw(`/admin/events/${id}`);
 }
 
 // Virtual tours (admin)

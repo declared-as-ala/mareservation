@@ -7,6 +7,7 @@ import { CardFooter, CardHeader } from '@/components/ui/card';
 import { BaseCard } from '@/components/shared/BaseCard';
 import { TypeBadge } from '@/components/shared/TypeBadge';
 import { cn } from '@/lib/utils';
+import { getEventAvailability } from '@/lib/events/availability';
 import type { Event } from '@/lib/api/types';
 
 function getVenueName(ev: Event): string {
@@ -29,14 +30,13 @@ export function EventCard({ event, className }: EventCardProps) {
   const href = `/evenement/${event.slug || event._id}`;
   const start = new Date(event.startAt);
   const cover = event.coverImage ?? event.imageUrl;
-  const activeTickets = (event.ticketTypes ?? []).filter((ticket) => ticket.isActive !== false);
-  const minPrice = activeTickets.length
-    ? Math.min(...activeTickets.map((ticket) => Number(ticket.price || 0)))
+  const avail = getEventAvailability(event.ticketTypes);
+  const minPrice = avail.hasTickets
+    ? Math.min(...(event.ticketTypes ?? [])
+        .filter((t) => t.isActive !== false)
+        .map((t) => Number(t.price || 0))
+        .filter((p) => p > 0))
     : null;
-  const remaining = activeTickets.reduce(
-    (sum, ticket) => sum + Math.max(0, Number(ticket.capacity || 0) - Number(ticket.sold || 0)),
-    0
-  );
   const has360 = venueHas360(event);
 
   return (
@@ -83,7 +83,13 @@ export function EventCard({ event, className }: EventCardProps) {
             )}
           </div>
           <div className="mt-3 flex items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2 text-xs">
-            <span className="text-zinc-500">{remaining > 0 ? `${remaining} billets restants` : 'Billets limites'}</span>
+            {avail.isSoldOut ? (
+              <span className="font-bold text-red-400">COMPLET</span>
+            ) : avail.remaining > 0 ? (
+              <span className="text-zinc-500">{avail.remaining} billets restants</span>
+            ) : (
+              <span className="text-zinc-500">Billets limites</span>
+            )}
             {minPrice != null ? <span className="font-bold text-amber-300">Des {minPrice} TND</span> : null}
           </div>
         </CardHeader>

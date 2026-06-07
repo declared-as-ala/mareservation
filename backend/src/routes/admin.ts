@@ -1168,6 +1168,117 @@ router.get('/events', async (req, res) => {
   }
 });
 
+// Whitelist of fields an admin may write on an Event.
+function pickEventFields(body: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  const stringFields = ['title', 'type', 'description', 'coverImage', 'afficheImageUrl', 'virtualTourUrl', 'ageRestriction', 'termsFr', 'organizerName', 'status'];
+  for (const f of stringFields) {
+    if (body[f] !== undefined) out[f] = body[f];
+  }
+  if (body.venueId !== undefined && mongoose.Types.ObjectId.isValid(String(body.venueId))) {
+    out.venueId = body.venueId;
+  }
+  if (body.startAt !== undefined) out.startAt = body.startAt ? new Date(String(body.startAt)) : undefined;
+  if (body.endsAt !== undefined) out.endsAt = body.endsAt ? new Date(String(body.endsAt)) : undefined;
+  if (body.isPublished !== undefined) out.isPublished = Boolean(body.isPublished);
+  if (body.isVedette !== undefined) out.isVedette = Boolean(body.isVedette);
+  if (Array.isArray(body.galleryUrls)) out.galleryUrls = body.galleryUrls.filter((u) => typeof u === 'string');
+  if (Array.isArray(body.panoramicImages)) {
+    out.panoramicImages = body.panoramicImages.filter((u) => typeof u === 'string');
+    out.hasVirtualTour = (out.panoramicImages as string[]).length > 0 || Boolean(body.virtualTourUrl);
+  }
+  if (body.hasVirtualTour !== undefined) out.hasVirtualTour = Boolean(body.hasVirtualTour);
+  if (Array.isArray(body.ticketTypes)) {
+    out['ticketTypes'] = body.ticketTypes.map((t: any) => ({
+      _id: t._id && mongoose.Types.ObjectId.isValid(t._id) ? t._id : new mongoose.Types.ObjectId(),
+      name: t.name || 'Standard',
+      price: Number(t.price || 0),
+      capacity: Number(t.capacity || 0),
+      sold: Number(t.sold || 0),
+      salesStartAt: t.salesStartAt ? new Date(t.salesStartAt) : undefined,
+      salesEndAt: t.salesEndAt ? new Date(t.salesEndAt) : undefined,
+      maxPerOrder: Number(t.maxPerOrder || 10),
+      isActive: t.isActive !== false,
+    }));
+  }
+  return out;
+}
+
+// PATCH /api/admin/events/:id
+router.patch('/events/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Identifiant invalide.' });
+    }
+    const update = pickEventFields(req.body ?? {});
+
+    // Preserve server-side sold counters when ticketTypes are being updated
+    if (Array.isArray(update.ticketTypes)) {
+      const current = await Event.findById(req.params.id, { ticketTypes: 1 }).lean();
+      if (current?.ticketTypes) {
+        const soldMap = new Map(
+          (current.ticketTypes as any[]).map((t: any) => [String(t._id), Number(t.sold || 0)])
+        );
+        (update.ticketTypes as any[]) = (update.ticketTypes as any[]).map((t: any) => {
+          const serverSold = soldMap.get(String(t._id));
+          if (serverSold !== undefined) t.sold = Math.max(serverSold, Number(t.sold || 0));
+          else t.sold = Math.max(0, Number(t.sold || 0));
+          // Clamp capacity >= sold
+          t.capacity = Math.max(Number(t.capacity || 0), t.sold);
+          return t;
+        });
+      }
+    }
+
+    const event = await Event.findByIdAndUpdate(req.params.id, { $set: update }, { new: true })
+      .populate('venueId', 'name city')
+      .lean();
+    if (!event) return res.status(404).json({ error: 'Événement introuvable.' });
+    res.json(event);
+  } catch (error) {
+    console.error('Error updating event:', error);
+    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'événement.' });
+  }
+});
+
+// POST /api/admin/events
+router.post('/events', async (req, res) => {
+  try {
+    const body = req.body ?? {};
+    if (!body.title || !body.venueId || !body.startAt) {
+      return res.status(400).json({ error: 'Titre, lieu et date de début requis.' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(String(body.venueId))) {
+      return res.status(400).json({ error: 'Lieu invalide.' });
+    }
+    const fields = pickEventFields(body);
+    const created = await Event.create({
+      ...fields,
+      slug: body.slug ? slugify(String(body.slug)) : slugify(String(body.title)),
+    });
+    const event = await Event.findById(created._id).populate('venueId', 'name city').lean();
+    res.status(201).json(event);
+  } catch (error) {
+    console.error('Error creating event:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de l\'événement.' });
+  }
+});
+
+// DELETE /api/admin/events/:id
+router.delete('/events/:id', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Identifiant invalide.' });
+    }
+    const deleted = await Event.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Événement introuvable.' });
+    res.json({ message: 'Événement supprimé.' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression de l\'événement.' });
+  }
+});
+
 // PATCH /api/admin/reservations/:id/cancel
 router.patch('/reservations/:id/cancel', async (req, res) => {
   try {

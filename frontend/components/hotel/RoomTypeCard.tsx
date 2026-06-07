@@ -208,16 +208,20 @@ export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCa
           </div>
         )}
 
-        {/* Plein écran button when 360 — opens the multi-room scene viewer */}
-        {hasInlinePanorama && (group.rooms.length > 1 || totalTourSceneCount > 1) && (
+        {/* Plein écran button — always available when there is any 360 content.
+            Lets the client blow the immersive view up to full-screen on every
+            room type, even a single-room type with one scene. */}
+        {hasInlinePanorama && (
           <button
             type="button"
             onClick={() => onView360(group)}
-            aria-label="Ouvrir la visite plein écran"
-            className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[11px] font-bold text-white backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-amber-400/85 hover:text-black"
+            aria-label="Agrandir la visite 360° en plein écran"
+            className="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-black/75 px-3.5 py-1.5 text-[11px] font-bold text-amber-200 shadow-lg backdrop-blur-md transition-all hover:scale-[1.03] hover:bg-amber-400 hover:text-black"
           >
-            <Maximize2 className="size-3" />
-            Voir toutes ({group.rooms.length})
+            <Maximize2 className="size-3.5" />
+            {group.rooms.length > 1 || totalTourSceneCount > 1
+              ? `Plein écran · ${group.rooms.length} vues`
+              : 'Voir en grand'}
           </button>
         )}
 

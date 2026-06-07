@@ -172,17 +172,29 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     if (ageRestriction !== undefined) (event as any).ageRestriction = ageRestriction || undefined;
     if (termsFr !== undefined) (event as any).termsFr = termsFr || undefined;
     if (Array.isArray(ticketTypes)) {
-      (event as any).ticketTypes = ticketTypes.map((t: any) => ({
-        _id: t._id && mongoose.Types.ObjectId.isValid(t._id) ? t._id : new mongoose.Types.ObjectId(),
-        name: t.name || 'Standard',
-        price: Number(t.price || 0),
-        capacity: Number(t.capacity || 0),
-        sold: Number(t.sold || 0),
-        salesStartAt: t.salesStartAt ? new Date(t.salesStartAt) : undefined,
-        salesEndAt: t.salesEndAt ? new Date(t.salesEndAt) : undefined,
-        maxPerOrder: Number(t.maxPerOrder || 10),
-        isActive: t.isActive !== false,
-      }));
+      // Build a map of server-side sold counters to prevent client reset
+      const currentSoldMap = new Map<string, number>();
+      if (event.ticketTypes) {
+        for (const t of event.ticketTypes as any[]) {
+          if (t._id) currentSoldMap.set(String(t._id), Number(t.sold || 0));
+        }
+      }
+      (event as any).ticketTypes = ticketTypes.map((t: any) => {
+        const serverSold = currentSoldMap.get(String(t._id));
+        const sold = serverSold !== undefined ? Math.max(serverSold, Number(t.sold || 0)) : Math.max(0, Number(t.sold || 0));
+        const capacity = Math.max(Number(t.capacity || 0), sold);
+        return {
+          _id: t._id && mongoose.Types.ObjectId.isValid(t._id) ? t._id : new mongoose.Types.ObjectId(),
+          name: t.name || 'Standard',
+          price: Number(t.price || 0),
+          capacity,
+          sold,
+          salesStartAt: t.salesStartAt ? new Date(t.salesStartAt) : undefined,
+          salesEndAt: t.salesEndAt ? new Date(t.salesEndAt) : undefined,
+          maxPerOrder: Number(t.maxPerOrder || 10),
+          isActive: t.isActive !== false,
+        };
+      });
     }
     event.updatedBy = userId as any;
     await event.save();

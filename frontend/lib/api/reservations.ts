@@ -36,7 +36,7 @@ export async function fetchTableAvailabilityTimeline(tableId: string, date: stri
 
 export async function fetchReservationById(id: string): Promise<Reservation | null> {
   try {
-    const raw = await apiGetRaw<{ success?: boolean; data?: Reservation } | Reservation>(`/reservations/me/${id}`);
+    const raw = await apiGetRaw<{ success?: boolean; data?: Reservation } | Reservation>(`/reservations/${id}`);
     const data = (raw as { data?: Reservation })?.data ?? (raw as Reservation);
     return data && typeof data === 'object' && '_id' in data ? data : null;
   } catch {

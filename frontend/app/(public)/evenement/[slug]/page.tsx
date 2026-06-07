@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { fetchEventByIdOrSlug } from '@/lib/api/events';
 import { createEventOrder } from '@/lib/api/event-checkout';
+import { getEventAvailability } from '@/lib/events/availability';
 import { DetailPageSkeleton } from '@/components/shared/skeletons';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { Button } from '@/components/ui/button';
@@ -150,6 +151,7 @@ export default function EventDetailPage() {
   const venueLine = getVenueCity(event);
   const mediaImages = getEventImages(event);
   const imageUrl = event.coverImage ?? event.imageUrl ?? mediaImages[0] ?? null;
+  const eventAvail = getEventAvailability(event.ticketTypes);
   const soldOut = !selectedTicket || ticketRemaining(selectedTicket) <= 0;
 
   const handleReserve = async () => {
@@ -247,7 +249,7 @@ export default function EventDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-amber-400/20 bg-zinc-950/90 p-5 shadow-2xl shadow-black/40 backdrop-blur md:p-6">
+              <div className="rounded-3xl border border-amber-400/20 bg-zinc-950/90 p-5 shadow-2xl shadow-black/40 backdrop-blur md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">Reservation</p>
@@ -255,6 +257,13 @@ export default function EventDetailPage() {
                 </div>
                 <Ticket className="size-6 text-amber-300" />
               </div>
+
+              {eventAvail.isSoldOut && (
+                <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-950/30 p-4 text-center">
+                  <p className="text-sm font-bold text-red-400">Evenement complet</p>
+                  <p className="mt-1 text-xs text-red-300/70">Tous les billets ont ete vendus.</p>
+                </div>
+              )}
 
               <div className="space-y-3">
                 {ticketTypes.map((ticket) => {
@@ -463,11 +472,11 @@ export default function EventDetailPage() {
 
           <Button
             onClick={handleReserve}
-            disabled={loading || soldOut || !ticketTypes.length}
+            disabled={loading || soldOut || !ticketTypes.length || eventAvail.isSoldOut}
             className="mt-4 h-13 w-full rounded-2xl bg-amber-400 py-6 text-base font-black text-black hover:bg-amber-300"
           >
             {loading ? <Loader2 className="mr-2 size-5 animate-spin" /> : <CheckCircle2 className="mr-2 size-5" />}
-            {soldOut ? 'Billet epuise' : 'Confirmer et obtenir QR'}
+            {eventAvail.isSoldOut ? 'Evenement complet' : soldOut ? 'Billet epuise' : 'Confirmer et obtenir QR'}
           </Button>
         </aside>
       </main>

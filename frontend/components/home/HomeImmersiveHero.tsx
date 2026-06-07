@@ -10,7 +10,7 @@ import type { Venue } from '@/lib/api/types';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
   ArrowRight, Globe, ShieldCheck, Armchair,
-  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Trophy, Play,
+  UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Play,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────
@@ -56,8 +56,7 @@ const CATEGORIES = [
   { title: 'Hébergement', subtitle: "Hôtels • Maisons d'hôtes", href: '/hotels', Icon: BedDouble },
   { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restaurants', Icon: UtensilsCrossed },
   { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/explorer?q=Bar', Icon: Martini },
-  { title: 'Événements', subtitle: 'Concerts • Festivals', href: '/evenements', Icon: PartyPopper },
-  { title: 'Sport', subtitle: 'Matchs • Tournois', href: '/evenements?type=SPORTS', Icon: Trophy },
+  { title: 'Événements', subtitle: 'Concerts • Festivals • Sport', href: '/evenements', Icon: PartyPopper },
   { title: 'Business', subtitle: 'Réunions • Coworking', href: '/coworking', Icon: Briefcase },
   { title: 'Bien-être', subtitle: 'Spas • Piscines', href: '/explorer?q=Spa', Icon: Flower2 },
 ];

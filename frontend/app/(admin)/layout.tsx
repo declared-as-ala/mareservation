@@ -89,7 +89,7 @@ const categoryGroup: CategoryGroup = {
       icon: HotelIcon,
       children: [
         { href: '/admin/hotels', label: 'Hôtels', icon: HotelIcon },
-        { href: '/admin/maisons-dhote', label: "Maisons d'hôtes", icon: HomeIcon },
+        { href: '/admin/venues?type=MAISON_DHOTE', label: "Maisons d'hôtes", icon: HomeIcon, typeQuery: 'MAISON_DHOTE' },
       ],
     },
     {
@@ -117,22 +117,13 @@ const categoryGroup: CategoryGroup = {
     {
       key: 'evenements',
       label: 'Événements',
-      subtitle: 'Concerts • Festivals',
+      subtitle: 'Concerts • Festivals • Sport',
       icon: PartyPopper,
       children: [
+        { href: '/admin/events', label: 'Tous les événements', icon: CalendarDays },
         { href: '/admin/events?type=CONCERT', label: 'Concerts', icon: PartyPopper, typeQuery: 'CONCERT' },
         { href: '/admin/events?type=FESTIVAL', label: 'Festivals', icon: Sparkles, typeQuery: 'FESTIVAL' },
-        { href: '/admin/events', label: 'Tous les événements', icon: CalendarDays },
-      ],
-    },
-    {
-      key: 'sport',
-      label: 'Sport',
-      subtitle: 'Matchs • Tournois',
-      icon: Trophy,
-      children: [
-        { href: '/admin/events?type=SPORT', label: 'Matchs', icon: Trophy, typeQuery: 'SPORT' },
-        { href: '/admin/events?type=TOURNOI', label: 'Tournois', icon: Trophy, typeQuery: 'TOURNOI' },
+        { href: '/admin/events?type=SPORT', label: 'Sport · Matchs', icon: Trophy, typeQuery: 'SPORT' },
       ],
     },
     {
@@ -255,9 +246,28 @@ function CategoryGroupBlock({
   isItemActive: (item: NavItem) => boolean;
   onNavigate?: () => void;
 }) {
-  // Auto-expand the category whose child is currently active.
+  // Does a category's direct href fully match the current URL (path + every
+  // query param in the href)? Prevents e.g. "Bien-être" (/admin/venues?q=Spa)
+  // lighting up on every /admin/venues page.
+  function hrefMatchesCurrent(href: string): boolean {
+    const [base, query] = href.split('?');
+    if (pathname !== base) return false;
+    if (!query) {
+      // A bare href (no query) only matches when the current view isn't
+      // narrowed by a filter param — so /admin/events stays inactive while
+      // /admin/events?type=SPORT is showing.
+      return !searchParams.get('type') && !searchParams.get('q');
+    }
+    const params = new URLSearchParams(query);
+    for (const [k, v] of params.entries()) {
+      if (searchParams.get(k) !== v) return false;
+    }
+    return true;
+  }
+
+  // Auto-expand the category whose child (or own href) is currently active.
   function isChildActive(cat: CategoryNode): boolean {
-    if (cat.href && pathname === cat.href.split('?')[0]) return true;
+    if (cat.href && hrefMatchesCurrent(cat.href)) return true;
     return !!cat.children?.some((c) => isItemActive(c));
   }
 
@@ -392,10 +402,14 @@ function SidebarContent({
     if (item.qQuery) {
       return pathname === basePath && searchParams.get('q') === item.qQuery && !searchParams.get('type');
     }
-    if (basePath === '/admin/venues') {
-      return pathname === basePath && !searchParams.get('type') && !searchParams.get('q');
+    // A bare catch-all entry ("Tous les événements", "Tous les lieux") is only
+    // active when no filter param narrows the current view — otherwise a
+    // filtered URL like /admin/events?type=SPORT would also light up the
+    // catch-all alongside the real "Sport" child.
+    if (pathname === basePath) {
+      return !searchParams.get('type') && !searchParams.get('q');
     }
-    return pathname === basePath || pathname.startsWith(basePath + '/');
+    return pathname.startsWith(basePath + '/');
   }
 
   return (
@@ -543,7 +557,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (i.qQuery) {
       return pathname === basePath && searchParamsLayout.get('q') === i.qQuery && !searchParamsLayout.get('type');
     }
-    return pathname === basePath || pathname.startsWith(basePath + '/');
+    if (pathname === basePath) {
+      return !searchParamsLayout.get('type') && !searchParamsLayout.get('q');
+    }
+    return pathname.startsWith(basePath + '/');
   });
   const pageTitle = currentItem?.label ?? 'Administration';
 

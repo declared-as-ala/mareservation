@@ -11,6 +11,7 @@ import {
   type OwnerEventTicketType,
 } from '@/lib/api/owner-events';
 import { fetchOwnerVenues } from '@/lib/api/owner';
+import { TicketTypesEditor } from '@/components/events/TicketTypesEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,15 +19,12 @@ import { cn } from '@/lib/utils';
 import {
   CalendarClock,
   CheckCircle2,
-  Crown,
   Edit3,
   ImageIcon,
   Loader2,
-  Plus,
   Send,
   Sparkles,
   Ticket,
-  Trash2,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -223,14 +221,6 @@ export default function OwnerEventsPage() {
     onError: (e: any) => toast.error(e?.message || 'Erreur envoi moderation.'),
   });
 
-  const updateTicket = (index: number, patch: Partial<TicketDraft>) => {
-    setTickets((current) => current.map((ticket, i) => (i === index ? { ...ticket, ...patch } : ticket)));
-  };
-
-  const removeTicket = (index: number) => {
-    setTickets((current) => (current.length <= 1 ? current : current.filter((_, i) => i !== index)));
-  };
-
   return (
     <div className="min-h-screen bg-[#080808] px-4 py-8 text-zinc-100">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -375,83 +365,12 @@ export default function OwnerEventsPage() {
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">Inventaire</p>
                 <h2 className="mt-1 text-xl font-black">Billets & zones</h2>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full border-zinc-700 text-zinc-200"
-                onClick={() => setTickets((current) => [...current, { name: 'Early Bird', price: 20, capacity: 100, sold: 0, maxPerOrder: 4, isActive: true }])}
-              >
-                <Plus className="mr-2 size-4" />
-                Ajouter
-              </Button>
             </div>
 
-            <div className="space-y-3">
-              {tickets.map((ticket, index) => (
-                <div key={`${ticket._id || 'ticket'}-${index}`} className="rounded-2xl border border-zinc-800 bg-black/70 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="grid size-10 place-items-center rounded-xl bg-amber-400/10 text-amber-300">
-                        {ticket.name.toLowerCase().includes('vip') ? <Crown className="size-4" /> : <Ticket className="size-4" />}
-                      </div>
-                      <div>
-                        <Input
-                          className="h-9 rounded-xl border-zinc-800 bg-zinc-950 text-sm font-bold text-zinc-100"
-                          value={ticket.name}
-                          onChange={(e) => updateTicket(index, { name: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label="Supprimer ce type de billet"
-                      className="grid size-10 place-items-center rounded-xl border border-zinc-800 text-zinc-500 transition hover:border-red-400/40 hover:text-red-300 disabled:opacity-40"
-                      disabled={tickets.length <= 1}
-                      onClick={() => removeTicket(index)}
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Prix TND</Label>
-                      <Input type="number" min={0} className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100" value={ticket.price} onChange={(e) => updateTicket(index, { price: Number(e.target.value || 0) })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Capacite</Label>
-                      <Input type="number" min={1} className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100" value={ticket.capacity} onChange={(e) => updateTicket(index, { capacity: Number(e.target.value || 0) })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Max / commande</Label>
-                      <Input type="number" min={1} max={20} className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100" value={ticket.maxPerOrder ?? 10} onChange={(e) => updateTicket(index, { maxPerOrder: Number(e.target.value || 1) })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Vendues</Label>
-                      <div className="flex h-11 items-center rounded-xl border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-400">{ticket.sold || 0}</div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Debut vente</Label>
-                      <Input type="datetime-local" className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100" value={ticket.salesStartAt || ''} onChange={(e) => updateTicket(index, { salesStartAt: e.target.value })} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-500">Fin vente</Label>
-                      <Input type="datetime-local" className="h-11 rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100" value={ticket.salesEndAt || ''} onChange={(e) => updateTicket(index, { salesEndAt: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                <p className="text-xs text-zinc-500">Capacite totale</p>
-                <p className="mt-1 text-2xl font-black text-white">{formTotals.capacity}</p>
-              </div>
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4">
-                <p className="text-xs text-zinc-500">Potentiel brut</p>
-                <p className="mt-1 text-2xl font-black text-amber-300">{formTotals.potential} TND</p>
-              </div>
-            </div>
+            <TicketTypesEditor
+              value={tickets}
+              onChange={setTickets}
+            />
 
             <Button
               className="mt-4 h-12 w-full rounded-2xl bg-amber-400 font-black text-black hover:bg-amber-300"

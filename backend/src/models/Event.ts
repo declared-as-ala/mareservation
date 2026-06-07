@@ -24,9 +24,15 @@ export interface IEvent extends Document {
   coverImage?: string;
   afficheImageUrl?: string;
   galleryUrls?: string[];
+  /** Equirectangular 360° images (rotate-in-place immersive view) */
+  panoramicImages?: string[];
+  /** External virtual-tour embed URL (Klapty / Matterport) */
+  virtualTourUrl?: string;
+  hasVirtualTour?: boolean;
   startAt: Date;
   endsAt?: Date;
   isPublished: boolean;
+  isVedette?: boolean;
   reservationMode: EventReservationMode;
   approvalStatus?: EventApprovalStatus;
   ticketTypes?: IEventTicketType[];
@@ -59,9 +65,13 @@ const EventSchema = new Schema<IEvent>(
     coverImage: { type: String },
     afficheImageUrl: { type: String },
     galleryUrls: { type: [String], default: [] },
+    panoramicImages: { type: [String], default: [] },
+    virtualTourUrl: { type: String },
+    hasVirtualTour: { type: Boolean, default: false },
     startAt: { type: Date, required: true },
     endsAt: { type: Date },
     isPublished: { type: Boolean, default: true },
+    isVedette: { type: Boolean, default: false },
     reservationMode: { type: String, enum: ['table', 'seat_zone', 'seat', 'ticket', 'ticket_only'], default: 'table' },
     approvalStatus: {
       type: String,

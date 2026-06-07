@@ -12,7 +12,7 @@ import {
   Crown, Eye, DollarSign, TrendingUp, CheckCircle2,
   Clock, XCircle, Upload, Building2, Wifi, Car,
   Waves, Bath, Square, Settings2, ImagePlus, Check,
-  ChevronRight, AlertCircle, RefreshCw, X, ScanLine,
+  ChevronRight, AlertCircle, RefreshCw, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,12 +75,10 @@ function RoomGridCard({
   room,
   onEdit,
   onDelete,
-  onTour,
 }: {
   room: AdminHotelRoom;
   onEdit: () => void;
   onDelete: () => void;
-  onTour: () => void;
 }) {
   const typeLabel = ROOM_TYPE_LABELS[room.roomType] ?? room.roomType;
   return (
@@ -169,9 +167,6 @@ function RoomGridCard({
         <div className="flex gap-2 mt-auto pt-2 border-t border-zinc-800">
           <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px] border-zinc-700 text-zinc-400 hover:text-white rounded-lg" onClick={onEdit}>
             <Edit2 className="size-3 mr-1" /> Modifier
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 gap-1 px-2 border-purple-500/30 text-[11px] text-purple-300 hover:border-purple-400/50 hover:bg-purple-500/10 rounded-lg" onClick={onTour}>
-            <ScanLine className="size-3" /> 360
           </Button>
           <Button size="sm" variant="outline" className="h-7 px-2 border-zinc-700 text-red-500/60 hover:text-red-400 hover:border-red-500/30 rounded-lg" onClick={onDelete}>
             <Trash2 className="size-3" />
@@ -484,7 +479,6 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
                 key={room._id}
                 room={room}
                 onEdit={() => { setEditingRoom(room); setModalOpen(true); }}
-                onTour={() => setTouringRoom(room)}
                 onDelete={() => handleDelete(room)}
               />
             ))}
@@ -496,6 +490,7 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
       <AnimatePresence>
         {modalOpen && (
           <RoomEditorModal
+            key="room-editor"
             hotelId={hotelId}
             room={editingRoom === null ? null : (editingRoom as AdminHotelRoom)}
             onClose={() => { setModalOpen(false); setEditingRoom(null); }}
@@ -509,6 +504,7 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
         )}
         {touringRoom && (
           <RoomTourModal
+            key="room-tour"
             venueId={hotelId}
             room={touringRoom}
             onClose={() => {
@@ -698,44 +694,21 @@ export default function HotelDetailAdminPage() {
 
   return (
     <div className="min-h-screen bg-[#080808]">
-      {/* Top bar */}
-      <div className="sticky top-0 z-30 border-b border-zinc-800 bg-[#080808]/95 backdrop-blur-md">
-        <div className="flex items-center gap-4 px-6 py-3">
+      {/* Slim sticky nav */}
+      <div className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#080808]/90 backdrop-blur-xl">
+        <div className="flex items-center gap-3 px-6 py-2.5">
           <Link href="/admin/hotels">
-            <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-zinc-400 hover:text-white rounded-xl">
+            <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-zinc-400 hover:text-white rounded-lg">
               <ArrowLeft className="size-4" /> Hôtels
             </Button>
           </Link>
           <div className="h-4 w-px bg-zinc-800" />
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            {hotel.coverImage ? (
-              <div className="relative size-7 rounded-lg overflow-hidden shrink-0">
-                <Image src={hotel.coverImage} alt={hotel.name} fill className="object-cover" />
-              </div>
-            ) : (
-              <div className="flex size-7 items-center justify-center rounded-lg bg-zinc-800 shrink-0">
-                <Building2 className="size-3.5 text-zinc-500" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{hotel.name}</p>
-              <p className="text-xs text-zinc-500 flex items-center gap-1">
-                <MapPin className="size-2.5" />{hotel.city}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              'hidden sm:inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold',
-              hotel.isPublished
-                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-400'
-            )}>
-              {hotel.isPublished ? <><CheckCircle2 className="size-2.5" /> Publié</> : <><Clock className="size-2.5" /> Brouillon</>}
-            </span>
+          <ChevronRight className="size-3.5 text-zinc-600" />
+          <span className="truncate text-sm font-medium text-zinc-300">{hotel.name}</span>
+          <div className="ml-auto flex items-center gap-2">
             <Link href={getVenueHref({ ...hotel, type: 'HOTEL' })} target="_blank">
-              <Button size="sm" variant="outline" className="h-8 border-zinc-700 text-zinc-400 hover:text-white rounded-xl text-xs gap-1.5">
-                <Eye className="size-3.5" /> Voir
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 rounded-lg border-zinc-700 text-xs text-zinc-300 hover:text-white">
+                <Eye className="size-3.5" /> Aperçu
               </Button>
             </Link>
             <Button
@@ -743,28 +716,88 @@ export default function HotelDetailAdminPage() {
               variant="outline"
               onClick={handleDeleteHotel}
               disabled={deletingHotel}
-              className="h-8 rounded-xl border-red-600 text-red-400 hover:border-red-500 hover:text-white text-xs gap-1.5"
+              className="h-8 gap-1.5 rounded-lg border-red-600/50 text-xs text-red-400 hover:border-red-500 hover:bg-red-500/10 hover:text-red-300"
             >
-              <XCircle className="size-3.5" /> Supprimer
+              {deletingHotel ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />} Supprimer
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Stats bar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/30">
-        <div className="flex items-center divide-x divide-zinc-800 overflow-x-auto px-6">
+      {/* ── Hero banner ── */}
+      <div className="relative">
+        <div className="relative h-44 w-full overflow-hidden sm:h-56">
+          {hotel.coverImage ? (
+            <Image src={hotel.coverImage} alt={hotel.name} fill priority className="object-cover" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-[#080808]" />
+          )}
+          {/* Wash gradients for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-[#080808]/55 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#080808]/70 via-transparent to-transparent" />
+        </div>
+
+        {/* Overlaid identity */}
+        <div className="relative z-10 mx-auto -mt-16 max-w-7xl px-6 lg:px-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex items-end gap-4">
+              <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl border-2 border-white/10 bg-zinc-900 shadow-2xl sm:size-28">
+                {hotel.coverImage ? (
+                  <Image src={hotel.coverImage} alt={hotel.name} fill className="object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <Building2 className="size-8 text-zinc-600" />
+                  </div>
+                )}
+              </div>
+              <div className="pb-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold backdrop-blur-md',
+                      hotel.isPublished
+                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300'
+                        : 'border-zinc-600 bg-zinc-800/80 text-zinc-300'
+                    )}
+                  >
+                    {hotel.isPublished ? <><CheckCircle2 className="size-2.5" /> Publié</> : <><Clock className="size-2.5" /> Brouillon</>}
+                  </span>
+                  {hotel.isFeatured && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#D4AF37]/40 bg-[#D4AF37]/15 px-2.5 py-0.5 text-[10px] font-semibold text-[#D4AF37] backdrop-blur-md">
+                      <Crown className="size-2.5" /> Vedette
+                    </span>
+                  )}
+                </div>
+                <h1 className="mt-1.5 text-2xl font-bold leading-tight text-white drop-shadow sm:text-3xl">{hotel.name}</h1>
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-300">
+                  <MapPin className="size-3.5 text-zinc-500" />
+                  {[hotel.address, hotel.city, hotel.governorate].filter(Boolean).join(', ') || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Premium stat cards ── */}
+      <div className="mx-auto mt-6 max-w-7xl px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
-            { label: 'Chambres', value: (rooms as AdminHotelRoom[]).length, icon: BedDouble, color: 'text-zinc-300' },
-            { label: 'Disponibles', value: availableRooms, icon: CheckCircle2, color: 'text-emerald-400' },
-            { label: 'Prix départ', value: hotel.startingPrice ? `${hotel.startingPrice} DT` : '—', icon: DollarSign, color: 'text-[#D4AF37]' },
-            { label: 'Visite 360°', value: hotel.hasVirtualTour ? 'Active' : 'Non', icon: Globe2, color: hotel.hasVirtualTour ? 'text-purple-400' : 'text-zinc-500' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="flex items-center gap-2.5 px-5 py-3 shrink-0">
-              <Icon className={cn('size-4', color)} />
-              <div>
-                <p className={cn('text-sm font-bold', color)}>{value}</p>
-                <p className="text-[10px] text-zinc-500">{label}</p>
+            { label: 'Chambres', value: (rooms as AdminHotelRoom[]).length, icon: BedDouble, accent: 'bg-zinc-500/20', text: 'text-white' },
+            { label: 'Disponibles', value: availableRooms, icon: CheckCircle2, accent: 'bg-emerald-500/20', text: 'text-emerald-400' },
+            { label: 'Prix départ', value: hotel.startingPrice ? `${hotel.startingPrice} DT` : '—', icon: DollarSign, accent: 'bg-[#D4AF37]/20', text: 'text-[#D4AF37]' },
+            { label: 'Visite 360°', value: hotel.hasVirtualTour ? 'Active' : 'Non', icon: Globe2, accent: 'bg-purple-500/20', text: hotel.hasVirtualTour ? 'text-purple-400' : 'text-zinc-500' },
+          ].map(({ label, value, icon: Icon, accent, text }) => (
+            <div key={label} className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className={cn('absolute -right-5 -top-5 size-16 rounded-full blur-2xl', accent)} />
+              <div className="relative flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-xl border border-zinc-700/60 bg-zinc-800/60">
+                  <Icon className={cn('size-5', text)} />
+                </div>
+                <div>
+                  <p className={cn('text-lg font-bold leading-none', text)}>{value}</p>
+                  <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">{label}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -772,9 +805,9 @@ export default function HotelDetailAdminPage() {
       </div>
 
       {/* Content */}
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mx-auto max-w-7xl p-6 lg:px-8 lg:pb-12 lg:pt-8">
         <Tabs defaultValue="info">
-          <TabsList className="mb-6 h-10 rounded-xl bg-zinc-900 border border-zinc-800 p-1 gap-0.5">
+          <TabsList className="mb-6 inline-flex h-11 w-full justify-start gap-1 overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900/60 p-1.5 sm:w-auto">
             {[
               { value: 'info', label: 'Informations', icon: Settings2 },
               { value: 'rooms', label: `Chambres (${(rooms as AdminHotelRoom[]).length})`, icon: BedDouble },
@@ -784,7 +817,7 @@ export default function HotelDetailAdminPage() {
               <TabsTrigger
                 key={value}
                 value={value}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 data-[state=active]:bg-zinc-800 data-[state=active]:text-white transition-all"
+                className="flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[13px] font-medium text-zinc-400 transition-all data-[state=active]:bg-[#D4AF37] data-[state=active]:font-semibold data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-[#D4AF37]/20 hover:text-zinc-200 data-[state=active]:hover:text-black"
               >
                 <Icon className="size-3.5" /> {label}
               </TabsTrigger>

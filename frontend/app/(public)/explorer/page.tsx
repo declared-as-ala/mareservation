@@ -12,7 +12,7 @@ import {
   MapPin, Search, Coffee, Wine, Utensils, Music2, Hotel,
   Waves, Flower2, PartyPopper, LayoutGrid, SlidersHorizontal,
   X, ArrowRight, Star, Wifi, ChevronDown, BriefcaseBusiness,
-  Dumbbell, UtensilsCrossed, Trophy, Home,
+  Dumbbell, UtensilsCrossed, Home,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -38,7 +38,6 @@ const CATEGORIES = [
   { key: 'beach',       label: 'Beach Clubs',       icon: Waves,           type: '',             q: 'Beach' },
   { key: 'clubs',       label: 'Clubs',             icon: Music2,          type: '',             q: 'Club' },
   { key: 'events',      label: 'Événements',        icon: PartyPopper,     type: 'EVENT_SPACE',  q: '' },
-  { key: 'sport',       label: 'Sport',             icon: Trophy,          type: '',             q: '', href: '/evenements?type=sport' },
   { key: 'coworking',   label: 'Coworking',         icon: BriefcaseBusiness, type: 'COWORKING',  q: '' },
   { key: 'spas',        label: 'Spas & Bien-être',  icon: Flower2,         type: '',             q: 'Spa' },
 ];
