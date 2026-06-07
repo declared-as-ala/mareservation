@@ -1,186 +1,69 @@
-# 📋 NEXT STEPS — Ma Reservation
+# MaTable (MaReservation) — Completed Checklist & Next Steps
 
-> Living document — updated as features are built.
-> Last updated: 2026-04-05
+## ✅ Deliverable checklist (done)
 
----
+- **Navbar / routes**
+  - Same AppBar on all screens (Home + inner pages); search bar on every page.
+  - Removed “Pour les établissements” and “Comment ça marche”; no owner role or owner dashboard. Only CUSTOMER + ADMIN.
 
-## ✅ DONE
+- **Global search (AppBar)**
+  - Placeholder: “Rechercher un lieu, un événement…”
+  - Backend: `GET /api/search?q=...` returns lieux, chambres, evenements (grouped).
+  - Frontend: debounce, dropdown grouped by type, Ctrl+K/Cmd+K focus, clear button.
 
-### Core Platform
-- [x] Next.js frontend (App Router) + Express backend
-- [x] JWT auth with silent refresh (httpOnly cookie)
-- [x] Venue listing, detail, 360° immersive view
-- [x] Table placement system (yaw/pitch coordinates)
-- [x] Admin table editor (place markers in 360° view)
-- [x] Admin venue management (create, edit, publish)
+- **Database**
+  - MongoDB Atlas only; `MONGO_URI` in `backend/.env`; no Docker Mongo. `.env.example` has placeholders; docker-compose: frontend + backend only.
 
-### Cart & Checkout (Session 2)
-- [x] Cart store (Zustand persist) — `stores/cart.ts`
-- [x] Cart drawer — premium dark/gold UI — `CartDrawer.tsx`
-- [x] `/panier` cart page — dark premium redesign
-- [x] `/checkout` page — form + per-item summary + "Confirmer et payer"
-- [x] CartDrawer auto-opens when item added to cart
-- [x] Same table can be added multiple times (unique random id per add)
-- [x] `tableId` + `endAt` passed from modal → cart → checkout → createReservation
+- **Auth**
+  - Register / login / logout / refresh; bcrypt; JWT + refresh (httpOnly). Customer + Admin only.
+  - “Réserver” when not logged in → modal “Vous devez vous connecter pour réserver” (Se connecter / Créer un compte).
 
-### Sponsored / Banner System
-- [x] `isSponsored`, `sponsoredOrder`, `bannerImage` on Venue model
-- [x] Admin sponsored page with inline expand panel
-- [x] `GET /venues?isSponsored=true` filter working
+- **Reservations**
+  - Real reservations in MongoDB; no fake dashboard data. Dashboard: À venir / Passées; venue, date/time, booking type (Table / Chambre / Place), price, status; “Voir QR” and “Imprimer” ticket.
 
-### Features (Session 3 — Current)
-- [x] **Favorites / Wishlist**
-  - [x] Backend: `Favorite` model + toggle/list routes
-  - [x] Frontend: `FavoriteButton` component (heart, optimistic toggle)
-  - [x] Frontend: Heart added to every `VenueCard`
-  - [x] Frontend: `/dashboard/favorites` page fully implemented
-- [x] **Reviews & Ratings**
-  - [x] Backend: `Review` model + create/list/delete routes
-  - [x] Backend: auto-updates venue `rating` field on review submit
-  - [x] Frontend: `ReviewForm` with star picker embedded in confirmation page
-  - [x] `isVerified` flag set if review comes from confirmed reservation
-- [x] **QR Code Entry**
-  - [x] Backend already generates `qrCodeData` + `qrCodeImageUrl` on reservation create
-  - [x] Frontend: confirmation page shows QR image (or text code fallback)
-  - [x] Backend: `GET /reservations/scan?code=` — look up by code
-  - [x] Backend: `PATCH /reservations/:id/checkin` — mark as checked_in
-  - [x] Frontend: `/admin/scanner` — camera QR scan + manual code entry
-- [x] **360° Scene Builder**
-  - [x] Backend: `Scene` model (venueId, name, image, order, isActive)
-  - [x] Backend: full CRUD routes + reorder endpoint
-  - [x] Frontend: `/admin/scenes` — select venue → manage scenes → preview image
-  - [x] Frontend: create/edit/delete scenes with image preview
+- **Booking structure**
+  - TABLE (café/restaurant), ROOM (hotel), SEAT (cinema). Models: Users, Venues, VenueMedia, Tables, Rooms, Seats, Events, Reservations (bookingType, tableId/roomId/seatId, totalPrice). Conflict checks for overlapping table/room/seat.
+
+- **360° tours**
+  - Klapty only (no AI). `VenueMedia` kind `TOUR_360_EMBED_URL`; rendered via iframe. Cafés max 2 tables; hotels: list rooms + 360 + “Réserver cette chambre”; cinema: 360 + 3 seats.
+
+- **Venue detail UX**
+  - Stepper: 1) Date/heure (or nights for hotel), 2) Choose table/room/seat, 3) Confirm. Availability and disabled reserved items.
+
+- **Home**
+  - “Événements à venir” from `GET /api/events?upcoming=true` with skeleton; event cards with “Voir”.
+
+- **Admin**
+  - `/admin` (ADMIN only): overview (users, venues, reservations today/week, events); tables (users, venues, reservations); cancel reservation.
+
+- **Seed**
+  - 1 admin, 3 customers; 2 cafés (2 tables each), 1 restaurant, 1 hotel (rooms), 1 cinema (3 seats); Klapty URLs; events; sample reservations for `client1@example.com`. Credentials in README (password: `password123`).
+
+- **Run**
+  - Backend + frontend via docker-compose; frontend at http://localhost:5173.
 
 ---
 
-## ✅ COMPLETED THIS SESSION (in-progress items)
+## Next steps (optional / future)
 
-### Reviews display on venue page
-- [x] `ReviewsSection` component — star summary bar, per-rating distribution, verified badge
-- [x] "Avis" tab added to `/lieu/[slug]` venue detail page
-- [x] Paginated reviews with "Charger plus" button
-- [x] Empty state with CTA
+1. **Email / SMS**
+   - Send confirmation (and optional reminder) when a reservation is created or cancelled.
 
-### Scene switching in 360° viewer
-- [x] `PanoramaEngine` — added `scenes[]`, `activeSceneId`, `onSceneChange` props
-- [x] Scene pill navigation strip rendered inside viewer (bottom-center)
-- [x] Table placements filtered by `sceneId` on venue page
-- [x] Admin table editor — scene selector pill bar above panorama
-- [x] "Gérer les scènes" link from editor → `/admin/scenes`
-- [x] `createAdminTablePlacement` uses selected scene id instead of hardcoded `'default'`
+2. **Search polish**
+   - Optional: highlight match in results; recent searches persisted across sessions (if not already).
 
-### Admin sidebar links
-- [x] "Scènes 360°" → `/admin/scenes` added to Contenu group
-- [x] "Scanner QR" → `/admin/scanner` added to Conciergerie group
+3. **Admin**
+   - Optional: “Deactivate venue” action; export reservations (CSV); more filters (booking type, date range).
 
----
+4. **Tests**
+   - E2E (Playwright/Cypress) for reserve flow and auth.
+   - Unit tests for overlap logic, validation, and critical API routes.
 
-## ⏳ TODO — NEXT PRIORITIES
+5. **i18n**
+   - Extract French strings and add language switching if you plan multiple locales.
 
-### 1. 🔔 Real-Time Table Availability (WebSockets)
-- Socket.IO on backend
-- Emit `table:reserved` / `table:released` on reservation create/cancel
-- Frontend: subscribe on venue page, update markers live
-- Show "X personnes regardent ce lieu" counter
+6. **Deploy**
+   - Deploy backend (e.g. Railway, Render) and frontend (Vercel, Netlify); keep `MONGO_URI`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `FRONTEND_URL` in env; optional rate limiting and CORS for production.
 
-### 2. ⏱️ Reservation Hold Timer
-- `ReservationHold` model already exists
-- Frontend: 8-min countdown in cart/checkout header
-- "Votre table est réservée pour 08:00 — payez avant expiration"
-- Backend cron: release expired holds
-
-### 3. 💳 Payment Integration (Konnect)
-- Konnect API keys in `.env`
-- `POST /api/v1/payments/initiate` → returns payment URL
-- Webhook `POST /api/v1/payments/webhook` → confirm reservation
-- Checkout redirect to Konnect → return to `/reservation/:id/confirmation`
-
-### 4. 📧 Email Notifications
-- Resend or Nodemailer
-- Templates: confirmation + QR, reminder 24h, cancellation
-- Backend: trigger after reservation create/cancel
-- Queue with BullMQ (optional)
-
-### 5. 🗓️ Availability Calendar on Venue Page
-- Date/time picker before entering 360° view
-- Passes `startAt`/`endAt` to table-placements API
-- Filter shows accurate per-slot availability
-
-### 6. 💬 AI Concierge (upgrade SOS Conseil)
-- Claude API streaming
-- User describes: "table pour 2 vendredi soir Tunis"
-- Returns top 3 matching venues with direct booking links
-- Save conversation history per user
-
-### 7. 📊 Venue Reviews displayed on venue page
-- `ReviewsSection` component
-- Star breakdown bars
-- Paginated review list
-
-### 8. 🌐 Multi-Language (FR / AR / EN)
-- `next-intl`
-- RTL layout for Arabic
-- Language switcher in Navbar
-
----
-
-## 💡 QUICK WINS (< 1 day each)
-
-| # | Feature | Status |
-|---|---------|--------|
-| 1 | Admin sidebar: Scanner + Scenes links | ⏳ |
-| 2 | Reviews section on `/lieu/[slug]` | ⏳ |
-| 3 | Scene switching in PanoramaEngine | ⏳ |
-| 4 | "Voir le lieu" → `/?table=id` URL pre-selects table | ⏳ |
-| 5 | Venue hours (opening times per day) | ⏳ |
-| 6 | Skeleton loaders everywhere | ⏳ |
-| 7 | CSV export for admin reservations | ⏳ |
-| 8 | Google OAuth social login | ⏳ |
-| 9 | Venue page: avg rating + star display | ⏳ |
-| 10 | "Recently viewed" venues on homepage | ⏳ |
-
----
-
-## 🏗️ TECH DEBT / IMPROVEMENTS
-
-- [ ] Backend TypeScript strict mode — remove `any` casts
-- [ ] Frontend: replace all `unknown` casts in API types
-- [ ] Unit tests for reservation conflict logic
-- [ ] Admin dashboard stats (reservations/day chart)
-- [ ] Image optimization — convert to WebP on upload
-- [ ] Rate limiting per user (not just global)
-
----
-
-## 📁 NEW FILES CREATED THIS SESSION
-
-### Backend
-- `backend/src/models/Favorite.ts`
-- `backend/src/models/Review.ts`
-- `backend/src/models/Scene.ts`
-- `backend/src/routes/favorites.ts`
-- `backend/src/routes/reviews.ts`
-- `backend/src/routes/scenes.ts`
-
-### Frontend
-- `frontend/lib/api/favorites.ts`
-- `frontend/lib/api/reviews.ts`
-- `frontend/lib/api/scenes.ts`
-- `frontend/components/shared/FavoriteButton.tsx`
-- `frontend/app/(admin)/admin/scanner/page.tsx`
-- `frontend/app/(admin)/admin/scenes/page.tsx`
-
-### Modified
-- `frontend/stores/cart.ts` — `drawerOpen`, `openDrawer`, `closeDrawer`, `tableId`, `endAt`
-- `frontend/components/layout/CartDrawer.tsx` — premium redesign + correct CTAs
-- `frontend/components/layout/Navbar.tsx` — cart state from store
-- `frontend/components/cards/VenueCard.tsx` — FavoriteButton added
-- `frontend/components/reservation/TableReservationModal.tsx` — auto-open drawer, unique ids, tableId/endAt
-- `frontend/app/(public)/panier/page.tsx` — dark/gold redesign
-- `frontend/app/(public)/checkout/page.tsx` — NEW
-- `frontend/app/(public)/reservation/[id]/confirmation/page.tsx` — QR code + review form
-- `frontend/app/(dashboard)/dashboard/favorites/page.tsx` — full implementation
-- `frontend/lib/api/types.ts` — Review, Scene types; qrCodeImageUrl on Reservation
-- `backend/src/routes/reservations.ts` — /scan + /checkin endpoints
-- `backend/src/app.ts` — register favorites, reviews, scenes routers
+7. **Analytics**
+   - Admin: charts for reservations over time, revenue by venue/type. Optional for MVP.

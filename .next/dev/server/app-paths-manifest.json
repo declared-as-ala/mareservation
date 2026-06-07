@@ -1,0 +1,4 @@
+{
+  "/(public)/page": "app/(public)/page.js",
+  "/(public)/explorer/page": "app/(public)/explorer/page.js"
+}

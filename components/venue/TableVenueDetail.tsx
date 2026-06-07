@@ -161,14 +161,16 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={goToReserver}
-                  className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-extrabold px-5 py-3 transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-amber-400/10 active:translate-y-0"
-                >
-                  Découvrir en 360°
-                  <ArrowRight className="size-3.5" />
-                </button>
+                {category !== 'RESTAURANT' && (
+                  <button
+                    type="button"
+                    onClick={goToReserver}
+                    className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-extrabold px-5 py-3 transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-amber-400/10 active:translate-y-0"
+                  >
+                    Découvrir en 360°
+                    <ArrowRight className="size-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 

@@ -196,7 +196,7 @@ export function TableReservationModal({
               <p className="text-xs text-zinc-500 mt-0.5">{venue.name}</p>
               <div className="flex items-center gap-3 mt-2 text-xs">
                 <span className="flex items-center gap-1 text-zinc-500"><Users className="size-3" />{placement.table.capacity} pers. max</span>
-                {tablePrice > 0 && <span className="font-semibold text-amber-400">{tablePrice} TND min.</span>}
+                {tablePrice > 0 && <span className="font-semibold text-amber-400">À partir de {tablePrice} TND</span>}
               </div>
             </div>
             <div className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${isAvailable ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
@@ -282,7 +282,7 @@ export function TableReservationModal({
                   <div className="text-xl mb-1.5">🪑</div>
                   <div className="text-xs font-bold text-zinc-100">Réservation simple</div>
                   <div className="text-[10px] text-zinc-500 mt-1">Commandez sur place</div>
-                  {tablePrice > 0 && <div className="text-[10px] font-semibold text-amber-400 mt-2">Min. {tablePrice} TND</div>}
+                  {tablePrice > 0 && <div className="text-[10px] font-semibold text-amber-400 mt-2">À partir de {tablePrice} TND</div>}
                 </button>
                 <button type="button" onClick={() => setOrderMode('with_menu')}
                   className={`rounded-2xl border p-4 text-left transition-all ${orderMode === 'with_menu' ? 'border-amber-400/60 bg-amber-400/10' : 'border-zinc-800 bg-zinc-900/60 hover:border-zinc-700'}`}>
@@ -373,7 +373,7 @@ export function TableReservationModal({
             {/* ── Summary ── */}
             <div className="rounded-xl bg-zinc-900/60 border border-zinc-800 px-4 py-3 flex items-center justify-between text-xs text-zinc-500">
               <span>📅 {selectedDate} · {startTime} → {endTime}</span>
-              <span>{partySize} pers.{orderMode === 'with_menu' && menuTotal > 0 ? ` · ${menuTotal.toFixed(2)} TND` : tablePrice > 0 ? ` · ${tablePrice} TND min.` : ''}</span>
+              <span>{partySize} pers.{orderMode === 'with_menu' && menuTotal > 0 ? ` · ${menuTotal.toFixed(2)} TND` : tablePrice > 0 ? ` · À partir de ${tablePrice} TND` : ''}</span>
             </div>
 
             {/* ── CTAs ── */}

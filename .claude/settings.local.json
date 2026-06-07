@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Read(//c/Users/Ala/.claude/skills/ui-ux-pro-max/**)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python3 \"C:/Users/Ala/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"premium immersive reservation platform dark luxury hospitality\" --design-system -p \"Ma Reservation\" -f markdown)",
+      "Bash(python \"C:/Users/Ala/.claude/skills/ui-ux-pro-max/scripts\")",
+      "Bash(dir \"C:/Users/Ala/.claude/skills/ui-ux-pro-max/\")",
+      "Bash(python \"C:/Users/Ala/.claude/plugins/ui-ux-pro-max/src/ui-ux-pro-max/scripts/search.py\" \"premium immersive reservation platform dark luxury hospitality\" --design-system -p \"Ma Reservation\" -f markdown)",
+      "Bash(dir *)",
+      "Bash(python3 -c \"from PIL import Image; img = Image.open\\(r'backend/scripts/image.png'\\); print\\(img.size\\)\")",
+      "Bash(git show *)",
+      "Bash(git diff *)",
+      "Read(//tmp/**)"
     ]
   }
 }

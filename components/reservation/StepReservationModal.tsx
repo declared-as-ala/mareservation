@@ -591,7 +591,7 @@ export function StepReservationModal({
                       <Users className="size-3" /> {placement.table.capacity} pers. max
                     </span>
                     {tablePrice > 0 && (
-                      <span className="font-semibold text-amber-400">{tablePrice} DT min.</span>
+                      <span className="font-semibold text-amber-400">À partir de {tablePrice} DT</span>
                     )}
                     {placement.table.locationLabel && (
                       <span className="flex items-center gap-1">
@@ -811,7 +811,7 @@ export function StepReservationModal({
                   </div>
                   {tablePrice > 0 && (
                     <div className="mt-2 text-[10px] font-bold text-amber-400">
-                      Min. {tablePrice} DT
+                      À partir de {tablePrice} DT
                     </div>
                   )}
                 </button>
@@ -944,7 +944,7 @@ export function StepReservationModal({
                 <div className="px-4 pb-4 border-t border-white/[0.06] pt-3 space-y-2">
                   {tablePrice > 0 && orderMode === 'table_only' && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-neutral-500">Minimum de consommation</span>
+                      <span className="text-neutral-500">À partir de</span>
                       <span className="font-bold text-amber-400">{tablePrice} DT</span>
                     </div>
                   )}

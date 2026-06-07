@@ -838,7 +838,13 @@ export default function HotelDetailPage() {
                   {!roomsLoading && roomTypeGroups.length > 0 && (
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h2 className="font-serif text-xl font-bold text-white">
+                        <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-400/[0.08] px-2.5 py-0.5">
+                          <Video className="size-3 text-amber-400" />
+                          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
+                            Photos & visites 360° par chambre
+                          </span>
+                        </div>
+                        <h2 className="font-serif text-xl font-bold text-white sm:text-2xl">
                           {roomTypeGroups.length} type{roomTypeGroups.length > 1 ? 's' : ''} de chambre
                         </h2>
                         <p className="text-[12px] text-neutral-500">

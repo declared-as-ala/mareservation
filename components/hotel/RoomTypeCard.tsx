@@ -224,12 +224,12 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
           </span>
         </div>
 
-        {/* Top-right: 360° + view badges */}
+        {/* Top-right: bigger 360° + view badges */}
         <div className="pointer-events-none absolute right-3 top-3 z-10 flex flex-col items-end gap-1.5">
           {hasVirtualTour && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-black/65 px-2 py-0.5 text-[10px] font-bold text-amber-300 backdrop-blur-md">
-              <Video className="size-3" />
-              360°
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/55 bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1 text-[11px] font-black text-black shadow-[0_4px_16px_rgba(245,158,11,0.45)]">
+              <Video className="size-3.5" />
+              Visite 360°
             </span>
           )}
           {hasBalcony && (
@@ -239,6 +239,19 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
             </span>
           )}
         </div>
+
+        {/* Centre overlay CTA when 360 available — only on hover, button on the body still does the work on tap */}
+        {hasVirtualTour && (
+          <button
+            type="button"
+            onClick={() => onView360(group)}
+            aria-label="Ouvrir la visite 360°"
+            className="absolute inset-x-0 bottom-14 z-[5] mx-auto hidden h-10 w-[60%] items-center justify-center gap-1.5 rounded-full border border-white/25 bg-black/65 px-4 text-[12px] font-bold text-white backdrop-blur-md transition-all hover:scale-[1.02] hover:bg-amber-400/85 hover:text-black sm:inline-flex"
+          >
+            <Video className="size-3.5" />
+            Explorer en 360°
+          </button>
+        )}
 
         {/* Bottom-left: availability pill */}
         <div className="pointer-events-none absolute bottom-3 left-3 z-10">
@@ -321,7 +334,7 @@ export function RoomTypeCard({ group, nights, onReserve, onView360, className }:
               <button
                 type="button"
                 onClick={() => onView360(group)}
-                className="group/btn inline-flex h-11 items-center gap-1.5 rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] px-4 text-[12px] font-bold text-amber-300 transition-all hover:border-amber-400/55 hover:bg-amber-400/[0.12] active:scale-95"
+                className="group/btn inline-flex h-11 items-center gap-1.5 rounded-2xl border-2 border-amber-400/55 bg-amber-400/[0.10] px-4 text-[12px] font-black uppercase tracking-wide text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-400/[0.18] hover:shadow-[0_4px_18px_rgba(245,158,11,0.30)] active:scale-95"
               >
                 <Video className="size-4" />
                 <span className="hidden sm:inline">Visite 360°</span>

@@ -152,6 +152,42 @@ router.get('/:id/scenes', async (req, res) => {
 });
 
 // GET /api/v1/venues/:idOrSlug/table-placements — public placements with live table availability
+// GET /api/v1/venues/:id/rooms — public: list rooms with per-room 360 panoramas
+// Optional ?startAt=&endAt= to compute live availability per room.
+router.get('/:id/rooms', async (req, res) => {
+  try {
+    const venueId = await findVenueId(req.params.id);
+    if (!venueId) return res.status(404).json({ error: 'Lieu non trouvé' });
+
+    const rooms = await Room.find({ venueId, isActive: true }).sort({ roomNumber: 1 }).lean();
+
+    const { startAt, endAt } = req.query;
+    if (startAt && endAt) {
+      const s = new Date(String(startAt));
+      const e = new Date(String(endAt));
+      const reservedRoomIds = await Reservation.find({
+        venueId,
+        bookingType: 'ROOM',
+        status: { $in: ['PENDING', 'CONFIRMED', 'pending', 'confirmed', 'checked_in'] },
+        startAt: { $lt: e },
+        endAt: { $gt: s },
+      }).distinct('roomId');
+
+      const reservedSet = new Set(reservedRoomIds.map(String));
+      const withStatus = rooms.map((r: any) => ({
+        ...r,
+        status: reservedSet.has(String(r._id)) ? 'reserved' : (r.defaultStatus ?? 'available'),
+      }));
+      return res.json(withStatus);
+    }
+
+    res.json(rooms.map((r: any) => ({ ...r, status: r.defaultStatus ?? 'available' })));
+  } catch (error) {
+    console.error('Error fetching venue rooms:', error);
+    res.status(500).json({ error: 'Erreur lors du chargement des chambres.' });
+  }
+});
+
 router.get('/:id/table-placements', async (req, res) => {
   try {
     const venueId = await findVenueId(req.params.id);

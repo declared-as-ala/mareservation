@@ -1,23 +1,3 @@
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy all source files
-COPY . .
-
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
-# Build Next.js
-RUN npm run build
-
-# Production stage
 FROM node:20-alpine
 
 WORKDIR /app
@@ -25,15 +5,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm install --omit=dev
+# Install dependencies
+RUN npm install --legacy-peer-deps
 
-# Copy built app from builder
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+# Copy source code
+COPY . .
 
 # Expose port
-EXPOSE 3000
+EXPOSE 5173
 
-# Start server
-CMD ["npm", "start"]
+# Start dev server
+CMD ["npm", "run", "dev", "--", "--host"]

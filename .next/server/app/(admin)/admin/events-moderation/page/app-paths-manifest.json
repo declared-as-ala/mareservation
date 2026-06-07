@@ -1,0 +1,3 @@
+{
+  "/(admin)/admin/events-moderation/page": "app/(admin)/admin/events-moderation/page.js"
+}
