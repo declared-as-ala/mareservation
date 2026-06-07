@@ -28,7 +28,12 @@ jobs:
           cd /app/mareservation || { echo "❌ Directory not found, cloning..."; mkdir -p /app/mareservation; git clone https://github.com/declared-as-ala/mareservation.git /app/mareservation; cd /app/mareservation; }
 
           echo "📥 Fetching latest code (hard reset to origin/main — robust against force-pushed/rewritten history)..."
-          git fetch origin main
+          # Heal a stale or locked refs/remotes/origin/main from a previous
+          # interrupted fetch (causes "cannot lock ref ... unable to update local ref").
+          git update-ref -d refs/remotes/origin/main 2>/dev/null || true
+          rm -f .git/refs/remotes/origin/main.lock 2>/dev/null || true
+          git gc --prune=now 2>/dev/null || true
+          git fetch --prune origin main
           git reset --hard FETCH_HEAD
 
           echo "⚙️ Copying environment file..."
