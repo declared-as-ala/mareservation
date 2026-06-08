@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, MapPin, Search, ScanEye, Sparkles, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Search, ScanEye, Sparkles, Ticket, X, ChevronDown } from 'lucide-react';
 import { fetchEvents } from '@/lib/api/events';
 import { EventCard } from '@/components/cards/EventCard';
 import { cn } from '@/lib/utils';
@@ -122,10 +122,6 @@ function EvenementsPageInner() {
 
   const featured = filteredEvents[0] ?? events[0] ?? null;
   const heroImage = getEventCover(featured);
-  const totalTickets = events.reduce((sum, event) => {
-    return sum + (event.ticketTypes ?? []).reduce((inner, ticket) => inner + Math.max(0, Number(ticket.capacity || 0) - Number(ticket.sold || 0)), 0);
-  }, 0);
-  const with360 = events.filter(eventHas360).length;
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100">
@@ -140,42 +136,28 @@ function EvenementsPageInner() {
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#080808] to-transparent" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-18">
+        <div className="relative mx-auto max-w-7xl px-4 py-7 md:px-6 md:py-16">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
             className="max-w-4xl"
           >
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-200 sm:text-xs">
               <Sparkles className="size-3.5" />
               Evenements premium
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
+            <h1 className="text-2xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-6xl">
               Concerts, shows, cinema et experiences avec vrais billets QR.
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-300 md:text-lg">
+            <p className="mt-3 hidden max-w-2xl text-base leading-7 text-zinc-300 sm:block md:text-lg">
               Decouvrez les evenements disponibles, regardez les photos du lieu, explorez les vues 360 quand elles existent, puis choisissez votre billet Normal ou VIP.
             </p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-400 sm:hidden">
+              <Calendar className="size-3.5 text-amber-300" />
+              {events.length} evenement{events.length !== 1 ? 's' : ''} a venir
+            </p>
           </motion.div>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-4 backdrop-blur">
-              <Calendar className="mb-3 size-5 text-amber-300" />
-              <p className="text-2xl font-black text-white">{events.length}</p>
-              <p className="text-sm text-zinc-500">evenements a venir</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-4 backdrop-blur">
-              <Ticket className="mb-3 size-5 text-amber-300" />
-              <p className="text-2xl font-black text-white">{totalTickets}</p>
-              <p className="text-sm text-zinc-500">billets disponibles</p>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-black/50 p-4 backdrop-blur">
-              <ScanEye className="mb-3 size-5 text-amber-300" />
-              <p className="text-2xl font-black text-white">{with360}</p>
-              <p className="text-sm text-zinc-500">lieux avec visite 360</p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -249,41 +231,69 @@ function EvenementsPageInner() {
           </div>
         </div>
 
-        <div className="sticky top-3 z-20 mb-7 rounded-3xl border border-zinc-800 bg-zinc-950/90 p-3 shadow-2xl shadow-black/30 backdrop-blur md:p-4">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
-            <label className="relative block">
+        <div className="sticky top-3 z-20 mb-7 space-y-3 rounded-3xl border border-zinc-800 bg-zinc-950/90 p-3 shadow-2xl shadow-black/30 backdrop-blur md:p-4">
+          {/* Search + city */}
+          <div className="flex flex-col gap-2.5 sm:flex-row">
+            <label className="relative block flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
                 value={q}
                 onChange={(event) => setQ(event.target.value)}
-                placeholder="Rechercher evenement, lieu, ville..."
-                className="h-12 w-full rounded-2xl border border-zinc-800 bg-black pl-11 pr-4 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
+                placeholder="Rechercher un evenement, lieu, ville..."
+                className="h-12 w-full rounded-2xl border border-zinc-800 bg-black pl-11 pr-10 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
               />
+              {q && (
+                <button
+                  type="button"
+                  onClick={() => setQ('')}
+                  aria-label="Effacer la recherche"
+                  className="absolute right-3 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
             </label>
-            <select
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-              className="h-12 rounded-2xl border border-zinc-800 bg-black px-4 text-sm text-zinc-100 outline-none transition focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
-            >
-              {EVENT_TYPES.map((item) => (
-                <option key={item.value} value={item.value}>{item.label}</option>
-              ))}
-            </select>
-            <select
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              className="h-12 rounded-2xl border border-zinc-800 bg-black px-4 text-sm text-zinc-100 outline-none transition focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
-            >
-              <option value="all">Toutes les villes</option>
-              {cities.map((item) => (
-                <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
+            <div className="relative sm:w-56">
+              <MapPin className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+              <select
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
+                className="h-12 w-full appearance-none rounded-2xl border border-zinc-800 bg-black pl-11 pr-9 text-sm text-zinc-100 outline-none transition focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
+              >
+                <option value="all">Toutes les villes</option>
+                {cities.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+            </div>
+          </div>
+
+          {/* Type pills */}
+          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+            {EVENT_TYPES.map((item) => {
+              const active = type === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => setType(item.value)}
+                  className={cn(
+                    'shrink-0 rounded-full border px-4 py-2 text-[13px] font-semibold transition-all',
+                    active
+                      ? 'border-amber-400 bg-amber-400 text-black shadow-lg shadow-amber-400/20'
+                      : 'border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {featured ? (
-          <section className="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/70">
+          <section className="mb-8 hidden overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/70 md:block">
             <div className="grid gap-0 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
               <div className="relative min-h-[300px]">
                 {getEventCover(featured) ? (
@@ -339,13 +349,13 @@ function EvenementsPageInner() {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-[360px] animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900/50" />
+              <div key={index} className="h-[260px] animate-pulse rounded-3xl border border-zinc-800 bg-zinc-900/50 sm:h-[360px]" />
             ))}
           </div>
         ) : filteredEvents.length ? (
-          <motion.div layout className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
             {filteredEvents.map((event) => (
               <motion.div key={event._id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
                 <EventCard event={event} />

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ArrowLeft } from 'lucide-react';
 import { fetchVenues, type VenuesQuery } from '@/lib/api/venues';
 import { fetchEvents, type EventsQuery } from '@/lib/api/events';
 import type { Venue, Event } from '@/lib/api/types';
@@ -44,6 +45,8 @@ interface CategoryListingPageProps {
   emptyDescription: string;
   mode: 'venue' | 'event';
   venueType?: string;
+  /** When set, a "Retour" button is shown in the hero linking here. */
+  backHref?: string;
 }
 
 function isValidVenueItem(value: unknown): value is Venue {
@@ -82,6 +85,7 @@ export function CategoryListingPage({
   emptyDescription,
   mode,
   venueType,
+  backHref,
 }: CategoryListingPageProps) {
   const [region, setRegion] = useState('__all__');
   const [search, setSearch] = useState('');
@@ -168,8 +172,19 @@ export function CategoryListingPage({
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Hero header */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/60 py-14 sm:py-18">
+      <div className="relative overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800/60 py-10 sm:py-18">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(251,191,36,0.06),transparent_60%)]" />
+        {backHref && (
+          <div className="relative mx-auto mb-5 max-w-7xl px-4">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-700/70 bg-zinc-900/70 px-3.5 py-2 text-sm font-medium text-zinc-300 backdrop-blur transition-colors hover:border-amber-400/40 hover:text-amber-300"
+            >
+              <ArrowLeft className="size-4" />
+              Retour
+            </Link>
+          </div>
+        )}
         <div className="relative mx-auto max-w-7xl px-4 text-center">
           <h1 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
             {title}

@@ -289,23 +289,34 @@ export default function CoworkingDetailPage() {
           {/* ── Left: content ── */}
           <div className="space-y-8 lg:col-span-2">
 
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
+            {/* Quick stats — only render categories that actually exist */}
+            {(() => {
+              const stats = [
                 { icon: Armchair, value: desks.length, label: 'Bureaux partagés' },
                 { icon: DoorClosed, value: offices.length, label: 'Bureaux privés' },
                 { icon: Presentation, value: meetingRooms.length, label: 'Salles de réunion' },
-              ].map(({ icon: Icon, value, label }) => (
+              ].filter((s) => s.value > 0);
+              if (stats.length === 0) return null;
+              return (
                 <div
-                  key={label}
-                  className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 text-center"
+                  className={cn(
+                    'grid gap-2.5 sm:gap-3',
+                    stats.length === 1 ? 'grid-cols-1' : stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                  )}
                 >
-                  <Icon className="mx-auto size-5 text-amber-400" />
-                  <div className="mt-2 font-serif text-2xl font-bold text-white">{value}</div>
-                  <div className="mt-0.5 text-[11px] leading-tight text-neutral-500">{label}</div>
+                  {stats.map(({ icon: Icon, value, label }) => (
+                    <div
+                      key={label}
+                      className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3.5 text-center sm:p-4"
+                    >
+                      <Icon className="mx-auto size-5 text-amber-400" />
+                      <div className="mt-2 font-serif text-xl font-bold text-white sm:text-2xl">{value}</div>
+                      <div className="mt-0.5 text-[11px] leading-tight text-neutral-500">{label}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
 
             {/* Tabs */}
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">

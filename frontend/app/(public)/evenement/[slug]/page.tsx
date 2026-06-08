@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TypeBadge } from '@/components/shared/TypeBadge';
 import { EventImmersiveShowcase } from '@/components/events/EventImmersiveShowcase';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth';
 import { cn } from '@/lib/utils';
 import {
@@ -88,6 +89,7 @@ export default function EventDetailPage() {
   const [paymentMethod, setPaymentMethod] = useState<'online_mock' | 'cash_order'>('online_mock');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mobileBookingOpen, setMobileBookingOpen] = useState(false);
 
   const { data: event, isLoading, error, refetch } = useQuery({
     queryKey: ['event', slug],
@@ -104,6 +106,10 @@ export default function EventDetailPage() {
     if (!selectedTicket) return 1;
     return Math.max(1, Math.min(20, Number(selectedTicket.maxPerOrder || 10), ticketRemaining(selectedTicket)));
   }, [selectedTicket]);
+  const minPrice = useMemo(() => {
+    const prices = ticketTypes.map((t) => Number(t.price || 0)).filter((p) => p > 0);
+    return prices.length ? Math.min(...prices) : null;
+  }, [ticketTypes]);
   const subtotal = Number(selectedTicket?.price || 0) * quantity;
   const serviceFee = EVENT_SERVICE_FEE_TND * quantity;
   const total = subtotal + serviceFee;
@@ -192,8 +198,199 @@ export default function EventDetailPage() {
     }
   };
 
+  // ── One reservation flow, reused in the desktop aside and the mobile sheet ──
+  function StepLabel({ n, children }: { n: number; children: React.ReactNode }) {
+    return (
+      <div className="mb-3 flex items-center gap-2">
+        <span className="grid size-6 place-items-center rounded-full bg-amber-400/15 text-[11px] font-black text-amber-300">{n}</span>
+        <span className="text-sm font-bold text-white">{children}</span>
+      </div>
+    );
+  }
+
+  function renderReservation() {
+    return (
+      <div className="space-y-5">
+        {eventAvail.isSoldOut && (
+          <div className="rounded-2xl border border-red-500/30 bg-red-950/30 p-4 text-center">
+            <p className="text-sm font-bold text-red-400">Evenement complet</p>
+            <p className="mt-1 text-xs text-red-300/70">Tous les billets ont ete vendus.</p>
+          </div>
+        )}
+
+        {/* 1 — ticket type */}
+        <div>
+          <StepLabel n={1}>Choisir votre billet</StepLabel>
+          <div className="space-y-2.5">
+            {ticketTypes.map((ticket) => {
+              const remaining = ticketRemaining(ticket);
+              const active = String(ticket._id) === String(selectedTicket?._id);
+              return (
+                <button
+                  key={String(ticket._id || ticket.name)}
+                  type="button"
+                  onClick={() => {
+                    setTicketTypeId(String(ticket._id));
+                    setQuantity(1);
+                  }}
+                  disabled={remaining <= 0}
+                  className={cn(
+                    'w-full rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
+                    active
+                      ? 'border-amber-400 bg-amber-400 text-black shadow-lg shadow-amber-400/15'
+                      : 'border-zinc-800 bg-black hover:border-zinc-600'
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-base font-black">{ticket.name}</p>
+                      <p className={cn('mt-1 text-xs', active ? 'text-black/65' : remaining > 0 ? 'text-emerald-400/80' : 'text-red-400/80')}>
+                        {remaining > 0 ? `${remaining} billets restants` : 'Epuise'}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-lg font-black">{ticket.price} TND</p>
+                  </div>
+                </button>
+              );
+            })}
+            {!ticketTypes.length ? (
+              <div className="rounded-2xl border border-zinc-800 bg-black p-5 text-center text-sm text-zinc-500">
+                Aucun billet disponible pour cet evenement.
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* 2 — quantity */}
+        <div>
+          <StepLabel n={2}>Quantite</StepLabel>
+          <div className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black p-4">
+            <p className="text-xs text-zinc-500">Maximum {maxQty} par commande</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Diminuer la quantite"
+                className="grid size-11 place-items-center rounded-full border border-zinc-800 text-zinc-300 transition-colors hover:border-zinc-600 disabled:opacity-40"
+                disabled={quantity <= 1}
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              >
+                <Minus className="size-4" />
+              </button>
+              <span className="grid size-11 place-items-center rounded-full bg-zinc-900 font-black text-white">{quantity}</span>
+              <button
+                type="button"
+                aria-label="Augmenter la quantite"
+                className="grid size-11 place-items-center rounded-full border border-zinc-800 text-zinc-300 transition-colors hover:border-zinc-600 disabled:opacity-40"
+                disabled={quantity >= maxQty || soldOut}
+                onClick={() => setQuantity((value) => Math.min(maxQty, value + 1))}
+              >
+                <Plus className="size-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 — client info */}
+        <div>
+          <StepLabel n={3}>Vos informations</StepLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Prenom *</Label>
+              <Input className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Prenom" autoComplete="given-name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-zinc-400">Nom *</Label>
+              <Input className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Nom" autoComplete="family-name" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label className="text-xs text-zinc-400">Email *</Label>
+              <Input type="email" className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@email.com" autoComplete="email" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label className="text-xs text-zinc-400">Telephone</Label>
+              <Input type="tel" className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 ..." autoComplete="tel" />
+            </div>
+          </div>
+        </div>
+
+        {/* 4 — payment */}
+        <div>
+          <StepLabel n={4}>Paiement</StepLabel>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('online_mock')}
+              className={cn(
+                'min-h-[88px] rounded-2xl border p-4 text-left transition',
+                paymentMethod === 'online_mock' ? 'border-amber-400 bg-amber-400 text-black' : 'border-zinc-800 bg-black text-zinc-300 hover:border-zinc-600'
+              )}
+            >
+              <CreditCard className="mb-2 size-5" />
+              <span className="block font-black">Online</span>
+              <span className={cn('text-xs', paymentMethod === 'online_mock' ? 'text-black/65' : 'text-zinc-500')}>Confirmation immediate</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('cash_order')}
+              className={cn(
+                'min-h-[88px] rounded-2xl border p-4 text-left transition',
+                paymentMethod === 'cash_order' ? 'border-amber-400 bg-amber-400 text-black' : 'border-zinc-800 bg-black text-zinc-300 hover:border-zinc-600'
+              )}
+            >
+              <Wallet className="mb-2 size-5" />
+              <span className="block font-black">Cash</span>
+              <span className={cn('text-xs', paymentMethod === 'cash_order' ? 'text-black/65' : 'text-zinc-500')}>A payer sous 4h</span>
+            </button>
+          </div>
+        </div>
+
+        {/* summary */}
+        <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-zinc-500">{selectedTicket?.name || 'Billet'} x{quantity}</span>
+            <span className="font-semibold text-zinc-200">{subtotal} TND</span>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-zinc-500">Frais service ({EVENT_SERVICE_FEE_TND} TND / billet)</span>
+            <span className="font-semibold text-zinc-200">{serviceFee} TND</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between border-t border-zinc-800 pt-3">
+            <span className="font-black text-white">Total</span>
+            <span className="font-serif text-2xl font-black text-amber-300">{total} TND</span>
+          </div>
+        </div>
+
+        {/* terms */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-1 size-4 accent-amber-400"
+          />
+          <span>J accepte les conditions de reservation et je comprends que le billet est non remboursable sauf annulation par l organisateur.</span>
+        </label>
+
+        <Button
+          onClick={handleReserve}
+          disabled={loading || soldOut || !ticketTypes.length || eventAvail.isSoldOut}
+          className="h-14 w-full rounded-2xl bg-amber-400 text-base font-black text-black hover:bg-amber-300"
+        >
+          {loading ? <Loader2 className="mr-2 size-5 animate-spin" /> : <CheckCircle2 className="mr-2 size-5" />}
+          {eventAvail.isSoldOut ? 'Evenement complet' : soldOut ? 'Billet epuise' : 'Confirmer et obtenir QR'}
+        </Button>
+
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-600">
+          <ShieldCheck className="size-3.5 text-emerald-500" />
+          Paiement securise · QR ticket immediat
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#080808] text-zinc-100">
+    <div className="min-h-screen bg-[#080808] pb-24 text-zinc-100 lg:pb-0">
+      {/* ── Hero ── */}
       <section className="relative overflow-hidden border-b border-zinc-900">
         <div className="absolute inset-0">
           {imageUrl ? (
@@ -205,7 +402,7 @@ export default function EventDetailPage() {
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#080808] to-transparent" />
         </div>
 
-        <div className="relative mx-auto flex min-h-[520px] max-w-7xl flex-col justify-end px-4 py-8 md:px-6">
+        <div className="relative mx-auto flex min-h-[400px] max-w-7xl flex-col justify-end px-4 py-7 md:min-h-[480px] md:px-6 md:py-8">
           <Button variant="ghost" className="mb-auto w-fit rounded-full text-zinc-300 hover:bg-white/10 hover:text-white" asChild>
             <Link href="/evenements">
               <ArrowLeft className="mr-2 size-4" />
@@ -213,123 +410,37 @@ export default function EventDetailPage() {
             </Link>
           </Button>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-end">
-            <div className="max-w-3xl">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <TypeBadge type={event.type} />
-                {event.isVedette ? (
-                  <span className="rounded-full border border-amber-400/40 bg-amber-400 px-3 py-1 text-xs font-black text-black">
-                    Selection premium
-                  </span>
-                ) : null}
-                <span className="rounded-full border border-zinc-700 bg-black/55 px-3 py-1 text-xs font-semibold text-zinc-300">
-                  QR ticket inclus
+          <div className="max-w-3xl">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <TypeBadge type={event.type} />
+              {event.isVedette ? (
+                <span className="rounded-full border border-amber-400/40 bg-amber-400 px-3 py-1 text-xs font-black text-black">
+                  Selection premium
                 </span>
-              </div>
-              <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">{event.title}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-300 md:text-lg">
-                {event.description || 'Reservez votre billet, recevez votre QR code et presentez-le a l entree.'}
-              </p>
-              <div className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur">
-                  <Calendar className="mb-2 size-5 text-amber-300" />
-                  <p className="font-bold text-white">{start.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur">
-                  <Clock className="mb-2 size-5 text-amber-300" />
-                  <p className="font-bold text-white">
-                    {start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur">
-                  <MapPin className="mb-2 size-5 text-amber-300" />
-                  <p className="font-bold text-white">{venueName}</p>
-                  {venueLine ? <p className="mt-1 text-xs text-zinc-400">{venueLine}</p> : null}
-                </div>
-              </div>
+              ) : null}
+              <span className="rounded-full border border-zinc-700 bg-black/55 px-3 py-1 text-xs font-semibold text-zinc-300">
+                QR ticket inclus
+              </span>
             </div>
-
-              <div className="rounded-3xl border border-amber-400/20 bg-zinc-950/90 p-5 shadow-2xl shadow-black/40 backdrop-blur md:p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">Reservation</p>
-                  <h2 className="mt-1 text-xl font-black">Choisir vos billets</h2>
-                </div>
-                <Ticket className="size-6 text-amber-300" />
+            <h1 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-6xl">{event.title}</h1>
+            <p className="mt-3 hidden max-w-2xl text-base leading-7 text-zinc-300 sm:block md:text-lg">
+              {event.description || 'Reservez votre billet, recevez votre QR code et presentez-le a l entree.'}
+            </p>
+            <div className="mt-5 grid gap-2.5 text-sm sm:grid-cols-3 sm:gap-3">
+              <div className="rounded-2xl border border-white/10 bg-black/55 p-3.5 backdrop-blur sm:p-4">
+                <Calendar className="mb-2 size-5 text-amber-300" />
+                <p className="font-bold text-white">{start.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
               </div>
-
-              {eventAvail.isSoldOut && (
-                <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-950/30 p-4 text-center">
-                  <p className="text-sm font-bold text-red-400">Evenement complet</p>
-                  <p className="mt-1 text-xs text-red-300/70">Tous les billets ont ete vendus.</p>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {ticketTypes.map((ticket) => {
-                  const remaining = ticketRemaining(ticket);
-                  const active = String(ticket._id) === String(selectedTicket?._id);
-                  return (
-                    <button
-                      key={String(ticket._id || ticket.name)}
-                      type="button"
-                      onClick={() => {
-                        setTicketTypeId(String(ticket._id));
-                        setQuantity(1);
-                      }}
-                      disabled={remaining <= 0}
-                      className={cn(
-                        'w-full rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
-                        active ? 'border-amber-400 bg-amber-400 text-black shadow-lg shadow-amber-400/15' : 'border-zinc-800 bg-black hover:border-zinc-600'
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-base font-black">{ticket.name}</p>
-                          <p className={cn('mt-1 text-xs', active ? 'text-black/65' : 'text-zinc-500')}>
-                            {remaining > 0 ? `${remaining} billets restants` : 'Epuise'}
-                          </p>
-                        </div>
-                        <p className="text-lg font-black">{ticket.price} TND</p>
-                      </div>
-                    </button>
-                  );
-                })}
-                {!ticketTypes.length ? (
-                  <div className="rounded-2xl border border-zinc-800 bg-black p-5 text-center text-sm text-zinc-500">
-                    Aucun billet disponible pour cet evenement.
-                  </div>
-                ) : null}
+              <div className="rounded-2xl border border-white/10 bg-black/55 p-3.5 backdrop-blur sm:p-4">
+                <Clock className="mb-2 size-5 text-amber-300" />
+                <p className="font-bold text-white">
+                  {start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
-
-              <div className="mt-4 rounded-2xl border border-zinc-800 bg-black p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-white">Quantite</p>
-                    <p className="text-xs text-zinc-500">Maximum {maxQty} par commande</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      aria-label="Diminuer la quantite"
-                      className="grid size-11 place-items-center rounded-full border border-zinc-800 text-zinc-300 disabled:opacity-40"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                    >
-                      <Minus className="size-4" />
-                    </button>
-                    <span className="grid size-11 place-items-center rounded-full bg-zinc-900 font-black text-white">{quantity}</span>
-                    <button
-                      type="button"
-                      aria-label="Augmenter la quantite"
-                      className="grid size-11 place-items-center rounded-full border border-zinc-800 text-zinc-300 disabled:opacity-40"
-                      disabled={quantity >= maxQty || soldOut}
-                      onClick={() => setQuantity((value) => Math.min(maxQty, value + 1))}
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
-                </div>
+              <div className="rounded-2xl border border-white/10 bg-black/55 p-3.5 backdrop-blur sm:p-4">
+                <MapPin className="mb-2 size-5 text-amber-300" />
+                <p className="font-bold text-white">{venueName}</p>
+                {venueLine ? <p className="mt-1 text-xs text-zinc-400">{venueLine}</p> : null}
               </div>
             </div>
           </div>
@@ -344,11 +455,11 @@ export default function EventDetailPage() {
                 <Sparkles className="size-5" />
               </div>
               <div>
-                <h2 className="text-xl font-black">Experience evenement</h2>
+                <h2 className="text-lg font-black sm:text-xl">Experience evenement</h2>
                 <p className="text-sm text-zinc-500">Billet numerique, QR code, suivi dans votre compte.</p>
               </div>
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-zinc-800 bg-black p-4">
                 <QrCode className="mb-2 size-5 text-amber-300" />
                 <p className="font-bold text-white">Ticket QR</p>
@@ -391,95 +502,63 @@ export default function EventDetailPage() {
           ) : null}
         </section>
 
-        <aside className="h-fit rounded-3xl border border-zinc-800 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30 md:p-6 lg:sticky lg:top-24">
-          <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">Checkout</p>
-            <h2 className="mt-1 text-xl font-black">Informations client</h2>
+        {/* ── Desktop reservation aside ── */}
+        <aside className="hidden h-fit rounded-3xl border border-amber-400/20 bg-zinc-950/80 p-5 shadow-2xl shadow-black/30 md:p-6 lg:sticky lg:top-24 lg:block">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">Reservation</p>
+              <h2 className="mt-1 text-xl font-black">Vos billets</h2>
+            </div>
+            <Ticket className="size-6 text-amber-300" />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-zinc-300">Prenom</Label>
-              <Input className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-zinc-300">Nom</Label>
-              <Input className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label className="text-zinc-300">Email</Label>
-              <Input type="email" className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@email.com" />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label className="text-zinc-300">Telephone</Label>
-              <Input className="h-12 rounded-2xl border-zinc-800 bg-black text-zinc-100" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 ..." />
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('online_mock')}
-              className={cn(
-                'min-h-[88px] rounded-2xl border p-4 text-left transition',
-                paymentMethod === 'online_mock' ? 'border-amber-400 bg-amber-400 text-black' : 'border-zinc-800 bg-black text-zinc-300 hover:border-zinc-600'
-              )}
-            >
-              <CreditCard className="mb-2 size-5" />
-              <span className="block font-black">Online</span>
-              <span className={cn('text-xs', paymentMethod === 'online_mock' ? 'text-black/65' : 'text-zinc-500')}>Confirmation immediate</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('cash_order')}
-              className={cn(
-                'min-h-[88px] rounded-2xl border p-4 text-left transition',
-                paymentMethod === 'cash_order' ? 'border-amber-400 bg-amber-400 text-black' : 'border-zinc-800 bg-black text-zinc-300 hover:border-zinc-600'
-              )}
-            >
-              <Wallet className="mb-2 size-5" />
-              <span className="block font-black">Cash</span>
-              <span className={cn('text-xs', paymentMethod === 'cash_order' ? 'text-black/65' : 'text-zinc-500')}>A payer sous 4h</span>
-            </button>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-zinc-800 bg-black p-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-zinc-500">{selectedTicket?.name || 'Billet'} x{quantity}</span>
-              <span className="font-semibold text-zinc-200">{subtotal} TND</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-zinc-500">Frais service ({EVENT_SERVICE_FEE_TND} TND / billet)</span>
-              <span className="font-semibold text-zinc-200">{serviceFee} TND</span>
-            </div>
-            <div className="mt-3 border-t border-zinc-800 pt-3 flex items-center justify-between">
-              <span className="font-black text-white">Total</span>
-              <span className="text-2xl font-black text-amber-300">{total} TND</span>
-            </div>
-          </div>
-
-          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-1 size-4 accent-amber-400"
-            />
-            <span>
-              J accepte les conditions de reservation et je comprends que le billet est non remboursable sauf annulation par l organisateur.
-            </span>
-          </label>
-
-          <Button
-            onClick={handleReserve}
-            disabled={loading || soldOut || !ticketTypes.length || eventAvail.isSoldOut}
-            className="mt-4 h-13 w-full rounded-2xl bg-amber-400 py-6 text-base font-black text-black hover:bg-amber-300"
-          >
-            {loading ? <Loader2 className="mr-2 size-5 animate-spin" /> : <CheckCircle2 className="mr-2 size-5" />}
-            {eventAvail.isSoldOut ? 'Evenement complet' : soldOut ? 'Billet epuise' : 'Confirmer et obtenir QR'}
-          </Button>
+          {renderReservation()}
         </aside>
       </main>
+
+      {/* ── Mobile sticky CTA ── */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-400/20 bg-[#0D0D0D]/95 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur-xl lg:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            {minPrice != null ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Des</span>
+                <span className="font-serif text-lg font-black text-amber-400">{minPrice}</span>
+                <span className="text-xs font-bold text-amber-300/80">TND</span>
+              </div>
+            ) : (
+              <span className="text-sm font-medium text-zinc-300">Billets</span>
+            )}
+            <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+              <QrCode className="size-3" /> QR ticket inclus
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileBookingOpen(true)}
+            disabled={eventAvail.isSoldOut}
+            className="flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-6 text-sm font-black text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95 disabled:opacity-60"
+          >
+            <Ticket className="size-4" />
+            {eventAvail.isSoldOut ? 'Complet' : 'Reserver'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Mobile reservation sheet ── */}
+      <Sheet open={mobileBookingOpen} onOpenChange={setMobileBookingOpen}>
+        <SheetContent
+          side="bottom"
+          className="max-h-[94vh] overflow-y-auto rounded-t-3xl border-zinc-800 bg-[#0B0B0B] px-4 pb-10 text-zinc-100"
+        >
+          <SheetHeader className="px-0 pb-0 pt-1 text-left">
+            <SheetTitle className="flex items-center gap-2 pr-8 text-white">
+              <Ticket className="size-5 shrink-0 text-amber-300" />
+              <span className="truncate">Reserver — {event.title}</span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">{renderReservation()}</div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

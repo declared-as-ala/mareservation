@@ -10,6 +10,7 @@ export default function CoworkingPage() {
       subtitle="Réservez des espaces de travail flexibles, bureaux privés et salles de réunion."
       mode="venue"
       venueType="COWORKING"
+      backHref="/"
       emptyIcon={<BriefcaseBusiness className="size-12" />}
       emptyTitle="Aucun espace coworking pour le moment"
       emptyDescription="Revenez bientôt pour découvrir nos espaces partenaires."

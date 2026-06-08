@@ -733,11 +733,11 @@ export default function HotelDetailPage() {
       />
 
       {/* ── Two-column layout ── */}
-      <div id="hotel-content" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-4 sm:py-6 lg:py-10">
+      <div id="hotel-content" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-4 pb-28 sm:py-6 lg:py-10 lg:pb-10">
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3 lg:gap-8">
 
-          {/* ── Left: Main content ── */}
-          <div className="order-2 space-y-8 lg:order-1 lg:col-span-2">
+          {/* ── Left: Main content (360 leads on mobile) ── */}
+          <div className="order-1 space-y-8 lg:order-1 lg:col-span-2">
 
             {/* ── Tab navigation ── */}
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
@@ -1050,7 +1050,7 @@ export default function HotelDetailPage() {
           </div>
 
           {/* ── Booking trigger: compact card on desktop ── */}
-          <div className="order-1 lg:order-2 lg:col-span-1">
+          <div className="order-2 lg:order-2 lg:col-span-1">
             <div className="lg:sticky lg:top-24">
               {/* Desktop trigger card */}
               <div className="hidden lg:block overflow-hidden rounded-3xl border border-amber-400/[0.18] bg-gradient-to-br from-[#1a1408] via-[#111111] to-[#0B0B0B] shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
