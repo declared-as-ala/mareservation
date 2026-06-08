@@ -54,7 +54,7 @@ function getCategoryInfo(type?: string, name = '') {
 /* ─── Category quick-access tiles ─── */
 const CATEGORIES = [
   { title: 'Hébergement', subtitle: "Hôtels • Maisons d'hôtes", href: '/hotels', Icon: BedDouble },
-  { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restaurants', Icon: UtensilsCrossed },
+  { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restauration', Icon: UtensilsCrossed },
   { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/explorer?q=Bar', Icon: Martini },
   { title: 'Événements', subtitle: 'Concerts • Festivals • Sport', href: '/evenements', Icon: PartyPopper },
   { title: 'Business', subtitle: 'Réunions • Coworking', href: '/coworking', Icon: Briefcase },
@@ -211,28 +211,30 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
           eyebrow="Accès rapide"
           title={<>Explorer par <span className="text-amber-400">catégorie</span> <Spark /></>}
         />
-        <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-          {CATEGORIES.map(({ title, href, Icon }) => (
+        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+          {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
             <Link
               key={title}
               href={href}
-              className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-white/[0.07] bg-gradient-to-b from-[#141414] to-[#0e0e0e] px-1 py-2 text-center transition-all duration-300 hover:border-amber-400/35 hover:from-[#1a1610] hover:to-[#121212] active:scale-95"
+              className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-white/[0.07] bg-gradient-to-b from-[#141414] to-[#0e0e0e] px-1.5 py-2 text-center transition-all duration-300 hover:border-amber-400/35 hover:from-[#1a1610] hover:to-[#121212] active:scale-95"
             >
               <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.10] text-amber-400 transition-all group-hover:bg-amber-400/[0.18] group-hover:shadow-[0_0_14px_rgba(245,158,11,0.30)]">
                 <Icon className="size-3" strokeWidth={1.8} />
               </span>
-              <span className="text-[9.5px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
+              <span className="text-[10px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
+              <span className="line-clamp-1 text-[8px] font-medium leading-tight text-white/40">{subtitle}</span>
             </Link>
           ))}
-          {/* 8th slot — Tout voir */}
+          {/* Tout voir */}
           <Link
             href="/explorer"
-            className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-1 py-2 text-center transition-all duration-300 hover:border-amber-400/55 hover:bg-amber-400/[0.10] active:scale-95"
+            className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-1.5 py-2 text-center transition-all duration-300 hover:border-amber-400/55 hover:bg-amber-400/[0.10] active:scale-95"
           >
             <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.18] text-amber-300">
               <ArrowRight className="size-3" strokeWidth={2} />
             </span>
-            <span className="text-[9.5px] font-bold leading-none text-amber-300">Tout</span>
+            <span className="text-[10px] font-bold leading-none text-amber-300">Tout</span>
+            <span className="line-clamp-1 text-[8px] font-medium leading-tight text-amber-300/50">Tout voir</span>
           </Link>
         </div>
       </div>
