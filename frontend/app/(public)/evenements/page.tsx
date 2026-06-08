@@ -3,9 +3,10 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, MapPin, Search, ScanEye, Sparkles, Ticket, X, ChevronDown } from 'lucide-react';
+import { Calendar, MapPin, Search, ScanEye, Sparkles, Ticket, X, ChevronDown, ArrowLeft } from 'lucide-react';
 import { fetchEvents } from '@/lib/api/events';
 import { EventCard } from '@/components/cards/EventCard';
 import { cn } from '@/lib/utils';
@@ -137,6 +138,15 @@ function EvenementsPageInner() {
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 py-7 md:px-6 md:py-16">
+          <div className="mb-4 flex">
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md transition-all hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-400"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Retour
+            </Link>
+          </div>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
