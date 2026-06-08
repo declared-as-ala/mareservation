@@ -258,11 +258,11 @@ function EvenementsPageInner() {
               <select
                 value={city}
                 onChange={(event) => setCity(event.target.value)}
-                className="h-12 w-full appearance-none rounded-2xl border border-zinc-800 bg-black pl-11 pr-9 text-sm text-zinc-100 outline-none transition focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
+                className="h-12 w-full appearance-none rounded-2xl border border-zinc-800 bg-[#161616] pl-11 pr-9 text-sm text-zinc-100 outline-none transition [color-scheme:dark] focus:border-amber-400/70 focus:ring-2 focus:ring-amber-400/20"
               >
-                <option value="all">Toutes les villes</option>
+                <option value="all" className="bg-[#161616] text-zinc-100">Toutes les villes</option>
                 {cities.map((item) => (
-                  <option key={item} value={item}>{item}</option>
+                  <option key={item} value={item} className="bg-[#161616] text-zinc-100">{item}</option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
