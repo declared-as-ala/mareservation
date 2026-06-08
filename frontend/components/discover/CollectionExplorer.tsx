@@ -1,76 +1,98 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Search,
-  X,
-  UtensilsCrossed,
-  Coffee,
-  MapPin,
-  ChevronDown,
-  LayoutGrid,
-} from 'lucide-react';
+import { ArrowLeft, Search, X, MapPin, ChevronDown, LayoutGrid, Compass } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
-import { RestaurantCard } from '@/components/cards/RestaurantCard';
-import { CafeCard } from '@/components/cards/CafeCard';
+import { VenueCard } from '@/components/cards/VenueCard';
 import { cn } from '@/lib/utils';
 
-type TypeFilter = 'all' | 'RESTAURANT' | 'CAFE';
-
-const TYPE_TABS: { value: TypeFilter; label: string; Icon: typeof Coffee }[] = [
-  { value: 'all', label: 'Tous', Icon: LayoutGrid },
-  { value: 'RESTAURANT', label: 'Restaurants', Icon: UtensilsCrossed },
-  { value: 'CAFE', label: 'Cafés', Icon: Coffee },
-];
-
-function isCafe(v: Venue) {
-  return v.type === 'CAFE' || v.type === 'CAFE_LOUNGE';
+export interface CollectionCategory {
+  value: string;
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+  /** Backend $text keywords that define this sub-category. */
+  keywords: string[];
 }
 
-export default function RestaurationPage() {
-  const [type, setType] = useState<TypeFilter>('all');
+interface CollectionExplorerProps {
+  /** Stable cache key (e.g. "sorties"). */
+  cacheKey: string;
+  eyebrow: string;
+  badgeIcon: ComponentType<{ className?: string }>;
+  titleLead: string;
+  titleHighlight: string;
+  subtitle: string;
+  emptyLabel: string;
+  /** Sub-categories (a "Tous" tab is added automatically). */
+  categories: CollectionCategory[];
+}
+
+type Entry = { venue: Venue; cats: Set<string> };
+
+export function CollectionExplorer({
+  cacheKey,
+  eyebrow,
+  badgeIcon: BadgeIcon,
+  titleLead,
+  titleHighlight,
+  subtitle,
+  emptyLabel,
+  categories,
+}: CollectionExplorerProps) {
+  const [active, setActive] = useState('all');
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('all');
 
-  const restoQuery = useQuery({
-    queryKey: ['venues', 'RESTAURANT'],
-    queryFn: () => fetchVenues({ type: 'RESTAURANT' }),
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ['collection', cacheKey],
     staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const byId = new Map<string, Entry>();
+      await Promise.all(
+        categories.flatMap((cat) =>
+          cat.keywords.map(async (kw) => {
+            const res = await fetchVenues({ q: kw });
+            for (const v of res) {
+              if (!v?._id) continue;
+              const entry = byId.get(v._id) ?? { venue: v, cats: new Set<string>() };
+              entry.cats.add(cat.value);
+              byId.set(v._id, entry);
+            }
+          })
+        )
+      );
+      return Array.from(byId.values());
+    },
   });
-  const cafeQuery = useQuery({
-    queryKey: ['venues', 'CAFE'],
-    queryFn: () => fetchVenues({ type: 'CAFE' }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const isLoading = restoQuery.isLoading || cafeQuery.isLoading;
-  const allVenues = useMemo(
-    () => [...(restoQuery.data ?? []), ...(cafeQuery.data ?? [])],
-    [restoQuery.data, cafeQuery.data]
-  );
 
   const cities = useMemo(
-    () => Array.from(new Set(allVenues.map((v) => v.city).filter(Boolean))).sort(),
-    [allVenues]
+    () => Array.from(new Set(entries.map((e) => e.venue.city).filter(Boolean))).sort(),
+    [entries]
   );
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = { all: entries.length };
+    for (const cat of categories) map[cat.value] = entries.filter((e) => e.cats.has(cat.value)).length;
+    return map;
+  }, [entries, categories]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return allVenues.filter((v) => {
-      if (type === 'RESTAURANT' && v.type !== 'RESTAURANT') return false;
-      if (type === 'CAFE' && !isCafe(v)) return false;
-      if (q && ![v.name, v.city, v.address, v.governorate].filter(Boolean).some((s) => String(s).toLowerCase().includes(q))) return false;
-      if (city !== 'all' && v.city !== city) return false;
+    return entries.filter(({ venue, cats }) => {
+      if (active !== 'all' && !cats.has(active)) return false;
+      if (city !== 'all' && venue.city !== city) return false;
+      if (q && ![venue.name, venue.city, venue.address, venue.governorate].filter(Boolean).some((s) => String(s).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [allVenues, type, search, city]);
+  }, [entries, active, city, search]);
 
-  const restaurantCount = allVenues.filter((v) => v.type === 'RESTAURANT').length;
-  const cafeCount = allVenues.filter(isCafe).length;
+  const tabs: CollectionCategory[] = [
+    { value: 'all', label: 'Tous', Icon: LayoutGrid, keywords: [] },
+    ...categories,
+  ];
 
   return (
     <div className="min-h-screen bg-[#0B0B0C] text-white pb-[max(2rem,env(safe-area-inset-bottom))]">
@@ -89,37 +111,36 @@ export default function RestaurationPage() {
           </div>
 
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/35 bg-amber-400/[0.08] px-2.5 py-1">
-            <UtensilsCrossed className="size-3 text-amber-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300">Restauration</span>
+            <BadgeIcon className="size-3 text-amber-400" />
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-300">{eyebrow}</span>
           </span>
           <h1 className="mt-3 font-serif text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-4xl md:text-5xl">
-            Restaurants &amp; Cafés,{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">au même endroit.</span>
+            {titleLead}{' '}
+            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">{titleHighlight}</span>
           </h1>
-          <p className="mt-2.5 max-w-xl text-sm text-white/55 sm:text-base">
-            Choisissez votre humeur — une table gastronomique ou un café cosy.
-          </p>
+          <p className="mt-2.5 max-w-xl text-sm text-white/55 sm:text-base">{subtitle}</p>
 
-          {/* Type toggle */}
-          <div className="mt-6 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.07] bg-[#111111] p-1.5 sm:inline-grid sm:w-auto sm:grid-flow-col">
-            {TYPE_TABS.map(({ value, label, Icon }) => {
-              const active = type === value;
-              const count = value === 'RESTAURANT' ? restaurantCount : value === 'CAFE' ? cafeCount : allVenues.length;
+          {/* Category toggle */}
+          <div className="no-scrollbar mt-6 -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:flex-wrap sm:px-0">
+            {tabs.map(({ value, label, Icon }) => {
+              const isActive = active === value;
               return (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setType(value)}
+                  onClick={() => setActive(value)}
                   className={cn(
-                    'flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all sm:px-6',
-                    active ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/20' : 'text-white/60 hover:text-white'
+                    'flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all',
+                    isActive
+                      ? 'border-amber-400 bg-amber-400 text-black shadow-lg shadow-amber-400/20'
+                      : 'border-white/[0.08] bg-[#111111] text-white/60 hover:border-white/20 hover:text-white'
                   )}
                 >
                   <Icon className="size-4" />
                   <span>{label}</span>
                   {!isLoading && (
-                    <span className={cn('rounded-full px-1.5 text-[10px] font-black', active ? 'bg-black/15 text-black' : 'bg-white/10 text-white/50')}>
-                      {count}
+                    <span className={cn('rounded-full px-1.5 text-[10px] font-black', isActive ? 'bg-black/15 text-black' : 'bg-white/10 text-white/50')}>
+                      {counts[value] ?? 0}
                     </span>
                   )}
                 </button>
@@ -166,7 +187,7 @@ export default function RestaurationPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-serif text-lg font-bold text-white sm:text-xl">
-              {type === 'CAFE' ? 'Cafés' : type === 'RESTAURANT' ? 'Restaurants' : 'Restaurants & Cafés'}
+              {active === 'all' ? eyebrow : tabs.find((t) => t.value === active)?.label}
             </h2>
             <span className="text-sm text-white/45">
               {filtered.length} lieu{filtered.length !== 1 ? 'x' : ''}
@@ -187,12 +208,12 @@ export default function RestaurationPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <UtensilsCrossed className="size-12 text-neutral-700" />
-              <h3 className="text-base font-semibold text-neutral-400">Aucun lieu trouvé</h3>
-              <p className="max-w-xs text-sm text-neutral-600">Essayez une autre ville ou une autre recherche.</p>
+              <Compass className="size-12 text-neutral-700" />
+              <h3 className="text-base font-semibold text-neutral-400">{emptyLabel}</h3>
+              <p className="max-w-xs text-sm text-neutral-600">Essayez une autre ville ou une autre catégorie.</p>
               <button
                 type="button"
-                onClick={() => { setSearch(''); setCity('all'); setType('all'); }}
+                onClick={() => { setSearch(''); setCity('all'); setActive('all'); }}
                 className="text-sm font-semibold text-amber-400 hover:underline"
               >
                 Réinitialiser
@@ -200,13 +221,9 @@ export default function RestaurationPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {filtered.map((v) =>
-                isCafe(v) ? (
-                  <CafeCard key={v._id} venue={v as Venue & { rating?: number }} />
-                ) : (
-                  <RestaurantCard key={v._id} venue={v as Venue & { rating?: number }} />
-                )
-              )}
+              {filtered.map(({ venue }) => (
+                <VenueCard key={venue._id} venue={venue} />
+              ))}
             </div>
           )}
         </div>

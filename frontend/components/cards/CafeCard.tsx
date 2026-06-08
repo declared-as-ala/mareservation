@@ -15,7 +15,7 @@ interface CafeCardProps {
 function getOpenStatus(): { open: boolean; label: string } {
   // Placeholder — until cafés expose opening hours.
   const h = new Date().getHours();
-  if (h >= 7 && h < 23) return { open: true, label: `Ouvert · ferme à 23 h` };
+  if (h >= 7 && h < 23) return { open: true, label: 'Ouvert' };
   return { open: false, label: 'Fermé' };
 }
 
@@ -92,8 +92,8 @@ export function CafeCard({ venue, className }: CafeCardProps) {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-serif text-base font-bold leading-tight text-white transition-colors group-hover:text-amber-100">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <h3 className="line-clamp-1 font-serif text-sm font-bold leading-tight text-white transition-colors group-hover:text-amber-100 sm:text-base">
           {venue.name}
         </h3>
 
@@ -105,7 +105,7 @@ export function CafeCard({ venue, className }: CafeCardProps) {
         )}
 
         {/* Amenity row */}
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-[11px] text-neutral-500">
+        <div className="mt-auto flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-2 text-[11px] text-neutral-500">
           {hasWifi && (
             <span className="inline-flex items-center gap-1 text-neutral-400">
               <Wifi className="size-3.5 text-amber-400/70" />

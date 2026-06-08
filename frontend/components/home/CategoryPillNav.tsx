@@ -15,7 +15,7 @@ const PILLS: Pill[] = [
   { label: 'Cafés', href: '/cafes', Icon: Coffee },
   { label: 'Événements', href: '/evenements', Icon: Calendar },
   { label: 'Coworking', href: '/coworking', Icon: Briefcase },
-  { label: 'Bien-être', href: '/explorer?q=Spa', Icon: Sparkles },
+  { label: 'Bien-être', href: '/bien-etre', Icon: Sparkles },
   { label: 'Cinéma', href: '/cinema', Icon: Clapperboard },
 ];
 

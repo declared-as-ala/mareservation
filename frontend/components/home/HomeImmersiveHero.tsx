@@ -55,10 +55,10 @@ function getCategoryInfo(type?: string, name = '') {
 const CATEGORIES = [
   { title: 'Hébergement', subtitle: "Hôtels • Maisons d'hôtes", href: '/hotels', Icon: BedDouble },
   { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restauration', Icon: UtensilsCrossed },
-  { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/explorer?q=Bar', Icon: Martini },
+  { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/sorties', Icon: Martini },
   { title: 'Événements', subtitle: 'Concerts • Festivals • Sport', href: '/evenements', Icon: PartyPopper },
   { title: 'Business', subtitle: 'Réunions • Coworking', href: '/coworking', Icon: Briefcase },
-  { title: 'Bien-être', subtitle: 'Spas • Piscines', href: '/explorer?q=Spa', Icon: Flower2 },
+  { title: 'Bien-être', subtitle: 'Spas • Piscines', href: '/bien-etre', Icon: Flower2 },
 ];
 
 /* ─── Immersive feature highlights ─── */

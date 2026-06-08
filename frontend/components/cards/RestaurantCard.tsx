@@ -108,8 +108,8 @@ export function RestaurantCard({ venue, slot, className }: RestaurantCardProps) 
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-serif text-base font-bold leading-tight text-white transition-colors group-hover:text-amber-100">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
+        <h3 className="line-clamp-1 font-serif text-sm font-bold leading-tight text-white transition-colors group-hover:text-amber-100 sm:text-base">
           {venue.name}
         </h3>
 
@@ -121,12 +121,12 @@ export function RestaurantCard({ venue, slot, className }: RestaurantCardProps) 
         )}
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+          <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500">
             <PriceTier tier={tier} />
-            <span className="text-neutral-600">·</span>
-            <span>Réservation rapide</span>
+            <span className="hidden text-neutral-600 sm:inline">·</span>
+            <span className="hidden truncate sm:inline">Réservation rapide</span>
           </div>
-          <span className="text-[12px] font-bold text-amber-400 transition-transform group-hover:translate-x-0.5">
+          <span className="shrink-0 text-[12px] font-bold text-amber-400 transition-transform group-hover:translate-x-0.5">
             Voir →
           </span>
         </div>
