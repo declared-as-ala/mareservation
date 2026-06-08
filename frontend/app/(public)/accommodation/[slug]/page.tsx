@@ -885,7 +885,7 @@ export default function HotelDetailPage() {
                     </p>
                   </div>
 
-                  <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30">
+                  <div className="relative h-[70vh] min-h-[460px] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30 sm:aspect-video sm:h-auto sm:min-h-0">
                     {venueTour.scenes.length > 0 ? (
                       <PanoramaTourViewer
                         scenes={venueTour.scenes}
@@ -915,6 +915,7 @@ export default function HotelDetailPage() {
                         src={venue.immersiveUrl}
                         title="Visite virtuelle"
                         className="h-full w-full"
+                        allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
                         allowFullScreen
                       />
                     ) : (
