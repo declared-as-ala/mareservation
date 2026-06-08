@@ -1,7 +1,16 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { Sparkles, CheckCircle2, TriangleAlert } from 'lucide-react';
+import Link from 'next/link';
+import {
+  Sparkles,
+  CheckCircle2,
+  TriangleAlert,
+  ArrowLeft,
+  ShieldCheck,
+  Zap,
+  Headset,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import {
   submitSOSConseil,
@@ -114,6 +123,8 @@ export default function SOSConseilPage() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  /** Mobile-only: the assistant opens as a floating chat bubble overlay. */
+  const [chatOpen, setChatOpen] = useState(false);
 
   /** Dernière extraction serveur IA (pour résumé + merge) */
   const [assistExtracted, setAssistExtracted] = useState<SOSAssistantExtracted | null>(null);
@@ -331,26 +342,48 @@ export default function SOSConseilPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="border-b border-white/[0.06] bg-gradient-to-br from-amber-400/5 via-black to-black">
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-400/30 bg-amber-400/5 text-amber-400 text-xs font-semibold uppercase tracking-widest mb-6">
-            <Sparkles className="w-3.5 h-3.5" />
+      {/* ── Hero ── */}
+      <div className="relative overflow-hidden border-b border-white/[0.06] bg-gradient-to-b from-[#15110a] via-black to-black">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-amber-500/[0.10] blur-[120px]" />
+        <div className="relative mx-auto max-w-7xl px-4 py-9 sm:px-6 sm:py-14">
+          <div className="mb-5 flex">
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md transition-all hover:border-amber-400/40 hover:bg-amber-400/10 hover:text-amber-400"
+            >
+              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
+              Retour
+            </Link>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-amber-300">
+            <Headset className="size-3.5" />
             Service Conciergerie
           </div>
-          <h1 className="text-4xl font-bold text-white mb-3">SOS Conseil</h1>
-          <p className="text-zinc-400 max-w-xl">
-            Décrivez votre événement : l’assistant vous aide à cadrer le besoin, puis vous complétez ou validez le
-            formulaire.
+          <h1 className="mt-4 font-serif text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl">
+            SOS Conseil
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-zinc-400 sm:text-base">
+            Décrivez votre événement à notre assistant — il cadre votre besoin et remplit la demande pour vous. Notre équipe vous recontacte avec les meilleures recommandations.
           </p>
+          <div className="mt-6 flex flex-wrap gap-2.5">
+            {[
+              { Icon: Zap, label: 'Réponse rapide' },
+              { Icon: Sparkles, label: 'Sur-mesure' },
+              { Icon: ShieldCheck, label: 'Sans engagement' },
+            ].map(({ Icon, label }) => (
+              <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300">
+                <Icon className="size-3.5 text-amber-400" />
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        {/* Mobile: form then chat. Desktop: centered form + chat docked right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:items-start">
-          <div className="hidden lg:block lg:col-span-2" />
-
-          <div className="lg:col-span-6 order-1">
+      <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:py-10 lg:pb-10">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+          {/* Form column */}
+          <div className="lg:col-span-7">
             <Card className="border-white/[0.08] bg-white/[0.03]">
               <CardHeader>
                 <CardTitle className="text-white">Votre demande</CardTitle>
@@ -613,37 +646,54 @@ export default function SOSConseilPage() {
             </Card>
           </div>
 
-          <div className="lg:col-span-4 order-2 lg:sticky lg:top-6">
-            <div className="rounded-2xl border border-white/[0.04] bg-white/[0.02] p-4 mb-4">
-              <p className="text-sm font-semibold text-amber-300 mb-2">Exemples rapides</p>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  'Dîner romantique pour 2, vue mer, budget 200 TND',
-                  'Anniversaire 30 personnes, musique live, budget 800 TND',
-                  "Réunion d'affaire calme, 10 personnes, projecteur",
-                ].map((ex) => (
-                  <button
-                    key={ex}
-                    type="button"
-                    onClick={() => setField('details', ex)}
-                    className="text-xs rounded-lg px-3 py-1.5 border border-zinc-700 bg-zinc-900/50 text-zinc-200 hover:bg-zinc-900/60"
-                  >
-                    {ex.length > 36 ? `${ex.slice(0, 36)}...` : ex}
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          {/* Assistant column — desktop only (mobile uses the floating bubble) */}
+          <div className="hidden lg:col-span-5 lg:sticky lg:top-6 lg:block">
             <SOSConseilAssistant
               getCurrentFormSnapshot={formSnapshotForChat}
               onAssistantReply={(payload) => {
                 applyMergedFromAssistant(payload);
               }}
-              className="min-h-[560px] lg:min-h-[680px]"
+              className="lg:min-h-[700px]"
             />
           </div>
         </div>
       </div>
+
+      {/* ── Mobile floating assistant bubble ── */}
+      {!chatOpen && (
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          aria-label="Ouvrir l'assistant IA"
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-4 py-3.5 text-sm font-black text-black shadow-[0_12px_34px_rgba(245,158,11,0.5)] transition-transform active:scale-95 lg:hidden"
+        >
+          <span className="relative flex size-5 items-center justify-center">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-black/20" />
+            <Sparkles className="relative size-5" />
+          </span>
+          Assistant IA
+        </button>
+      )}
+
+      {/* ── Mobile assistant overlay ── */}
+      {chatOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setChatOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 flex h-[92dvh] flex-col">
+            <SOSConseilAssistant
+              getCurrentFormSnapshot={formSnapshotForChat}
+              onAssistantReply={(payload) => {
+                applyMergedFromAssistant(payload);
+              }}
+              onClose={() => setChatOpen(false)}
+              className="h-full rounded-b-none border-b-0"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
