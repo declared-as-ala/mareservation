@@ -334,6 +334,7 @@ export interface HomepageConfig {
   supportEmail?: string;
   defaultLanguage?: string;
   homeSectionsOrder?: string[];
+  restaurationImages?: { restaurant?: string; cafe?: string };
   bannerSlides?: BannerSlide[];
 }
 

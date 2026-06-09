@@ -517,6 +517,7 @@ export interface AdminSettings {
   defaultLanguage?: string;
   maintenanceMode?: boolean;
   homeSectionsOrder?: string[];
+  restaurationImages?: { restaurant?: string; cafe?: string };
 }
 
 export async function fetchAdminSettings(): Promise<AdminSettings> {

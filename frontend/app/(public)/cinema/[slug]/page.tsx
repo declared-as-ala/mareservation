@@ -28,6 +28,7 @@ import type { Venue } from '@/lib/api/types';
 import { CinematicVenueHero } from '@/components/venue/CinematicVenueHero';
 import { HotelAmenitiesGrid } from '@/components/hotel/HotelAmenities';
 import { VenueMap } from '@/components/venue/VenueMap';
+import { VenueGallery } from '@/components/venue/VenueGallery';
 import { SimilarVenues } from '@/components/venue/SimilarVenues';
 
 const PanoramaEngine = dynamic(() => import('@/components/immersive/PanoramaEngine'), { ssr: false });
@@ -232,6 +233,8 @@ export default function CinemaDetailPage() {
                       <p className="whitespace-pre-wrap leading-relaxed text-neutral-400">{venue.description}</p>
                     </div>
                   )}
+
+                  <VenueGallery images={allImages} venueName={venue.name} />
 
                   <div>
                     <h2 className="mb-3 text-lg font-semibold text-neutral-200">Équipements &amp; Services</h2>

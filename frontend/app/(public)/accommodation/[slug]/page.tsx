@@ -43,6 +43,7 @@ import { FavoriteButton } from '@/components/shared/FavoriteButton';
 import { ShareButton } from '@/components/venue/ShareButton';
 import { SimilarVenues } from '@/components/venue/SimilarVenues';
 import { VenueMap } from '@/components/venue/VenueMap';
+import { VenueGallery } from '@/components/venue/VenueGallery';
 
 const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
@@ -973,6 +974,8 @@ export default function HotelDetailPage() {
                   transition={{ duration: 0.2 }}
                   className="space-y-6"
                 >
+                  <VenueGallery images={allImages} venueName={venue.name} />
+
                   <dl className="space-y-4 text-sm">
                     {venue.address && (
                       <div>

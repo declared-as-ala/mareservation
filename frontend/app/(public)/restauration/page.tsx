@@ -5,8 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  Search,
-  X,
   UtensilsCrossed,
   Coffee,
   MapPin,
@@ -14,6 +12,7 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
+import { fetchHomepageConfig } from '@/lib/api/meta';
 import type { Venue } from '@/lib/api/types';
 import { RestaurantCard } from '@/components/cards/RestaurantCard';
 import { CafeCard } from '@/components/cards/CafeCard';
@@ -33,7 +32,6 @@ function isCafe(v: Venue) {
 
 export default function RestaurationPage() {
   const [type, setType] = useState<TypeFilter>('all');
-  const [search, setSearch] = useState('');
   const [city, setCity] = useState('all');
 
   const restoQuery = useQuery({
@@ -46,6 +44,12 @@ export default function RestaurationPage() {
     queryFn: () => fetchVenues({ type: 'CAFE' }),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: homeConfig } = useQuery({
+    queryKey: ['homepage-config'],
+    queryFn: fetchHomepageConfig,
+    staleTime: 10 * 60 * 1000,
+  });
+  const bannerImages = homeConfig?.restaurationImages ?? {};
 
   const isLoading = restoQuery.isLoading || cafeQuery.isLoading;
   const allVenues = useMemo(
@@ -59,15 +63,13 @@ export default function RestaurationPage() {
   );
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return allVenues.filter((v) => {
       if (type === 'RESTAURANT' && v.type !== 'RESTAURANT') return false;
       if (type === 'CAFE' && !isCafe(v)) return false;
-      if (q && ![v.name, v.city, v.address, v.governorate].filter(Boolean).some((s) => String(s).toLowerCase().includes(q))) return false;
       if (city !== 'all' && v.city !== city) return false;
       return true;
     });
-  }, [allVenues, type, search, city]);
+  }, [allVenues, type, city]);
 
   const restaurantCount = allVenues.filter((v) => v.type === 'RESTAURANT').length;
   const cafeCount = allVenues.filter(isCafe).length;
@@ -100,6 +102,47 @@ export default function RestaurationPage() {
             Choisissez votre humeur — une table gastronomique ou un café cosy.
           </p>
 
+          {/* Category banners (editable in admin) — also act as quick filters */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
+            {([
+              { key: 'RESTAURANT' as const, label: 'Restaurants', img: bannerImages.restaurant, Icon: UtensilsCrossed, count: restaurantCount, glow: 'from-amber-500/30' },
+              { key: 'CAFE' as const, label: 'Cafés', img: bannerImages.cafe, Icon: Coffee, count: cafeCount, glow: 'from-orange-500/30' },
+            ]).map(({ key, label, img, Icon, count, glow }) => {
+              const active = type === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setType(active ? 'all' : key)}
+                  className={cn(
+                    'group relative aspect-[16/10] overflow-hidden rounded-3xl border text-left transition-all sm:aspect-[2/1]',
+                    active ? 'border-amber-400 ring-2 ring-amber-400/40' : 'border-white/[0.08] hover:border-amber-400/40'
+                  )}
+                >
+                  {img ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={img} alt={label} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  ) : (
+                    <div className={cn('absolute inset-0 bg-gradient-to-br to-transparent', glow)} />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-2 sm:inset-x-4 sm:bottom-4">
+                    <div className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-base font-black text-white sm:text-xl">
+                        <Icon className="size-4 text-amber-300 sm:size-5" />
+                        {label}
+                      </span>
+                      {!isLoading && <span className="text-[11px] font-semibold text-white/70 sm:text-xs">{count} lieux</span>}
+                    </div>
+                    <span className={cn('hidden shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold backdrop-blur-md sm:inline-flex', active ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/25 bg-black/50 text-white')}>
+                      {active ? 'Affiché' : 'Voir'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Type toggle */}
           <div className="mt-6 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.07] bg-[#111111] p-1.5 sm:inline-grid sm:w-auto sm:grid-flow-col">
             {TYPE_TABS.map(({ value, label, Icon }) => {
@@ -127,23 +170,9 @@ export default function RestaurationPage() {
             })}
           </div>
 
-          {/* Search + city */}
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
-              <Search className="size-4 shrink-0 text-neutral-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un lieu, une ville…"
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-600 focus:outline-none"
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch('')} aria-label="Effacer" className="text-neutral-500 hover:text-white">
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="relative sm:w-56">
+          {/* City filter */}
+          <div className="mt-3">
+            <div className="relative sm:w-72">
               <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
               <select
                 value={city}
@@ -192,7 +221,7 @@ export default function RestaurationPage() {
               <p className="max-w-xs text-sm text-neutral-600">Essayez une autre ville ou une autre recherche.</p>
               <button
                 type="button"
-                onClick={() => { setSearch(''); setCity('all'); setType('all'); }}
+                onClick={() => { setCity('all'); setType('all'); }}
                 className="text-sm font-semibold text-amber-400 hover:underline"
               >
                 Réinitialiser

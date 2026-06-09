@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Globe, Phone, Mail, ImageIcon, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { Settings, Globe, Phone, Mail, ImageIcon, Save, Loader2, CheckCircle2, UtensilsCrossed } from 'lucide-react';
+import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
 import { toast } from 'sonner';
 
 type SettingsForm = {
@@ -21,6 +22,8 @@ type SettingsForm = {
   supportEmail: string;
   defaultLanguage: string;
   maintenanceMode: boolean;
+  restaurantImage: string;
+  cafeImage: string;
 };
 
 const defaultForm: SettingsForm = {
@@ -31,6 +34,8 @@ const defaultForm: SettingsForm = {
   supportEmail: '',
   defaultLanguage: 'fr',
   maintenanceMode: false,
+  restaurantImage: '',
+  cafeImage: '',
 };
 
 export default function AdminSettingsPage() {
@@ -53,6 +58,8 @@ export default function AdminSettingsPage() {
         supportEmail: data.supportEmail ?? '',
         defaultLanguage: data.defaultLanguage ?? 'fr',
         maintenanceMode: data.maintenanceMode ?? false,
+        restaurantImage: data.restaurationImages?.restaurant ?? '',
+        cafeImage: data.restaurationImages?.cafe ?? '',
       });
     }
   }, [data]);
@@ -66,6 +73,10 @@ export default function AdminSettingsPage() {
       supportEmail: form.supportEmail || undefined,
       defaultLanguage: form.defaultLanguage || undefined,
       maintenanceMode: form.maintenanceMode,
+      restaurationImages: {
+        restaurant: form.restaurantImage || undefined,
+        cafe: form.cafeImage || undefined,
+      },
     }),
     onSuccess: () => {
       toast.success('Paramètres enregistrés');
@@ -190,6 +201,37 @@ export default function AdminSettingsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Restauration page images */}
+      <Card className="border-zinc-800 bg-zinc-900/50">
+        <CardHeader className="pb-3 border-b border-zinc-800">
+          <CardTitle className="flex items-center gap-2 text-base text-zinc-100">
+            <UtensilsCrossed className="size-4 text-amber-400" />
+            Images page Restauration
+          </CardTitle>
+          <CardDescription className="text-zinc-400">
+            Images d&apos;en-tête affichées en haut de la page /restauration (Restaurants &amp; Cafés)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ImageUploadField
+              label="Image Restaurants"
+              value={form.restaurantImage}
+              onChange={(url) => setForm((f) => ({ ...f, restaurantImage: url }))}
+              aspect="aspect-[16/10]"
+              hint="Bannière de la catégorie Restaurants"
+            />
+            <ImageUploadField
+              label="Image Cafés"
+              value={form.cafeImage}
+              onChange={(url) => setForm((f) => ({ ...f, cafeImage: url }))}
+              aspect="aspect-[16/10]"
+              hint="Bannière de la catégorie Cafés"
+            />
           </div>
         </CardContent>
       </Card>

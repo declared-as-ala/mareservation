@@ -23,6 +23,7 @@ router.get('/homepage-config', async (_req, res) => {
       isMaintenanceMode: settings?.isMaintenanceMode ?? false,
       maintenanceMessageFr: settings?.maintenanceMessageFr,
       socialLinks: settings?.socialLinks ?? {},
+      restaurationImages: settings?.restaurationImages ?? {},
       bannerSlides: bannerSlides || [],
     };
     sendSuccess(res, { data: config });

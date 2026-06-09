@@ -14,6 +14,8 @@ export interface IAppSettings extends Document {
   socialLinks?: Record<string, string>;
   isMaintenanceMode: boolean;
   maintenanceMessageFr?: string;
+  /** Editable header images for the /restauration discovery page. */
+  restaurationImages?: { restaurant?: string; cafe?: string };
   updatedAt: Date;
 }
 
@@ -32,6 +34,10 @@ const AppSettingsSchema = new Schema<IAppSettings>(
     socialLinks: { type: Schema.Types.Mixed, default: {} },
     isMaintenanceMode: { type: Boolean, default: false },
     maintenanceMessageFr: { type: String },
+    restaurationImages: {
+      restaurant: { type: String },
+      cafe: { type: String },
+    },
   },
   { timestamps: true }
 );

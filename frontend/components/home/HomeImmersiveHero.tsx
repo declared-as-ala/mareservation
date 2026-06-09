@@ -225,17 +225,6 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
               <span className="line-clamp-1 text-[8px] font-medium leading-tight text-white/40">{subtitle}</span>
             </Link>
           ))}
-          {/* Tout voir */}
-          <Link
-            href="/explorer"
-            className="group flex flex-col items-center justify-center gap-1 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-1.5 py-2 text-center transition-all duration-300 hover:border-amber-400/55 hover:bg-amber-400/[0.10] active:scale-95"
-          >
-            <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.18] text-amber-300">
-              <ArrowRight className="size-3" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold leading-none text-amber-300">Tout</span>
-            <span className="line-clamp-1 text-[8px] font-medium leading-tight text-amber-300/50">Tout voir</span>
-          </Link>
         </div>
       </div>
 
