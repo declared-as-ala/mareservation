@@ -5,6 +5,11 @@ import { Event } from '../models/Event';
 import { Reservation } from '../models/Reservation';
 import { generateQRDataURL } from '../utils/qr';
 import { sendEmail } from '../services/email.service';
+import {
+  createReservationQrAttachment,
+  createReservationTicketEmail,
+  RESERVATION_QR_CONTENT_ID,
+} from '../services/reservation-ticket-email';
 
 const router = Router();
 const EVENT_SERVICE_FEE_TND = 1.5;
@@ -131,30 +136,49 @@ router.post('/orders', authenticate, async (req: AuthRequest, res) => {
       throw createError;
     }
 
-    const qrPayload = JSON.stringify({
-      kind: 'event_ticket',
-      reservationId: reservation._id.toString(),
-      reservationCode,
-      confirmationCode,
-      verifyUrl: `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${confirmationCode}`,
-      eventId: event._id.toString(),
-      eventTitle: event.title,
-      ticketTypeId: String(ticketType._id),
-      ticketTypeName: ticketType.name,
-      quantity: qty,
-      userId: String(userId),
-      status: reservation.status,
-    });
+    const qrPayload = `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${confirmationCode}`;
     const qrCodeImageUrl = await generateQRDataURL(qrPayload, { width: 320, margin: 1 });
     reservation.qrCodeData = qrPayload;
     reservation.qrCodeImageUrl = qrCodeImageUrl;
     await reservation.save();
 
     if (email) {
+      const venue = event.venueId as any;
+      const ticketUrl = `${FRONTEND_URL}/reservation/${reservation._id}/confirmation`;
+      const startsAt = new Date(event.startAt);
+      const template = createReservationTicketEmail({
+        guestName: `${firstName} ${lastName}`.trim(),
+        reservationCode,
+        venueName: event.title,
+        experienceLabel: 'Billet événement',
+        status: 'confirmed',
+        ticketUrl,
+        qrImageSrc: `cid:${RESERVATION_QR_CONTENT_ID}`,
+        address: [venue?.name, venue?.address, venue?.city].filter(Boolean).join(', ') || undefined,
+        details: [
+          { label: 'Billet', value: `${ticketType.name} x${qty}`, accent: true },
+          {
+            label: 'Date',
+            value: startsAt.toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            }),
+          },
+          { label: 'Heure', value: startsAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) },
+          { label: 'Paiement', value: isCashOrder ? 'À régler' : 'Payé' },
+          { label: 'Total', value: `${total.toLocaleString('fr-FR')} TND`, accent: true },
+        ],
+        note: 'Chaque ticket est unique. Ne partagez pas votre QR code avant votre arrivée.',
+      });
+      const qrAttachment = createReservationQrAttachment(qrCodeImageUrl);
       void sendEmail({
         to: email,
-        subject: `Confirmation billet - ${event.title}`,
-        html: `<p>Bonjour ${firstName},</p><p>Votre reservation <b>${reservationCode}</b> est confirmee pour <b>${event.title}</b>.</p><p>Billet: <b>${ticketType.name}</b> x${qty}. Total: <b>${total} TND</b>.</p>`,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        attachments: qrAttachment ? [qrAttachment] : undefined,
       });
     }
 

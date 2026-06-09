@@ -19,11 +19,19 @@ const smtpTransporter =
       })
     : null;
 
+export interface EmailAttachment {
+  filename: string;
+  content: string | Buffer;
+  contentType?: string;
+  contentId?: string;
+}
+
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  attachments?: EmailAttachment[];
 }
 
 type EmailHealth = {
@@ -68,7 +76,7 @@ export async function getEmailHealth(): Promise<EmailHealth> {
   return health;
 }
 
-export async function sendEmail({ to, subject, html, text }: EmailOptions): Promise<boolean> {
+export async function sendEmail({ to, subject, html, text, attachments }: EmailOptions): Promise<boolean> {
   logger.info('Email send attempt', {
     to,
     subject,
@@ -88,6 +96,10 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
         subject,
         html,
         text: text || html.replace(/<[^>]*>/g, ''),
+        attachments: attachments?.map(({ contentId, ...attachment }) => ({
+          ...attachment,
+          cid: contentId,
+        })),
       });
       logger.info(`Email sent via SMTP to ${to}: ${subject}`);
       return true;
@@ -112,6 +124,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
       subject,
       html,
       text: text || html.replace(/<[^>]*>/g, ''),
+      attachments,
     });
     logger.info(`Email sent to ${to}: ${subject}`);
     return true;

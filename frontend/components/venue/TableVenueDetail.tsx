@@ -14,6 +14,7 @@ import {
   Clock,
   ArrowLeft,
   Star,
+  PartyPopper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchVenueByIdOrSlug } from '@/lib/api/venues';
@@ -44,11 +45,12 @@ function getAllImages(venue: Venue): string[] {
 }
 
 
-type TableCategory = 'CAFE' | 'RESTAURANT';
+type TableCategory = 'CAFE' | 'RESTAURANT' | 'EVENT_SPACE';
 
 const CATEGORY_META: Record<TableCategory, { icon: typeof Coffee; label: string; aboutLabel: string }> = {
   CAFE: { icon: Coffee, label: 'Café & Lounge', aboutLabel: 'À propos du café' },
   RESTAURANT: { icon: UtensilsCrossed, label: 'Restaurant', aboutLabel: 'À propos du restaurant' },
+  EVENT_SPACE: { icon: PartyPopper, label: 'Espace événementiel', aboutLabel: 'À propos du lieu' },
 };
 
 /**

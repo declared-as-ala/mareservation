@@ -16,7 +16,7 @@ export type ReservationStatus =
 
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
 
-export type BookingType = 'TABLE' | 'ROOM' | 'SEAT';
+export type BookingType = 'TABLE' | 'ROOM' | 'SEAT' | 'COWORKING';
 
 export type PaymentOption = 'online' | 'on_arrival' | 'partial' | 'deposit' | 'pay_at_hotel';
 
@@ -124,7 +124,7 @@ const ReservationSchema = new Schema<IReservation>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
     eventId: { type: Schema.Types.ObjectId, ref: 'Event' },
-    bookingType: { type: String, enum: ['TABLE', 'ROOM', 'SEAT'], required: true },
+    bookingType: { type: String, enum: ['TABLE', 'ROOM', 'SEAT', 'COWORKING'], required: true },
     tableId: { type: Schema.Types.ObjectId, ref: 'Table' },
     roomId: { type: Schema.Types.ObjectId, ref: 'Room' },
     seatId: { type: Schema.Types.ObjectId, ref: 'Seat' },

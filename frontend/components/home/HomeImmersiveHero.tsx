@@ -48,7 +48,15 @@ function getCategoryInfo(type?: string, name = '') {
   if (t === 'HOTEL') return { label: 'Hôtel', Icon: BedDouble };
   if (t === 'COWORKING') return { label: 'Coworking', Icon: Laptop };
   if (t === 'CINEMA') return { label: 'Cinéma', Icon: Clapperboard };
+  if (t === 'EVENT_SPACE') return { label: 'Événementiel', Icon: PartyPopper };
   return { label: 'Lieu', Icon: Sparkles };
+}
+
+function getHomeVenueHref(venue: CardVenue): string {
+  if (String(venue._id).startsWith('mock-')) {
+    return venue.type ? `/explorer?type=${encodeURIComponent(venue.type)}` : '/explorer';
+  }
+  return getVenueHref(venue);
 }
 
 /* ─── Category quick-access tiles ─── */
@@ -463,7 +471,7 @@ function MobileVenueCard({ venue }: { venue: CardVenue }) {
   const { label, Icon } = getCategoryInfo(venue.type, venue.name);
   return (
     <Link
-      href={getVenueHref(venue)}
+      href={getHomeVenueHref(venue)}
       className="group block overflow-hidden rounded-2xl border border-white/[0.06] bg-[#111112] transition-all duration-300 hover:border-amber-400/30 active:scale-95"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-950">
@@ -530,7 +538,7 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
           return (
             <Link
               key={v._id}
-              href={getVenueHref(v)}
+              href={getHomeVenueHref(v)}
               aria-hidden={!active}
               tabIndex={active ? 0 : -1}
               className={`absolute inset-0 block transition-opacity duration-[1100ms] ease-out ${
@@ -649,7 +657,7 @@ function DesktopVenueCard({ venue, featured = false }: { venue: CardVenue; featu
   const { label, Icon } = getCategoryInfo(venue.type, venue.name);
   return (
     <Link
-      href={getVenueHref(venue)}
+      href={getHomeVenueHref(venue)}
       className="group relative block overflow-hidden rounded-2xl border border-white/[0.07] bg-zinc-950 transition-all duration-500 hover:border-amber-400/35 hover:shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
     >
       <div className={`relative w-full overflow-hidden ${featured ? 'aspect-[16/9]' : 'aspect-[4/3]'}`}>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { CheckCircle2, XCircle, AlertCircle, Loader2, BedDouble, Calendar, Users, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Loader2, Ticket, Calendar, Users, MapPin, Phone, ShieldCheck } from 'lucide-react';
 import { apiGetRaw } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
@@ -15,15 +15,21 @@ type VerifyResponse = {
     ref: string;
     status: string;
     checkInStatus: string;
+    bookingType?: 'TABLE' | 'ROOM' | 'SEAT' | 'COWORKING';
     startAt: string;
     endAt: string;
     nights?: number;
+    partySize?: number;
     guestFirstName?: string;
     guestLastName?: string;
     adults?: number;
     children?: number;
-    venue?: { name?: string; city?: string; address?: string; phone?: string; coverImage?: string };
+    venue?: { name?: string; city?: string; address?: string; phone?: string; coverImage?: string; type?: string };
     room?: { name?: string; roomNumber?: number; roomType?: string };
+    table?: { tableNumber?: number; locationLabel?: string };
+    seat?: { seatNumber?: number; zone?: string };
+    reservableUnit?: { label?: string; unitType?: string };
+    event?: { title?: string; type?: string };
     totalPrice?: number;
     paymentStatus?: string;
   };
@@ -79,7 +85,7 @@ export default function VerifyReservationPage() {
             {REASON_LABEL[data?.reason ?? 'server_error'] ?? 'Cette réservation ne peut pas être vérifiée.'}
           </p>
           <p className="mt-4 text-xs text-zinc-600">
-            Si vous pensez que c&apos;est une erreur, contactez la réception de l&apos;hôtel.
+            Si vous pensez que c&apos;est une erreur, contactez l&apos;établissement.
           </p>
         </div>
       </div>
@@ -88,7 +94,24 @@ export default function VerifyReservationPage() {
 
   const r = data.reservation!;
   const fmt = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+  const fmtTime = (d?: string) => d ? new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
   const isCheckedIn = r.checkInStatus === 'checked_in';
+  const venueName = r.venue?.name ?? 'Établissement';
+  const experienceName = r.event?.title ?? venueName;
+  const isStay = r.bookingType === 'ROOM';
+  const unitLabel =
+    r.room?.name ||
+    (r.room?.roomNumber != null ? `Chambre ${r.room.roomNumber}` : undefined) ||
+    r.table?.locationLabel ||
+    (r.table?.tableNumber != null ? `Table ${r.table.tableNumber}` : undefined) ||
+    r.reservableUnit?.label ||
+    r.seat?.zone ||
+    (r.seat?.seatNumber != null ? `Place ${r.seat.seatNumber}` : undefined);
+  const unitKind =
+    r.bookingType === 'ROOM' ? 'Chambre' :
+    r.bookingType === 'TABLE' ? 'Table' :
+    r.bookingType === 'COWORKING' ? 'Espace' :
+    'Place / billet';
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 px-4 py-8">
@@ -118,31 +141,38 @@ export default function VerifyReservationPage() {
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-hidden mb-3">
           {r.venue?.coverImage && (
             <div className="relative h-32">
-              <Image src={r.venue.coverImage} alt={r.venue.name ?? 'Hôtel'} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
+              <Image src={r.venue.coverImage} alt={experienceName} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-3 left-4">
-                <p className="font-bold text-white text-lg">{r.venue.name}</p>
+                <p className="font-bold text-white text-lg">{experienceName}</p>
                 <p className="text-xs text-zinc-300 flex items-center gap-1"><MapPin className="size-3" />{r.venue.city}</p>
               </div>
             </div>
           )}
           <div className="p-4 space-y-3 text-sm">
             <div className="flex items-center gap-3">
-              <BedDouble className="size-4 text-amber-400 shrink-0" />
+              <Ticket className="size-4 text-amber-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-zinc-500 text-xs">Chambre</p>
-                <p className="text-zinc-200 font-medium truncate">
-                  {r.room?.name ?? `Chambre ${r.room?.roomNumber ?? ''}`}
-                  {r.room?.roomType && <span className="text-zinc-500 ml-1">· {r.room.roomType}</span>}
-                </p>
+                <p className="text-zinc-500 text-xs">{r.event ? 'Événement' : 'Établissement'}</p>
+                <p className="text-zinc-200 font-medium truncate">{experienceName}</p>
+                {r.event && <p className="text-zinc-500 text-xs truncate">{venueName}</p>}
               </div>
             </div>
+            {unitLabel && (
+              <div className="flex items-center gap-3">
+                <Ticket className="size-4 text-amber-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-zinc-500 text-xs">{unitKind}</p>
+                  <p className="text-zinc-200 font-medium truncate">{unitLabel}</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <Calendar className="size-4 text-amber-400 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-zinc-500 text-xs">Séjour</p>
+                <p className="text-zinc-500 text-xs">{isStay ? 'Séjour' : 'Date et horaire'}</p>
                 <p className="text-zinc-200 font-medium">
-                  {fmt(r.startAt)} → {fmt(r.endAt)}
+                  {isStay ? `${fmt(r.startAt)} → ${fmt(r.endAt)}` : `${fmt(r.startAt)} · ${fmtTime(r.startAt)}`}
                   {r.nights && <span className="text-zinc-500 ml-1">· {r.nights} nuit{r.nights > 1 ? 's' : ''}</span>}
                 </p>
               </div>
@@ -158,6 +188,9 @@ export default function VerifyReservationPage() {
                       {r.adults ?? 0} ad. {r.children ? `· ${r.children} enf.` : ''}
                     </span>
                   )}
+                  {!r.adults && !r.children && r.partySize ? (
+                    <span className="text-zinc-500 ml-2 text-xs">· {r.partySize} personne{r.partySize > 1 ? 's' : ''}</span>
+                  ) : null}
                 </p>
               </div>
             </div>
@@ -189,7 +222,7 @@ export default function VerifyReservationPage() {
 
         {r.venue?.phone && (
           <a href={`tel:${r.venue.phone}`} className="mt-6 flex items-center justify-center gap-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-bold py-3 text-sm transition-colors">
-            <Phone className="size-4" /> Contacter l&apos;hôtel
+            <Phone className="size-4" /> Contacter l&apos;établissement
           </a>
         )}
 

@@ -155,7 +155,7 @@ export function UserMenuDropdown() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="group relative flex h-12 max-w-[220px] items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.035] px-2.5 pr-3 text-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-200 hover:border-amber-300/35 hover:bg-amber-300/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
+            className="group relative flex size-11 items-center justify-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.035] p-0 text-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-200 hover:border-amber-300/35 hover:bg-amber-300/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:h-12 lg:w-auto lg:max-w-[220px] lg:justify-start lg:px-2.5 lg:pr-3"
             aria-label="Ouvrir le menu du profil"
           >
             <Avatar className="size-9 ring-2 ring-amber-300/25 ring-offset-2 ring-offset-[#050504] transition-all duration-200 group-hover:ring-amber-300/55">
@@ -177,7 +177,8 @@ export function UserMenuDropdown() {
         <DropdownMenuContent
           align="end"
           sideOffset={12}
-          className="w-[320px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070706]/96 p-0 text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur-xl"
+          collisionPadding={12}
+          className="w-[min(320px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#070706]/96 p-0 text-zinc-100 shadow-2xl shadow-black/50 backdrop-blur-xl"
         >
           <div className="relative border-b border-white/[0.07] p-4">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(245,158,11,0.20),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),transparent_45%)]" aria-hidden />

@@ -3,11 +3,21 @@ import { Reservation } from '../models/Reservation';
 import { Table } from '../models/Table';
 import { Room } from '../models/Room';
 import { Seat } from '../models/Seat';
+import { ReservableUnit } from '../models/ReservableUnit';
 import { ReservationHold } from '../models/ReservationHold';
+import { User } from '../models/User';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateConfirmationCode } from '../utils/confirmationCode';
+import { generateQRDataURL } from '../utils/qr';
+import { sendEmail } from '../services/email.service';
+import {
+  createReservationQrAttachment,
+  createReservationTicketEmail,
+  RESERVATION_QR_CONTENT_ID,
+} from '../services/reservation-ticket-email';
 
 const router = Router();
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 function overlaps(start1: Date, end1: Date, start2: Date, end2: Date): boolean {
   return start1 < end2 && end1 > start2;
@@ -18,7 +28,22 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Authentication required' });
 
-    const { venueId, bookingType, tableId, roomId, seatId, startAt, endAt, totalPrice, guestFirstName, guestLastName, guestPhone, partySize } = req.body;
+    const {
+      venueId,
+      bookingType,
+      reservableUnitId,
+      tableId,
+      roomId,
+      seatId,
+      startAt,
+      endAt,
+      totalPrice,
+      guestFirstName,
+      guestLastName,
+      guestPhone,
+      guestEmail,
+      partySize,
+    } = req.body;
     if (!venueId || !startAt || !endAt) {
       return res.status(400).json({ error: 'venueId, startAt and endAt are required' });
     }
@@ -35,10 +60,36 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
     const end = new Date(endAt);
     if (start >= end) return res.status(400).json({ error: 'startAt must be before endAt' });
 
-    const type = bookingType === 'ROOM' || bookingType === 'SEAT' ? bookingType : 'TABLE';
+    const isCoworking = bookingType === 'COWORKING';
+    const type =
+      bookingType === 'ROOM' || bookingType === 'SEAT' || bookingType === 'COWORKING'
+        ? bookingType
+        : 'TABLE';
     let total = Number(totalPrice) || 0;
 
-    if (type === 'TABLE') {
+    if (isCoworking) {
+      if (!reservableUnitId) return res.status(400).json({ error: 'reservableUnitId required for coworking booking' });
+      const unit = await ReservableUnit.findOne({
+        _id: reservableUnitId,
+        venueId,
+        status: 'active',
+        isReservable: true,
+      });
+      if (!unit) return res.status(404).json({ error: 'Coworking unit not found' });
+      if (party > Number(unit.capacityMax || party)) {
+        return res.status(400).json({ error: `Capacité max: ${unit.capacityMax} personnes` });
+      }
+      total = total || Number(unit.basePrice || 0);
+      const existing = await Reservation.find({
+        reservableUnitId,
+        status: { $in: ['PENDING', 'CONFIRMED', 'pending', 'confirmed', 'checked_in'] },
+      });
+      for (const r of existing) {
+        if (overlaps(start, end, r.startAt, r.endAt)) {
+          return res.status(409).json({ error: 'This coworking unit is already reserved for the selected time.' });
+        }
+      }
+    } else if (type === 'TABLE') {
       if (!tableId) return res.status(400).json({ error: 'tableId required for table booking' });
       const table = await Table.findOne({ _id: tableId, venueId });
       if (!table) return res.status(404).json({ error: 'Table not found' });
@@ -86,6 +137,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       userId: req.userId,
       venueId,
       bookingType: type,
+      reservableUnitId: isCoworking ? reservableUnitId : undefined,
       tableId: type === 'TABLE' ? tableId : undefined,
       roomId: type === 'ROOM' ? roomId : undefined,
       seatId: type === 'SEAT' ? seatId : undefined,
@@ -98,11 +150,106 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       guestFirstName: String(guestFirstName).trim(),
       guestLastName: String(guestLastName).trim(),
       guestPhone: phone,
+      customerEmail: typeof guestEmail === 'string' && guestEmail.trim() ? guestEmail.trim().toLowerCase() : undefined,
       partySize: party,
       source: 'web',
     });
     await reservation.save();
-    await reservation.populate(['tableId', 'roomId', 'seatId', 'venueId']);
+    await reservation.populate(['reservableUnitId', 'tableId', 'roomId', 'seatId', 'venueId']);
+
+    const ticketUrl = `${FRONTEND_URL}/reservation/${reservation._id}/confirmation`;
+    const verifyUrl = `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${confirmationCode}`;
+    const qrPayload = verifyUrl;
+    let qrCodeImageUrl: string | undefined;
+    try {
+      qrCodeImageUrl = await generateQRDataURL(qrPayload, { width: 320, margin: 1 });
+      reservation.qrCodeData = qrPayload;
+      reservation.qrCodeImageUrl = qrCodeImageUrl;
+      await reservation.save();
+    } catch (error) {
+      console.warn('Reservation QR generation failed:', error);
+    }
+
+    const customerEmail =
+      reservation.customerEmail ||
+      (await User.findById(req.userId).select('email').lean())?.email;
+    if (customerEmail) {
+      const venue = reservation.venueId as any;
+      const table = reservation.tableId as any;
+      const room = reservation.roomId as any;
+      const seat = reservation.seatId as any;
+      const reservableUnit = reservation.reservableUnitId as any;
+      const venueTypeLabels: Record<string, string> = {
+        CAFE: 'Réservation café',
+        CAFE_LOUNGE: 'Réservation café lounge',
+        RESTAURANT: 'Réservation restaurant',
+        HOTEL: 'Séjour hôtel',
+        MAISON_DHOTE: "Séjour maison d'hôte",
+        CINEMA: 'Billet cinéma',
+        EVENT_SPACE: 'Réservation événement',
+        COWORKING: 'Réservation coworking',
+      };
+      const unitLabel =
+        isCoworking
+          ? reservableUnit?.label
+          : type === 'TABLE'
+          ? table?.locationLabel || (table?.tableNumber != null ? `Table ${table.tableNumber}` : undefined)
+          : type === 'ROOM'
+            ? room?.roomType || (room?.roomNumber != null ? `Chambre ${room.roomNumber}` : undefined)
+            : seat?.zone || (seat?.seatNumber != null ? `Place ${seat.seatNumber}` : undefined);
+      const template = createReservationTicketEmail({
+        guestName: `${reservation.guestFirstName ?? ''} ${reservation.guestLastName ?? ''}`.trim() || 'Client',
+        reservationCode: confirmationCode,
+        venueName: venue?.name || 'Votre établissement',
+        experienceLabel: venueTypeLabels[venue?.type] || 'Réservation',
+        status: 'confirmed',
+        ticketUrl,
+        qrImageSrc: qrCodeImageUrl ? `cid:${RESERVATION_QR_CONTENT_ID}` : undefined,
+        address: [venue?.address, venue?.city].filter(Boolean).join(', ') || undefined,
+        phone: venue?.phone,
+        details: [
+          {
+            label: type === 'ROOM' ? 'Arrivée' : 'Date',
+            value: start.toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            }),
+          },
+          { label: 'Heure', value: start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) },
+          ...(type === 'ROOM'
+            ? [{
+                label: 'Départ',
+                value: end.toLocaleDateString('fr-FR', {
+                  weekday: 'long',
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                }),
+              }]
+            : []),
+          { label: type === 'SEAT' ? 'Billets' : 'Personnes', value: String(party) },
+          ...(unitLabel
+            ? [{
+                label: isCoworking ? 'Espace' : type === 'TABLE' ? 'Table' : type === 'ROOM' ? 'Chambre' : 'Place',
+                value: unitLabel,
+                accent: true,
+              }]
+            : []),
+          ...(total > 0 ? [{ label: 'Total', value: `${total.toLocaleString('fr-FR')} TND`, accent: true }] : []),
+        ],
+        note: 'Conservez cet email et présentez votre QR ticket ou votre référence à votre arrivée.',
+      });
+      const qrAttachment = createReservationQrAttachment(qrCodeImageUrl);
+      void sendEmail({
+        to: customerEmail,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+        attachments: qrAttachment ? [qrAttachment] : undefined,
+      });
+    }
 
     res.status(201).json({
       message: 'Réservation créée',
@@ -111,6 +258,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         userId: reservation.userId,
         venueId: reservation.venueId,
         bookingType: reservation.bookingType,
+        reservableUnitId: reservation.reservableUnitId,
         tableId: reservation.tableId,
         roomId: reservation.roomId,
         seatId: reservation.seatId,

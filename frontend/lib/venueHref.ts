@@ -19,7 +19,7 @@ export function getVenueHref(venue: { type?: string | null; slug?: string | null
     case 'RESTAURANT':
       return `/restaurant/${id}`;
     case 'EVENT_SPACE':
-      return `/evenement/${id}`;
+      return `/event-space/${id}`;
     default:
       return `/explorer?venue=${id}`;
   }

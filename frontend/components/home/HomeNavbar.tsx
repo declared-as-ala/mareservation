@@ -34,7 +34,6 @@ export function HomeNavbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const { user, isLoading: authLoading } = useAuth();
   const totalQuantity = useCartStore((s) => s.totalQuantity());
@@ -51,11 +50,6 @@ export function HomeNavbar() {
   useEffect(() => {
     if (searchFocused) setTimeout(() => searchRef.current?.focus(), 50);
   }, [searchFocused]);
-
-  // Focus mobile search when sheet opens
-  useEffect(() => {
-    if (mobileOpen) setTimeout(() => mobileSearchRef.current?.focus(), 300);
-  }, [mobileOpen]);
 
   const bgClass = isHome
     ? scrolled
@@ -88,7 +82,7 @@ export function HomeNavbar() {
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-zinc-950 to-amber-900/45" aria-hidden />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_50%,rgba(245,158,11,0.20),transparent_45%)]" aria-hidden />
-        <div className="relative mx-auto flex h-[84px] sm:h-[92px] lg:h-[100px] max-w-[1440px] items-center justify-between gap-2 sm:gap-4 px-3 sm:px-5 lg:px-8">
+        <div className="relative mx-auto flex h-[72px] max-w-[1440px] items-center justify-between gap-1.5 px-2.5 sm:h-[92px] sm:gap-4 sm:px-5 lg:h-[100px] lg:px-8">
           {/* Logo */}
           <Link
             href="/"
@@ -99,11 +93,11 @@ export function HomeNavbar() {
               alt="Before You Go"
               width={540}
               height={152}
-              className="h-[52px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[60px] lg:h-[68px] xl:h-[72px]"
+              className="h-[44px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[60px] lg:h-[68px] xl:h-[72px]"
               style={{ width: 'auto' }}
               priority
             />
-            <span className="flex flex-col leading-none">
+            <span className="hidden flex-col leading-none sm:flex">
               <span className="font-serif text-[17px] font-black tracking-tight text-amber-300 sm:text-[19px] lg:text-[20px] xl:text-[19px] 2xl:text-[22px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
                 BeforeYouGo
               </span>
@@ -151,7 +145,7 @@ export function HomeNavbar() {
           </nav>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             {/* Search bar — desktop */}
             <form onSubmit={handleSearch} className="hidden xl:block relative shrink-0">
               <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-neutral-500 transition-colors" style={{ pointerEvents: 'none' }} />
@@ -213,6 +207,13 @@ export function HomeNavbar() {
               )}
             </div>
 
+            {/* Mobile profile dropdown — anchored to the top bar (logged in) */}
+            {!authLoading && user && (
+              <div className="xl:hidden">
+                <UserMenuDropdown />
+              </div>
+            )}
+
             {/* Mobile hamburger — fully circular, visible below xl */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
@@ -225,8 +226,8 @@ export function HomeNavbar() {
                   <Menu className="size-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="flex w-[300px] flex-col border-white/[0.08] bg-[#050504] p-0 sm:w-[400px]">
-                <SheetHeader className="px-5 pt-5 pb-4 border-b border-white/[0.06]">
+              <SheetContent side="right" className="flex h-dvh w-[calc(100%-1rem)] max-w-[400px] flex-col gap-0 border-white/[0.08] bg-[#050504] p-0 pb-[env(safe-area-inset-bottom)]">
+                <SheetHeader className="border-b border-white/[0.06] px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5">
                   <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
                   <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
                     <Image
@@ -234,19 +235,47 @@ export function HomeNavbar() {
                       alt="Before You Go"
                       width={420}
                       height={120}
-                      className="h-[52px] w-auto object-contain sm:h-[58px] drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)]"
+                      className="h-[44px] w-auto object-contain drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)] sm:h-[52px]"
                       style={{ width: 'auto' }}
                     />
                   </Link>
                 </SheetHeader>
 
-                <div className="flex-1 overflow-y-auto px-5 py-4">
+                {/* Auth: profile lives in the top-bar dropdown now; the sheet only
+                    surfaces sign-in CTAs for logged-out visitors. */}
+                {!user && (
+                  <div className="border-b border-white/[0.06] px-4 py-4 sm:px-5">
+                    {authLoading ? (
+                      <div className="h-12 animate-pulse rounded-xl bg-white/5" aria-hidden />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <SheetClose asChild>
+                          <Link
+                            href="/login"
+                            className="flex min-h-12 items-center justify-center rounded-xl border border-white/[0.12] px-3 py-3 text-center text-sm font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
+                          >
+                            Connexion
+                          </Link>
+                        </SheetClose>
+                        <SheetClose asChild>
+                          <Link
+                            href="/register"
+                            className="flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-3 py-3 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/20 outline-none transition-all duration-300 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 focus-visible:ring-2 focus-visible:ring-amber-200"
+                          >
+                            S&apos;inscrire
+                          </Link>
+                        </SheetClose>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
                   {/* Mobile search */}
                   <form onSubmit={handleMobileSearch} className="mb-5">
                     <div className="relative">
                       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-neutral-500" style={{ pointerEvents: 'none' }} />
                       <input
-                        ref={mobileSearchRef}
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         placeholder="Rechercher un lieu, restaurant..."
@@ -297,32 +326,6 @@ export function HomeNavbar() {
                 </div>
 
                 {/* Auth section — bottom of sheet */}
-                <div className="border-t border-white/[0.06] px-5 py-4">
-                  {authLoading ? (
-                    <div className="h-24 rounded-xl bg-white/5" aria-hidden />
-                  ) : user ? (
-                    <UserMenuDropdown />
-                  ) : (
-                    <div className="flex flex-col gap-2.5">
-                      <SheetClose asChild>
-                        <Link
-                          href="/login"
-                          className="block min-h-12 rounded-xl border border-white/[0.12] px-4 py-3 text-center text-sm font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
-                        >
-                          Connexion
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link
-                          href="/register"
-                          className="block min-h-12 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-4 py-3 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 focus-visible:ring-2 focus-visible:ring-amber-200"
-                        >
-                          Créer un compte
-                        </Link>
-                      </SheetClose>
-                    </div>
-                  )}
-                </div>
               </SheetContent>
             </Sheet>
           </div>
@@ -330,7 +333,7 @@ export function HomeNavbar() {
       </header>
 
       {/* Spacer for fixed header on non-home pages */}
-      {!isHome && <div className="h-[76px] sm:h-[84px] xl:h-[88px]" />}
+      {!isHome && <div className="h-[72px] sm:h-[92px] lg:h-[100px]" />}
 
     </>
   );

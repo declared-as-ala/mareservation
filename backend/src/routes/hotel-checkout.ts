@@ -11,10 +11,14 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateConfirmationCode } from '../utils/confirmationCode';
 import { generateQRDataURL } from '../utils/qr';
 import {
-  createHotelClientConfirmationTemplate,
   createHotelOwnerNewReservationTemplate,
   sendEmail,
 } from '../services/email.service';
+import {
+  createReservationQrAttachment,
+  createReservationTicketEmail,
+  RESERVATION_QR_CONTENT_ID,
+} from '../services/reservation-ticket-email';
 import { sendWhatsApp } from '../services/whatsapp.service';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import { logger } from '../config/logger';
@@ -319,11 +323,7 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     });
 
     // Build QR payload — verification URL with confirmation code
-    const qrPayload = JSON.stringify({
-      ref: reservation.reservationCode,
-      code: reservation.confirmationCode,
-      url: `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${reservation.confirmationCode}`,
-    });
+    const qrPayload = `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${reservation.confirmationCode}`;
     try {
       const qrDataUrl = await generateQRDataURL(qrPayload, { width: 320, margin: 1 });
       reservation.qrCodeData = qrPayload;
@@ -371,8 +371,37 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     // Client confirmation
     const clientEmail = reservation.customerEmail ?? dbUser?.email;
     if (clientEmail) {
-      const tpl = createHotelClientConfirmationTemplate(params);
-      sendEmail({ to: clientEmail, subject: tpl.subject, html: tpl.html, text: tpl.text }).catch((err) =>
+      const tpl = createReservationTicketEmail({
+        guestName,
+        reservationCode: params.reservationCode,
+        venueName: params.hotelName,
+        experienceLabel: 'Séjour hôtel',
+        status: reservation.status === 'confirmed' ? 'confirmed' : 'pending',
+        ticketUrl,
+        qrImageSrc: reservation.qrCodeImageUrl ? `cid:${RESERVATION_QR_CONTENT_ID}` : undefined,
+        address: params.hotelAddress,
+        phone: params.hotelPhone,
+        details: [
+          { label: 'Chambre', value: roomName, accent: true },
+          { label: 'Arrivée', value: params.checkIn },
+          { label: 'Départ', value: params.checkOut },
+          { label: 'Durée', value: `${nights} nuit${nights > 1 ? 's' : ''}` },
+          { label: 'Voyageurs', value: `${guestsTotal} personne${guestsTotal > 1 ? 's' : ''}` },
+          { label: 'Paiement', value: params.paymentLabel },
+          { label: 'Total', value: params.total, accent: true },
+          { label: 'Payé', value: params.paid },
+          { label: 'À régler sur place', value: params.remaining },
+        ],
+        note: 'Présentez votre QR ticket à la réception. Annulation gratuite jusqu’à 24 h avant l’arrivée.',
+      });
+      const qrAttachment = createReservationQrAttachment(reservation.qrCodeImageUrl);
+      sendEmail({
+        to: clientEmail,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+        attachments: qrAttachment ? [qrAttachment] : undefined,
+      }).catch((err) =>
         logger.warn('client confirmation email failed: ' + (err instanceof Error ? err.message : String(err)))
       );
     }
@@ -504,6 +533,10 @@ router.get('/verify/:id', async (req: Request, res: Response) => {
     const reservation = await Reservation.findById(id)
       .populate('venueId', 'name slug city address phone coverImage')
       .populate('roomId', 'name roomNumber roomType')
+      .populate('tableId', 'tableNumber locationLabel')
+      .populate('seatId', 'seatNumber zone')
+      .populate('reservableUnitId', 'label unitType')
+      .populate('eventId', 'title type')
       .lean();
     if (!reservation) return res.json({ ok: false, reason: 'not_found' });
     if (!code || (reservation as any).confirmationCode !== code) {
@@ -520,15 +553,21 @@ router.get('/verify/:id', async (req: Request, res: Response) => {
         ref: (reservation as any).reservationCode ?? (reservation as any).confirmationCode,
         status,
         checkInStatus,
+        bookingType: (reservation as any).bookingType,
         startAt: (reservation as any).startAt,
         endAt: (reservation as any).endAt,
         nights: (reservation as any).nights,
+        partySize: (reservation as any).partySize ?? (reservation as any).peopleCount,
         guestFirstName: (reservation as any).guestFirstName ?? (reservation as any).customerFirstName,
         guestLastName: (reservation as any).guestLastName ?? (reservation as any).customerLastName,
         adults: (reservation as any).adults,
         children: (reservation as any).children,
         venue: (reservation as any).venueId,
         room: (reservation as any).roomId,
+        table: (reservation as any).tableId,
+        seat: (reservation as any).seatId,
+        reservableUnit: (reservation as any).reservableUnitId,
+        event: (reservation as any).eventId,
         totalPrice: (reservation as any).totalPrice,
         paymentStatus: (reservation as any).paymentStatus,
       },
