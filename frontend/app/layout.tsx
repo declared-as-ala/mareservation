@@ -5,8 +5,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Before you go – Réservez en quelques clics",
-  description: "Réservez tables, chambres et places pour cafés, restaurants, hôtels et événements.",
+  title: "Look and Book – Book your moment",
+  description: "Look and Book — réservez tables, chambres et places pour cafés, restaurants, hôtels et événements.",
   icons: {
     icon: '/logo.png',
     apple: '/logo.png',
