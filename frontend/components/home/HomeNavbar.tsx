@@ -89,22 +89,14 @@ export function HomeNavbar() {
             className="group flex items-center gap-2 shrink-0 outline-none transition-all duration-300 hover:scale-[1.015] focus-visible:ring-2 focus-visible:ring-amber-300/70 py-1"
           >
             <Image
-              src="/logo-transparent.png"
+              src="/logo.png"
               alt="Before You Go"
               width={540}
               height={152}
-              className="h-[44px] w-auto object-contain drop-shadow-[0_8px_22px_rgba(212,175,55,0.40)] transition-transform duration-300 sm:h-[60px] lg:h-[68px] xl:h-[72px]"
+              className="h-[56px] w-auto object-contain transition-transform duration-300 sm:h-[76px] lg:h-[86px] xl:h-[92px]"
               style={{ width: 'auto' }}
               priority
             />
-            <span className="hidden flex-col leading-none sm:flex">
-              <span className="font-serif text-[17px] font-black tracking-tight text-amber-300 sm:text-[19px] lg:text-[20px] xl:text-[19px] 2xl:text-[22px] drop-shadow-[0_2px_8px_rgba(212,175,55,0.45)]">
-                BeforeYouGo
-              </span>
-              <span className="mt-1 hidden text-[9px] font-medium tracking-[0.06em] text-zinc-400 sm:text-[10px] 2xl:block">
-                Visitez. Choisissez. <span className="text-amber-400">Réservez.</span>
-              </span>
-            </span>
           </Link>
 
           {/* Desktop nav */}
@@ -231,7 +223,7 @@ export function HomeNavbar() {
                   <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
                   <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
                     <Image
-                      src="/logo-transparent.png"
+                      src="/logo.png"
                       alt="Before You Go"
                       width={420}
                       height={120}
