@@ -289,12 +289,12 @@ export default function AdminVenuesPage() {
         <CreateVenueModal
           defaultType={typeFilter || ''}
           onClose={() => setCreateOpen(false)}
-          onCreated={(id) => {
+          onCreated={(id, type) => {
             setCreateOpen(false);
             toast.success('Établissement créé. Complétez ses détails.');
             queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
-            // Jump straight to the editor of the freshly created venue
-            router.push(`/admin/venues/${id}`);
+            // Jump straight to the dedicated category editor of the new venue
+            router.push(getAdminVenueHref({ _id: id, type }));
           }}
         />
       )}
@@ -828,7 +828,7 @@ function CreateVenueModal({
 }: {
   defaultType: string;
   onClose: () => void;
-  onCreated: (id: string) => void;
+  onCreated: (id: string, type: string) => void;
 }) {
   const [type, setType] = useState<string>(defaultType || 'HOTEL');
   const [name, setName] = useState('');
@@ -869,7 +869,7 @@ function CreateVenueModal({
       } as any);
       const id = (res as any)._id ?? (res as any).data?._id;
       if (!id) throw new Error('ID manquant');
-      onCreated(id);
+      onCreated(id, type);
     } catch {
       toast.error("Erreur lors de la création de l'établissement.");
     } finally {

@@ -15,7 +15,7 @@ import {
 
 export type VenueCategoryKey = 'RESTAURANT' | 'CAFE' | 'COWORKING' | 'CINEMA' | 'EVENT_SPACE';
 
-export type SectionKey = 'infos' | 'photos' | 'menu' | 'tables' | 'spaces' | 'tour' | 'reservations';
+export type SectionKey = 'infos' | 'photos' | 'menu' | 'tables' | 'spaces' | 'tour' | 'reservations' | 'events';
 
 export interface VenueTab {
   key: SectionKey;
@@ -83,14 +83,14 @@ export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig
     Icon: Clapperboard,
     accentText: 'text-blue-300',
     accentBg: 'bg-blue-500/20',
-    tabs: [...HEAD, ...COMMON_TAIL],
+    tabs: [...HEAD, { key: 'events', label: 'Séances & Films', Icon: Clapperboard }, ...COMMON_TAIL],
   },
   EVENT_SPACE: {
     label: 'Espace événementiel',
     Icon: PartyPopper,
     accentText: 'text-fuchsia-300',
     accentBg: 'bg-fuchsia-500/20',
-    tabs: [...HEAD, ...COMMON_TAIL],
+    tabs: [...HEAD, { key: 'events', label: 'Programme', Icon: PartyPopper }, ...COMMON_TAIL],
   },
 };
 

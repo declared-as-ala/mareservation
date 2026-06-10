@@ -18,7 +18,7 @@ import { getVenueHref } from '@/lib/venueHref';
 import { VENUE_CATEGORY_CONFIG, type VenueCategoryKey, type SectionKey } from '@/lib/admin/venueCategories';
 import {
   InfoSection, MediaSection, MenuSection, TablesSection, SpacesSection,
-  TourSection, ReservationsSection, type SectionProps,
+  TourSection, ReservationsSection, EventsSection, type SectionProps,
 } from './VenueSections';
 
 const SECTIONS: Record<SectionKey, ComponentType<SectionProps>> = {
@@ -29,6 +29,7 @@ const SECTIONS: Record<SectionKey, ComponentType<SectionProps>> = {
   spaces: SpacesSection,
   tour: TourSection,
   reservations: ReservationsSection,
+  events: EventsSection,
 };
 
 export function VenueAdminShell({ venueId, category }: { venueId: string; category: VenueCategoryKey }) {

@@ -3,10 +3,12 @@
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Loader2, Plus, Trash2, Save, Star, Pencil, X, Check, CalendarDays, MapPin,
+  ArrowUpRight, Ticket, CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ImageUploadField } from '@/components/admin/shared/ImageUploadField';
 import { cn } from '@/lib/utils';
-import { updateAdminVenue, fetchAdminVenueScenes, fetchAdminReservations } from '@/lib/api/admin';
+import { updateAdminVenue, fetchAdminVenueScenes, fetchAdminReservations, fetchAdminEvents } from '@/lib/api/admin';
 import { fetchAdminVenueMenu, createMenuItem, updateMenuItem, deleteMenuItem } from '@/lib/api/menu';
 import type { MenuItem } from '@/lib/api/types';
 import { buildTablePlacementApis, buildUnitPlacementApis } from '@/lib/admin/venuePlacementApis';
@@ -331,6 +333,61 @@ export function ReservationsSection({ venueId }: SectionProps) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ───────────────────────── Programme / Séances (events at this venue) ───────────────────────── */
+export function EventsSection({ venueId }: SectionProps) {
+  const { data: all = [], isLoading } = useQuery({ queryKey: ['admin-events'], queryFn: () => fetchAdminEvents() });
+  const events = (all as any[]).filter((e) => {
+    const v = e.venueId; return (typeof v === 'object' ? v?._id : v) === venueId;
+  }).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+  if (isLoading) return <SectionLoader />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-zinc-300">{events.length} événement{events.length !== 1 ? 's' : ''} programmé{events.length !== 1 ? 's' : ''}</p>
+        <Link href="/admin/events" className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800/50 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-zinc-600">
+          <CalendarDays className="size-3.5" /> Tous les événements
+        </Link>
+      </div>
+
+      {events.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-zinc-800 py-14 text-center">
+          <CalendarClock className="size-8 text-zinc-600" />
+          <p className="text-sm font-semibold text-zinc-300">Aucun événement programmé ici</p>
+          <p className="max-w-xs text-xs text-zinc-500">Créez un événement et associez‑le à ce lieu depuis la page Événements.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((e) => {
+            const cover = e.afficheImageUrl || e.coverImage;
+            const min = (e.ticketTypes ?? []).map((t: any) => Number(t.price || 0)).filter((p: number) => p > 0);
+            const price = min.length ? Math.min(...min) : null;
+            const published = e.isPublished !== false;
+            return (
+              <Link key={e._id} href={`/admin/events/${e._id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 transition-all hover:border-amber-400/30">
+                <div className="relative h-28 w-full overflow-hidden bg-zinc-950">
+                  {cover ? <img src={cover} alt={e.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center"><CalendarDays className="size-8 text-white/15" /></div>}
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                  <span className={cn('absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold', published ? 'bg-emerald-500/15 text-emerald-300' : 'bg-zinc-700/40 text-zinc-400')}>{published ? 'Publié' : 'Brouillon'}</span>
+                  <h3 className="absolute inset-x-3 bottom-2 line-clamp-1 text-sm font-bold text-white drop-shadow">{e.title}</h3>
+                </div>
+                <div className="flex items-center justify-between gap-2 p-3">
+                  <span className="flex items-center gap-1.5 text-[11px] text-zinc-400"><CalendarDays className="size-3 text-zinc-600" />{e.startAt ? new Date(e.startAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '—'}</span>
+                  <div className="flex items-center gap-2">
+                    {price !== null && <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300"><Ticket className="size-3" />{price} DT</span>}
+                    <ArrowUpRight className="size-3.5 text-zinc-600 transition-colors group-hover:text-amber-300" />
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
