@@ -1,22 +1,32 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAdminReservations, fetchAdminVenues, fetchAdminUsers, fetchAdminEvents } from '@/lib/api/admin';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  fetchAdminStats,
+  fetchAdminReservations,
+  fetchAdminVenues,
+  fetchAdminUsers,
+  fetchAdminEvents,
+} from '@/lib/api/admin';
 import {
   TrendingUp,
+  TrendingDown,
   Calendar,
   MapPin,
   Users,
-  FileText,
+  CalendarDays,
+  CircleDollarSign,
   Ticket,
+  BedDouble,
+  Armchair,
   ArrowUpRight,
-  ArrowDownRight,
-  Minus,
+  Clock3,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -26,439 +36,409 @@ import {
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
 } from 'recharts';
 import { VENUE_TYPE_LABELS } from '@/app/constants/venueTypes';
-import { getDashboardResourceName } from '@/lib/reservation-labels';
+import { cn } from '@/lib/utils';
 
-// ── Chart Colors ───────────────────────────────────────────────
+const CHART_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#f43f5e', '#06b6d4', '#ec4899'];
 
-const CHART_COLORS = [
-  '#f59e0b', // Amber (primary)
-  '#3b82f6', // Blue
-  '#10b981', // Emerald
-  '#8b5cf6', // Purple
-  '#f43f5e', // Rose
-];
+const CONFIRMED = ['confirmed', 'completed', 'checked_in', 'paid'];
+const isConfirmed = (s: unknown) => CONFIRMED.includes(String(s).toLowerCase());
 
-const EMPTY_COLOR = '#71717a';
-
-// ── Stat Card with Trend ───────────────────────────────────────
-
-interface StatWithTrendProps {
-  title: string;
-  value: number;
-  icon: React.ComponentType<{ className?: string }>;
-  iconColor: string;
-  iconBg: string;
+function fmtTND(n: number) {
+  return `${Math.round(n).toLocaleString('fr-FR')} TND`;
+}
+function rDate(r: any): Date {
+  return new Date(r.createdAt ?? r.startAt ?? r.startDate ?? Date.now());
+}
+function bookingBucket(r: any): 'TABLE' | 'ROOM' | 'SEAT' {
+  const t = String(r.bookingType || 'TABLE').toUpperCase();
+  return t === 'ROOM' ? 'ROOM' : t === 'SEAT' ? 'SEAT' : 'TABLE';
 }
 
-function StatWithTrend({ title, value, icon: Icon, iconColor, iconBg }: StatWithTrendProps) {
+// ── Tooltips ───────────────────────────────────────────────────
+function ChartTooltip({ active, payload, label, currency }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-300">{title}</CardTitle>
-        <div className={`rounded-lg p-2 ${iconBg}`}>
-          <Icon className={`size-4 ${iconColor}`} />
+    <div className="rounded-xl border border-zinc-700 bg-zinc-900/95 p-3 shadow-2xl backdrop-blur">
+      {label && <p className="mb-1.5 text-xs font-semibold text-zinc-200">{label}</p>}
+      {payload.map((entry: any, i: number) => (
+        <div key={i} className="flex items-center gap-2 text-xs">
+          <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+          <span className="text-zinc-400">{entry.name}:</span>
+          <span className="font-bold text-white">
+            {currency || entry.dataKey === 'revenue' ? fmtTND(Number(entry.value)) : Number(entry.value).toLocaleString('fr-FR')}
+          </span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-bold tracking-tight text-white">{value.toLocaleString('fr-FR')}</p>
-        <div className="flex items-center gap-1 mt-1">
-          <ArrowUpRight className="size-3 text-emerald-400" />
-          <span className="text-xs text-zinc-500">Total enregistré</span>
-        </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }
 
-// ── Custom Tooltip for Charts ──────────────────────────────────
-
-function ChartTooltip({ active, payload, label }: any) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3 shadow-lg">
-        <p className="text-sm font-medium text-zinc-200 mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-xs">
-            <div
-              className="size-2 rounded-full"
-              style={{ backgroundColor: entry.color || entry.fill }}
-            />
-            <span className="text-zinc-400">{entry.name}:</span>
-            <span className="font-semibold text-white">{entry.value}</span>
-          </div>
-        ))}
+// ── KPI card ───────────────────────────────────────────────────
+function KpiCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  tone,
+  delta,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: string;
+  delta?: number | null;
+}) {
+  const up = (delta ?? 0) >= 0;
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-5">
+      <div className={cn('absolute -right-6 -top-6 size-24 rounded-full blur-3xl', tone)} />
+      <div className="relative flex items-start justify-between">
+        <div className={cn('flex size-10 items-center justify-center rounded-xl border border-zinc-700/60 bg-zinc-800/60')}>
+          <Icon className="size-5 text-zinc-200" />
+        </div>
+        {delta != null && Number.isFinite(delta) && (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold',
+              up ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+            )}
+          >
+            {up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+            {Math.abs(delta).toFixed(0)}%
+          </span>
+        )}
       </div>
-    );
-  }
-  return null;
+      <p className="mt-4 text-2xl font-black leading-none tracking-tight text-white tabular-nums sm:text-3xl">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-zinc-300">{label}</p>
+      {sub && <p className="mt-0.5 text-xs text-zinc-500">{sub}</p>}
+    </div>
+  );
 }
 
-// ── Main Dashboard Charts ──────────────────────────────────────
+function SectionCard({ title, subtitle, action, children, className }: { title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn('rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5', className)}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-white">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-xs text-zinc-500">{subtitle}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function DashboardCharts() {
-  const { data: reservations = [], isLoading: loadingReservations } = useQuery({
-    queryKey: ['admin', 'reservations'],
-    queryFn: () => fetchAdminReservations(),
-  });
+  const { data: stats } = useQuery({ queryKey: ['admin', 'stats'], queryFn: fetchAdminStats });
+  const { data: reservations = [], isLoading: lr } = useQuery({ queryKey: ['admin', 'reservations'], queryFn: () => fetchAdminReservations() });
+  const { data: venues = [], isLoading: lv } = useQuery({ queryKey: ['admin', 'venues'], queryFn: () => fetchAdminVenues() });
+  const { data: users = [], isLoading: lu } = useQuery({ queryKey: ['admin', 'users'], queryFn: () => fetchAdminUsers() });
+  const { data: events = [], isLoading: le } = useQuery({ queryKey: ['admin', 'events'], queryFn: () => fetchAdminEvents() });
 
-  const { data: venues = [], isLoading: loadingVenues } = useQuery({
-    queryKey: ['admin', 'venues'],
-    queryFn: () => fetchAdminVenues(),
-  });
+  const isLoading = lr || lv || lu || le;
+  const rList = reservations as any[];
+  const vList = venues as any[];
+  const uList = users as any[];
+  const eList = events as any[];
 
-  const { data: users = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ['admin', 'users'],
-    queryFn: () => fetchAdminUsers(),
-  });
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const startThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-  const { data: events = [], isLoading: loadingEvents } = useQuery({
-    queryKey: ['admin', 'events'],
-    queryFn: () => fetchAdminEvents(),
-  });
+    const inThisMonth = (d: Date) => d >= startThisMonth;
+    const inLastMonth = (d: Date) => d >= startLastMonth && d < startThisMonth;
+    const pct = (cur: number, prev: number) => (prev <= 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100);
 
-  const isLoading = loadingReservations || loadingVenues || loadingUsers || loadingEvents;
-  const reservationsList = reservations as any[];
-  const venuesList = venues as any[];
+    // Revenue
+    let revenueTotal = 0, revThis = 0, revLast = 0;
+    let resThis = 0, resLast = 0;
+    const revByBucket = { TABLE: 0, ROOM: 0, SEAT: 0 };
+    for (const r of rList) {
+      const d = rDate(r);
+      const paid = isConfirmed(r.status);
+      const amt = Number(r.totalPrice || 0);
+      if (paid) {
+        revenueTotal += amt;
+        revByBucket[bookingBucket(r)] += amt;
+        if (inThisMonth(d)) revThis += amt;
+        else if (inLastMonth(d)) revLast += amt;
+      }
+      if (inThisMonth(d)) resThis += 1;
+      else if (inLastMonth(d)) resLast += 1;
+    }
 
-  const bookingSplit = reservationsList.reduce(
-    (acc, r) => {
-      const t = String(r.bookingType || 'TABLE').toUpperCase();
-      if (t === 'ROOM') acc.ROOM += 1;
-      else if (t === 'SEAT') acc.SEAT += 1;
-      else acc.TABLE += 1;
-      return acc;
-    },
-    { TABLE: 0, ROOM: 0, SEAT: 0 }
-  );
+    // New users
+    let usersThis = 0, usersLast = 0;
+    for (const u of uList) {
+      const d = new Date(u.createdAt ?? Date.now());
+      if (inThisMonth(d)) usersThis += 1;
+      else if (inLastMonth(d)) usersLast += 1;
+    }
 
-  const revenueByBooking = reservationsList
-    .filter((r) => ['confirmed', 'completed', 'CONFIRMED', 'COMPLETED', 'checked_in'].includes(String(r.status)))
-    .reduce(
-      (acc, r) => {
-        const t = String(r.bookingType || 'TABLE').toUpperCase();
-        const amount = Number(r.totalPrice || 0);
-        if (t === 'ROOM') acc.ROOM += amount;
-        else if (t === 'SEAT') acc.SEAT += amount;
-        else acc.TABLE += amount;
-        return acc;
+    // 30-day series
+    const days: { key: string; label: string; reservations: number; revenue: number }[] = [];
+    const idx = new Map<string, number>();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      idx.set(key, days.length);
+      days.push({ key, label: d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }), reservations: 0, revenue: 0 });
+    }
+    for (const r of rList) {
+      const d = rDate(r);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const i = idx.get(key);
+      if (i != null) {
+        days[i].reservations += 1;
+        if (isConfirmed(r.status)) days[i].revenue += Number(r.totalPrice || 0);
+      }
+    }
+
+    // Venue types
+    const typeCount: Record<string, number> = {};
+    for (const v of vList) typeCount[v.type || 'AUTRE'] = (typeCount[v.type || 'AUTRE'] || 0) + 1;
+    const venueTypeData = Object.entries(typeCount).map(([t, c]) => ({ name: VENUE_TYPE_LABELS[t] || t, value: c }));
+
+    // Status
+    const statusCount: Record<string, number> = {};
+    for (const r of rList) {
+      const s = String(r.status || 'autre').toLowerCase();
+      statusCount[s] = (statusCount[s] || 0) + 1;
+    }
+    const STATUS_FR: Record<string, string> = { confirmed: 'Confirmées', pending: 'En attente', cancelled: 'Annulées', completed: 'Terminées', checked_in: 'Check-in', paid: 'Payées', expired: 'Expirées' };
+    const statusData = Object.entries(statusCount).map(([s, c]) => ({ name: STATUS_FR[s] || s, value: c }));
+
+    // Top venues
+    const venueCount: Record<string, number> = {};
+    for (const r of rList) {
+      const name = typeof r.venueId === 'object' ? r.venueId?.name : undefined;
+      if (name) venueCount[name] = (venueCount[name] || 0) + 1;
+    }
+    const topVenues = Object.entries(venueCount).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([name, count]) => ({ name, count }));
+    const topMax = topVenues[0]?.count ?? 1;
+
+    // Recent reservations
+    const recent = [...rList].sort((a, b) => rDate(b).getTime() - rDate(a).getTime()).slice(0, 6);
+
+    return {
+      revenueTotal, revThis, revLast,
+      resThis, resLast,
+      usersThis, usersLast,
+      revByBucket,
+      days,
+      venueTypeData,
+      statusData,
+      topVenues, topMax,
+      recent,
+      deltas: {
+        revenue: pct(revThis, revLast),
+        reservations: pct(resThis, resLast),
+        users: pct(usersThis, usersLast),
       },
-      { TABLE: 0, ROOM: 0, SEAT: 0 }
-    );
+    };
+  }, [rList, vList, uList]);
 
-  const categoryRevenueChartData = [
-    { name: getDashboardResourceName('CAFE'), revenue: revenueByBooking.TABLE },
-    { name: getDashboardResourceName('HOTEL'), revenue: revenueByBooking.ROOM },
-    { name: getDashboardResourceName('CINEMA'), revenue: revenueByBooking.SEAT },
+  const revenueByCategory = [
+    { name: 'Tables', revenue: metrics.revByBucket.TABLE, icon: 'table' },
+    { name: 'Chambres', revenue: metrics.revByBucket.ROOM, icon: 'room' },
+    { name: 'Billets / Places', revenue: metrics.revByBucket.SEAT, icon: 'seat' },
   ];
 
-  // Prepare venue type distribution data
-  const venueTypeData = (venues as any[]).reduce((acc: Record<string, number>, v: any) => {
-    const type = v.type || 'Autre';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {});
-
-  const venueTypeChartData = Object.entries(venueTypeData).map(([type, count]) => ({
-    name: VENUE_TYPE_LABELS[type] || type,
-    value: count,
-  }));
-
-  // Prepare reservations by status
-  const reservationStatusData = (reservations as any[]).reduce((acc: Record<string, number>, r: any) => {
-    const status = r.status || 'Autre';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const reservationStatusChartData = Object.entries(reservationStatusData)
-    .slice(0, 5)
-    .map(([status, count]) => ({
-      name: status,
-      value: count,
-    }));
-
-  // Prepare users by role
-  const userRoleData = (users as any[]).reduce((acc: Record<string, number>, u: any) => {
-    const role = u.role || 'USER';
-    acc[role] = (acc[role] || 0) + 1;
-    return acc;
-  }, {});
-
-  const userRoleChartData = Object.entries(userRoleData).map(([role, count]) => ({
-    name: role,
-    value: count,
-  }));
+  const totalRes = stats?.totalReservations ?? rList.length;
+  const totalUsers = stats?.totalUsers ?? uList.length;
+  const totalVenues = stats?.totalVenues ?? vList.length;
+  const totalEvents = stats?.totalEvents ?? eList.length;
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <Skeleton className="h-4 w-40 bg-zinc-800" />
-            <Skeleton className="h-3 w-60 bg-zinc-800 mt-1" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[300px] w-full bg-zinc-800" />
-          </CardContent>
-        </Card>
-        <Card className="col-span-3 border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <Skeleton className="h-4 w-40 bg-zinc-800" />
-            <Skeleton className="h-3 w-60 bg-zinc-800 mt-1" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[300px] w-full bg-zinc-800" />
-          </CardContent>
-        </Card>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/50" />)}
+        </div>
+        <div className="h-80 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/50" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="h-72 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/50" />
+          <div className="h-72 animate-pulse rounded-2xl border border-zinc-800 bg-zinc-900/50" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatWithTrend title="Reservations tables" value={bookingSplit.TABLE} icon={Calendar} iconColor="text-amber-400" iconBg="bg-amber-500/10" />
-        <StatWithTrend title="Reservations chambres" value={bookingSplit.ROOM} icon={MapPin} iconColor="text-blue-400" iconBg="bg-blue-500/10" />
-        <StatWithTrend title="Reservations places" value={bookingSplit.SEAT} icon={Ticket} iconColor="text-purple-400" iconBg="bg-purple-500/10" />
+    <div className="space-y-5">
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard label="Revenu confirmé" value={fmtTND(metrics.revenueTotal)} sub={`${fmtTND(metrics.revThis)} ce mois`} icon={CircleDollarSign} tone="bg-amber-500/20" delta={metrics.deltas.revenue} />
+        <KpiCard label="Réservations" value={totalRes.toLocaleString('fr-FR')} sub={`${metrics.resThis} ce mois`} icon={CalendarDays} tone="bg-blue-500/20" delta={metrics.deltas.reservations} />
+        <KpiCard label="Utilisateurs" value={totalUsers.toLocaleString('fr-FR')} sub={`+${metrics.usersThis} ce mois`} icon={Users} tone="bg-violet-500/20" delta={metrics.deltas.users} />
+        <KpiCard label="Lieux actifs" value={totalVenues.toLocaleString('fr-FR')} sub={`${totalEvents} événements`} icon={MapPin} tone="bg-emerald-500/20" />
       </div>
 
-      {/* Venue Type Distribution */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Répartition des lieux par type
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              Distribution des {(venues as any[]).length} lieux selon leur catégorie
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {venueTypeChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500">
-                <MapPin className="size-8 mb-2" />
-                <p className="text-sm">Aucune donnée disponible</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={venueTypeChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#71717a"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#71717a"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar
-                    dataKey="value"
-                    fill="#f59e0b"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={60}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+      {/* ── Trend area: reservations + revenue (30d) ── */}
+      <SectionCard
+        title="Activité des 30 derniers jours"
+        subtitle="Réservations et revenu confirmé par jour"
+        action={
+          <div className="hidden items-center gap-4 sm:flex">
+            <span className="flex items-center gap-1.5 text-xs text-zinc-400"><span className="size-2.5 rounded-full bg-amber-400" /> Revenu</span>
+            <span className="flex items-center gap-1.5 text-xs text-zinc-400"><span className="size-2.5 rounded-full bg-blue-400" /> Réservations</span>
+          </div>
+        }
+      >
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={metrics.days} margin={{ top: 6, right: 6, left: -10, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.45} />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+            <XAxis dataKey="label" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} interval={4} minTickGap={20} />
+            <YAxis yAxisId="left" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} width={34} />
+            <YAxis yAxisId="right" orientation="right" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} width={44} hide />
+            <Tooltip content={<ChartTooltip />} />
+            <Area yAxisId="right" type="monotone" dataKey="revenue" name="Revenu" stroke="#f59e0b" strokeWidth={2} fill="url(#gRev)" />
+            <Area yAxisId="left" type="monotone" dataKey="reservations" name="Réservations" stroke="#3b82f6" strokeWidth={2} fill="url(#gRes)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </SectionCard>
 
-        <Card className="col-span-3 border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Types de lieux
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              Proportion par catégorie
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {venueTypeChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500">
-                <MapPin className="size-8 mb-2" />
-                <p className="text-sm">Aucune donnée disponible</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={venueTypeChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={90}
-                    innerRadius={50}
-                    fill="#8884d8"
-                    dataKey="value"
-                    paddingAngle={2}
-                  >
-                    {venueTypeChartData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">Revenus par categorie de reservation</CardTitle>
-            <CardDescription className="text-zinc-400">Tables, chambres, places</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={categoryRevenueChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+      {/* ── Distributions ── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SectionCard title="Lieux par type" subtitle={`${vList.length} établissements`}>
+          {metrics.venueTypeData.length === 0 ? (
+            <EmptyChart icon={MapPin} />
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie data={metrics.venueTypeData} cx="50%" cy="50%" innerRadius={55} outerRadius={88} paddingAngle={2} dataKey="value">
+                  {metrics.venueTypeData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                </Pie>
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+          <Legend data={metrics.venueTypeData} />
+        </SectionCard>
+
+        <SectionCard title="Revenu par catégorie" subtitle="Tables · Chambres · Billets" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={revenueByCategory} margin={{ top: 6, right: 6, left: -8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+              <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} width={48} />
+              <Tooltip content={<ChartTooltip currency />} cursor={{ fill: 'rgba(245,158,11,0.06)' }} />
+              <Bar dataKey="revenue" name="Revenu" radius={[8, 8, 0, 0]} maxBarSize={80}>
+                {revenueByCategory.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </SectionCard>
+      </div>
+
+      {/* ── Status + Top venues + Recent ── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SectionCard title="Réservations par statut" subtitle={`${rList.length} au total`}>
+          {metrics.statusData.length === 0 ? (
+            <EmptyChart icon={Calendar} />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={metrics.statusData} layout="vertical" margin={{ left: 8, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                <XAxis type="number" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                <YAxis dataKey="name" type="category" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} width={86} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} />
+                <Bar dataKey="value" name="Réservations" fill="#3b82f6" radius={[0, 6, 6, 0]} maxBarSize={26} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <Card className="border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">Top etablissements (activite)</CardTitle>
-            <CardDescription className="text-zinc-400">Basé sur les reservations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {Object.entries(
-              reservationsList.reduce((acc: Record<string, number>, r: any) => {
-                const venueName = typeof r.venueId === 'object' ? r.venueId?.name : undefined;
-                const key = venueName || 'Lieu';
-                acc[key] = (acc[key] || 0) + 1;
-                return acc;
-              }, {})
-            )
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 5)
-              .map(([name, count]) => (
-                <div key={name} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/50 px-3 py-2 text-sm">
-                  <span className="text-zinc-300">{name}</span>
-                  <span className="font-semibold text-amber-300">{count}</span>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Top établissements" subtitle="Par nombre de réservations">
+          {metrics.topVenues.length === 0 ? (
+            <p className="py-10 text-center text-sm text-zinc-600">Aucune donnée</p>
+          ) : (
+            <div className="space-y-3">
+              {metrics.topVenues.map((v, i) => (
+                <div key={v.name}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2 truncate text-zinc-300">
+                      <span className="grid size-5 place-items-center rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-400">{i + 1}</span>
+                      <span className="truncate">{v.name}</span>
+                    </span>
+                    <span className="shrink-0 font-bold text-amber-300">{v.count}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+                    <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500" style={{ width: `${(v.count / metrics.topMax) * 100}%` }} />
+                  </div>
                 </div>
               ))}
-            {!reservationsList.length && <p className="text-sm text-zinc-500">Aucune donnee.</p>}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </SectionCard>
 
-      {/* Reservations & Users */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <Card className="border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Réservations par statut
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              {(reservations as any[]).length} réservations au total
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {reservationStatusChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500">
-                <Calendar className="size-8 mb-2" />
-                <p className="text-sm">Aucune réservation</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={reservationStatusChartData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis
-                    type="number"
-                    stroke="#71717a"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    allowDecimals={false}
-                  />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    stroke="#71717a"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    width={100}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Bar
-                    dataKey="value"
-                    fill="#3b82f6"
-                    radius={[0, 6, 6, 0]}
-                    maxBarSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900/50">
-          <CardHeader>
-            <CardTitle className="text-base text-zinc-100">
-              Utilisateurs par rôle
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              {(users as any[]).length} utilisateurs au total
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {userRoleChartData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-zinc-500">
-                <Users className="size-8 mb-2" />
-                <p className="text-sm">Aucun utilisateur</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={userRoleChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={90}
-                    innerRadius={50}
-                    fill="#8884d8"
-                    dataKey="value"
-                    paddingAngle={2}
-                  >
-                    {userRoleChartData.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        <SectionCard title="Dernières réservations" subtitle="Activité récente">
+          {metrics.recent.length === 0 ? (
+            <p className="py-10 text-center text-sm text-zinc-600">Aucune réservation</p>
+          ) : (
+            <div className="space-y-2">
+              {metrics.recent.map((r: any, i: number) => {
+                const b = bookingBucket(r);
+                const Icon = b === 'ROOM' ? BedDouble : b === 'SEAT' ? Ticket : Armchair;
+                const vname = typeof r.venueId === 'object' ? r.venueId?.name : 'Lieu';
+                const who = [r.customerFirstName, r.customerLastName].filter(Boolean).join(' ') || r.guestName || '—';
+                return (
+                  <div key={r._id ?? i} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-2">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-zinc-800 text-zinc-300"><Icon className="size-4" /></span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-zinc-200">{vname}</p>
+                      <p className="flex items-center gap-1 truncate text-[11px] text-zinc-500"><Clock3 className="size-3" />{rDate(r).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · {who}</p>
+                    </div>
+                    {r.totalPrice ? <span className="shrink-0 text-xs font-bold text-amber-300">{fmtTND(Number(r.totalPrice))}</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SectionCard>
       </div>
+    </div>
+  );
+}
+
+function EmptyChart({ icon: Icon }: { icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <div className="flex h-[220px] flex-col items-center justify-center text-zinc-600">
+      <Icon className="mb-2 size-8" />
+      <p className="text-sm">Aucune donnée disponible</p>
+    </div>
+  );
+}
+
+function Legend({ data }: { data: { name: string; value: number }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-1.5">
+      {data.slice(0, 6).map((d, i) => (
+        <div key={d.name} className="flex items-center justify-between gap-2 text-[11px]">
+          <span className="flex items-center gap-1.5 truncate text-zinc-400">
+            <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+            <span className="truncate">{d.name}</span>
+          </span>
+          <span className="shrink-0 font-semibold text-zinc-300">{Math.round((d.value / total) * 100)}%</span>
+        </div>
+      ))}
     </div>
   );
 }
