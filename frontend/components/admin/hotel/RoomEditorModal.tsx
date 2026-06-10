@@ -561,15 +561,22 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
                         Enregistrez d&apos;abord la chambre pour construire la visite multi-scènes.
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => setTourOpen(true)}
-                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/40"
-                      >
-                        <Link2 className="size-4" />
-                        Construire / éditer la visite 360°
-                        <ArrowRight className="size-4" />
-                      </button>
+                      <>
+                        {panoCount > 0 && (
+                          <p className="mt-2.5 rounded-lg border border-purple-400/20 bg-purple-400/[0.06] px-3 py-2 text-[11px] text-purple-200/90">
+                            💡 Vos <strong>{panoCount} vue{panoCount > 1 ? 's' : ''} 360°</strong> ci-dessous seront importables en 1 clic comme scènes dans le constructeur — vous pourrez ensuite les relier.
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setTourOpen(true)}
+                          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/40"
+                        >
+                          <Link2 className="size-4" />
+                          Construire / éditer la visite 360°
+                          <ArrowRight className="size-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

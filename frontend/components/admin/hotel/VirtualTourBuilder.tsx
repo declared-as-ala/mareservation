@@ -51,6 +51,8 @@ interface VirtualTourBuilderProps {
   roomId?: string;
   initialScenes: AdminHotelScene[];
   initialHotspots: AdminSceneHotspot[];
+  /** Flat 360° images already uploaded (panoramicImages) — can be imported as scenes in one click. */
+  fallbackImages?: string[];
   onUpdated?: () => void;
 }
 
@@ -517,7 +519,7 @@ function AddHotspotModal({
 
 // ── Main VirtualTourBuilder component ─────────────────────────────────────────
 
-export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHotspots, onUpdated }: VirtualTourBuilderProps) {
+export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHotspots, fallbackImages, onUpdated }: VirtualTourBuilderProps) {
   const [scenes, setScenes] = useState<AdminHotelScene[]>(initialScenes);
   const [hotspots, setHotspots] = useState<AdminSceneHotspot[]>(initialHotspots);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(initialScenes[0]?._id ?? null);
@@ -525,10 +527,39 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
   const [pendingHotspot, setPendingHotspot] = useState<PendingHotspot | null>(null);
   const [showAddScene, setShowAddScene] = useState(false);
   const [show360Preview, setShow360Preview] = useState(false);
+  const [importing, setImporting] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   const activeScene = scenes.find((s) => s._id === activeSceneId);
   const activeHotspots = hotspots.filter((h) => h.virtualTourId === activeSceneId);
+
+  // Images uploaded via the simple panorama tool that aren't yet scenes.
+  const importableImages = (fallbackImages ?? []).filter(
+    (url) => !scenes.some((s) => s.image === url)
+  );
+
+  async function importFallbackImages() {
+    if (importableImages.length === 0) return;
+    setImporting(true);
+    try {
+      const created: AdminHotelScene[] = [];
+      for (let i = 0; i < importableImages.length; i++) {
+        const url = importableImages[i];
+        const scene = roomId
+          ? await createAdminRoomScene(roomId, { name: `Vue ${scenes.length + created.length + 1}`, image: url })
+          : await createAdminVenueScene(venueId, { name: `Vue ${scenes.length + created.length + 1}`, image: url });
+        created.push(scene);
+      }
+      setScenes((prev) => [...prev, ...created]);
+      if (!activeSceneId && created[0]) setActiveSceneId(created[0]._id);
+      toast.success(`${created.length} vue${created.length > 1 ? 's' : ''} importée${created.length > 1 ? 's' : ''} comme scène${created.length > 1 ? 's' : ''}.`);
+      onUpdated?.();
+    } catch {
+      toast.error("Erreur lors de l'import des vues.");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (mode !== 'add-hotspot') return;
@@ -584,31 +615,76 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
             <p className="text-xs text-zinc-500">{scenes.length} scène{scenes.length !== 1 ? 's' : ''} · {hotspots.length} hotspot{hotspots.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
-        <Button
-          onClick={() => setShowAddScene(true)}
-          size="sm"
-          className="h-8 bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl text-xs px-3"
-        >
-          <Plus className="size-3.5 mr-1.5" /> Nouvelle scène
-        </Button>
+        <div className="flex items-center gap-2">
+          {importableImages.length > 0 && (
+            <Button
+              onClick={importFallbackImages}
+              disabled={importing}
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-xl border-purple-500/40 bg-purple-500/10 px-3 text-xs font-semibold text-purple-200 hover:bg-purple-500/20"
+            >
+              {importing ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <ImagePlus className="mr-1.5 size-3.5" />}
+              Importer {importableImages.length} vue{importableImages.length > 1 ? 's' : ''}
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowAddScene(true)}
+            size="sm"
+            className="h-8 bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl text-xs px-3"
+          >
+            <Plus className="size-3.5 mr-1.5" /> Nouvelle scène
+          </Button>
+        </div>
       </div>
+
+      {/* How-to banner */}
+      {scenes.length >= 2 && hotspots.length === 0 && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/[0.07] px-4 py-3">
+          <MousePointer className="mt-0.5 size-4 shrink-0 text-[#D4AF37]" />
+          <p className="text-xs leading-relaxed text-amber-100/90">
+            <strong>Ajouter un lien (hotspot)&nbsp;:</strong> sélectionnez une scène à gauche, cliquez sur
+            <span className="mx-1 inline-flex items-center gap-1 rounded-md border border-[#D4AF37]/40 bg-[#D4AF37]/15 px-1.5 py-0.5 font-semibold text-[#D4AF37]"><Link2 className="size-3" /> Ajouter hotspot</span>,
+            puis cliquez sur l&apos;image à l&apos;endroit du lien et choisissez la scène de destination.
+          </p>
+        </div>
+      )}
 
       {scenes.length === 0 ? (
         // Empty state
-        <div
-          className="flex h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 cursor-pointer hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/5 transition-all"
-          onClick={() => setShowAddScene(true)}
-        >
+        <div className="flex h-72 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 px-4 text-center">
           <div className="flex size-14 items-center justify-center rounded-2xl bg-zinc-800 border border-zinc-700 mb-4">
             <Globe2 className="size-7 text-zinc-500" />
           </div>
           <p className="text-base font-semibold text-zinc-300 mb-1">Aucune scène 360°</p>
-          <p className="text-sm text-zinc-500 mb-4 text-center max-w-xs">
-            Uploadez des images équirectangulaires pour créer votre visite virtuelle immersive.
+          <p className="text-sm text-zinc-500 mb-4 max-w-sm">
+            {importableImages.length > 0
+              ? `Vous avez déjà ${importableImages.length} vue${importableImages.length > 1 ? 's' : ''} 360° uploadée${importableImages.length > 1 ? 's' : ''}. Importez-les comme scènes pour pouvoir les relier avec des hotspots.`
+              : 'Uploadez des images équirectangulaires pour créer votre visite virtuelle immersive.'}
           </p>
-          <Button size="sm" className="bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl">
-            <Plus className="size-4 mr-2" /> Ajouter la première scène
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {importableImages.length > 0 && (
+              <Button
+                onClick={importFallbackImages}
+                disabled={importing}
+                size="sm"
+                className="bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:opacity-90 text-white font-semibold rounded-xl"
+              >
+                {importing ? <Loader2 className="size-4 mr-2 animate-spin" /> : <ImagePlus className="size-4 mr-2" />}
+                Importer mes {importableImages.length} vue{importableImages.length > 1 ? 's' : ''}
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowAddScene(true)}
+              size="sm"
+              variant={importableImages.length > 0 ? 'outline' : 'default'}
+              className={importableImages.length > 0
+                ? 'rounded-xl border-zinc-700 text-zinc-300'
+                : 'bg-[#D4AF37] hover:bg-[#c9a227] text-black font-semibold rounded-xl'}
+            >
+              <Plus className="size-4 mr-2" /> {importableImages.length > 0 ? 'Nouvelle scène' : 'Ajouter la première scène'}
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_220px] gap-4 min-h-[520px]">

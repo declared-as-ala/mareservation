@@ -80,6 +80,7 @@ export function RoomTourModal({ venueId, room, onClose }: RoomTourModalProps) {
             roomId={roomId}
             initialScenes={tourData?.scenes ?? []}
             initialHotspots={tourData?.hotspots ?? []}
+            fallbackImages={room.panoramicImages ?? []}
             onUpdated={() => refetch()}
           />
         )}
