@@ -9,7 +9,7 @@ import {
   Upload, Loader2, Plus, Trash2, Crown, Eye, Wind,
   Wifi, Car, Waves, Sparkles, Coffee, Check,
   ImagePlus, Info, Image as ImageIcon, Compass, SlidersHorizontal,
-  RotateCw,
+  RotateCw, Route, Link2, ArrowRight, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { uploadImageFile } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AdminHotelRoom } from '@/lib/api/admin';
+import { RoomTourModal } from './RoomTourModal';
 
 const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
@@ -84,9 +85,10 @@ interface RoomEditorModalProps {
   onOpenTour?: (room: AdminHotelRoom) => void;
 }
 
-export function RoomEditorModal({ room, onClose, onSave }: RoomEditorModalProps) {
+export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorModalProps) {
   const isNew = !room;
   const [tab, setTab] = useState<TabKey>('infos');
+  const [tourOpen, setTourOpen] = useState(false);
 
   const [form, setForm] = useState<Partial<AdminHotelRoom>>({
     roomNumber: room?.roomNumber ?? undefined,
@@ -233,6 +235,7 @@ export function RoomEditorModal({ room, onClose, onSave }: RoomEditorModalProps)
   }
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -534,6 +537,50 @@ export function RoomEditorModal({ room, onClose, onSave }: RoomEditorModalProps)
                 </div>
               </div>
 
+              {/* ── Multi-scene tour (scenes linked by hotspots) ── */}
+              <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/[0.08] to-transparent p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10">
+                    <Route className="size-4 text-purple-300" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-purple-200">
+                      Visite multi-scènes
+                      <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-1.5 text-[9px] font-bold uppercase tracking-wide text-purple-300">
+                        Avec liens
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
+                      Créez plusieurs scènes (chambre, salle de bain, balcon…) et <strong className="text-zinc-300">reliez-les entre elles</strong> avec
+                      des hotspots cliquables. Le client navigue d&apos;une vue à l&apos;autre comme dans un vrai tour virtuel.
+                    </p>
+
+                    {isNew ? (
+                      <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-[11px] text-zinc-400">
+                        <Lock className="size-3.5 text-zinc-500" />
+                        Enregistrez d&apos;abord la chambre pour construire la visite multi-scènes.
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setTourOpen(true)}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/40"
+                      >
+                        <Link2 className="size-4" />
+                        Construire / éditer la visite 360°
+                        <ArrowRight className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 py-1">
+                <div className="h-px flex-1 bg-zinc-800" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">ou vue 360° simple</span>
+                <div className="h-px flex-1 bg-zinc-800" />
+              </div>
+
               {/* Big upload zone */}
               <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400/30 bg-amber-400/[0.04] text-amber-300/80 transition-colors hover:border-amber-400/60 hover:bg-amber-400/[0.08]">
                 <input
@@ -727,5 +774,11 @@ export function RoomEditorModal({ room, onClose, onSave }: RoomEditorModalProps)
         </div>
       </motion.div>
     </motion.div>
+
+    {/* Full-screen multi-scene tour builder (scenes + linking hotspots) */}
+    {tourOpen && room && (
+      <RoomTourModal venueId={hotelId} room={room} onClose={() => setTourOpen(false)} />
+    )}
+    </>
   );
 }
