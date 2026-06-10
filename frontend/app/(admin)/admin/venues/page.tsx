@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue, createAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { getVenueHref } from '@/lib/venueHref';
+import { getVenueHref, getAdminVenueHref } from '@/lib/venueHref';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -546,7 +546,7 @@ export default function AdminVenuesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44 border-zinc-800 bg-zinc-900">
                             <DropdownMenuItem asChild>
-                              <Link href={v.type === 'HOTEL' ? `/admin/hotels/${v._id}` : `/admin/venues/${v._id}`} className="flex items-center gap-2">
+                              <Link href={getAdminVenueHref(v)} className="flex items-center gap-2">
                                 <ExternalLink className="size-4" />
                                 Modifier
                               </Link>
@@ -650,7 +650,7 @@ export default function AdminVenuesPage() {
                     asChild
                     className="flex-1 border-zinc-700 bg-zinc-800/50 text-zinc-200 hover:bg-zinc-800 hover:text-zinc-100 hover:border-zinc-600 transition-all duration-200"
                   >
-                    <Link href={v.type === 'HOTEL' ? `/admin/hotels/${v._id}` : `/admin/venues/${v._id}`} className="flex items-center gap-1.5 justify-center">
+                    <Link href={getAdminVenueHref(v)} className="flex items-center gap-1.5 justify-center">
                       <ExternalLink className="size-3.5" />
                       Modifier
                     </Link>
