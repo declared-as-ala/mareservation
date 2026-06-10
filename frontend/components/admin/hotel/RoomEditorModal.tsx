@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -9,7 +10,7 @@ import {
   Upload, Loader2, Plus, Trash2, Crown, Eye, Wind,
   Wifi, Car, Waves, Sparkles, Coffee, Check,
   ImagePlus, Info, Image as ImageIcon, Compass, SlidersHorizontal,
-  RotateCw, Route, Link2, ArrowRight, Lock,
+  Route, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,11 +19,10 @@ import { Switch } from '@/components/ui/switch';
 import { uploadImageFile } from '@/lib/api/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { AdminHotelRoom } from '@/lib/api/admin';
-import { RoomTourModal } from './RoomTourModal';
+import { fetchAdminRoomScenes, type AdminHotelRoom } from '@/lib/api/admin';
 
-const PanoramaEngine = dynamic(
-  () => import('@/components/immersive/PanoramaEngine'),
+const VirtualTourBuilder = dynamic(
+  () => import('./VirtualTourBuilder').then((m) => ({ default: m.VirtualTourBuilder })),
   { ssr: false }
 );
 
@@ -88,7 +88,14 @@ interface RoomEditorModalProps {
 export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorModalProps) {
   const isNew = !room;
   const [tab, setTab] = useState<TabKey>('infos');
-  const [tourOpen, setTourOpen] = useState(false);
+
+  // Multi-scene 360° tour for this room (scenes + linking hotspots), loaded lazily
+  // when the Vue 360° tab is opened — same builder as the hotel virtual tour.
+  const { data: tourData, refetch: refetchTour, isLoading: tourLoading } = useQuery({
+    queryKey: ['admin-room-tour', room?._id],
+    queryFn: () => fetchAdminRoomScenes(room!._id),
+    enabled: !!room?._id && tab === 'pano',
+  });
 
   const [form, setForm] = useState<Partial<AdminHotelRoom>>({
     roomNumber: room?.roomNumber ?? undefined,
@@ -114,15 +121,14 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     panoramicImages: room?.panoramicImages ?? [],
   });
 
-  const [panoramicUploading, setPanoramicUploading] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [customAmenity, setCustomAmenity] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [previewPano, setPreviewPano] = useState<string | null>(null);
 
-  const panoCount = (form.panoramicImages ?? []).length;
   const photoCount = (form.gallery ?? []).length;
+  // 360 count = built scenes (once loaded) or simple panoramas otherwise.
+  const panoCount = Math.max((form.panoramicImages ?? []).length, tourData?.scenes?.length ?? 0);
 
   function toggleAmenity(key: string) {
     setForm((f) => ({
@@ -150,42 +156,6 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     } finally {
       setUploadingCover(false);
     }
-  }
-
-  async function uploadPanoramic(files: FileList | File[]) {
-    setPanoramicUploading(true);
-    try {
-      const arr = Array.from(files);
-      const urls = await Promise.all(arr.map((f) => uploadImageFile(f)));
-      setForm((f) => ({
-        ...f,
-        panoramicImages: [...(f.panoramicImages ?? []), ...urls],
-        hasVirtualTour: true,
-      }));
-      toast.success(`${urls.length} vue 360° ajoutée${urls.length > 1 ? 's' : ''}.`);
-    } catch {
-      toast.error("Erreur lors de l'upload 360°.");
-    } finally {
-      setPanoramicUploading(false);
-    }
-  }
-
-  function removePanoramic(url: string) {
-    setForm((f) => {
-      const next = (f.panoramicImages ?? []).filter((u) => u !== url);
-      return { ...f, panoramicImages: next, hasVirtualTour: next.length > 0 };
-    });
-  }
-
-  function movePanoramic(url: string, dir: -1 | 1) {
-    setForm((f) => {
-      const list = [...(f.panoramicImages ?? [])];
-      const i = list.indexOf(url);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= list.length) return f;
-      [list[i], list[j]] = [list[j], list[i]];
-      return { ...f, panoramicImages: list };
-    });
   }
 
   async function uploadGalleryFiles(files: FileList | File[]) {
@@ -235,7 +205,6 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
   }
 
   return (
-    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -249,7 +218,10 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="flex w-full max-w-2xl max-h-[94vh] flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+        className={cn(
+          'flex w-full max-h-[94vh] flex-col overflow-hidden rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl sm:rounded-3xl',
+          tab === 'pano' ? 'max-w-6xl' : 'max-w-2xl'
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -521,161 +493,42 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
             </div>
           )}
 
-          {/* ── VUE 360° ── */}
+          {/* ── VUE 360° — full multi-scene tour builder (like the hotel virtual tour) ── */}
           {tab === 'pano' && (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.05] p-4">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/15">
-                  <Compass className="size-4 text-amber-400" />
+              <div className="flex items-start gap-3 rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/[0.08] to-transparent p-4">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10">
+                  <Route className="size-4 text-purple-300" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-amber-200">Vues immersives 360°</p>
+                  <p className="text-sm font-semibold text-purple-200">Visite virtuelle 360° de la chambre</p>
                   <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
-                    Uploadez des images <strong className="text-zinc-300">équirectangulaires (ratio 2:1)</strong>.
-                    Le client pourra tourner la vue à 360° directement sur la page de la chambre.
+                    Ajoutez plusieurs vues 360° (chambre, salle de bain, balcon…) et <strong className="text-zinc-300">reliez-les avec des hotspots</strong> cliquables —
+                    exactement comme la visite virtuelle de l&apos;hôtel. Le client navigue d&apos;une vue à l&apos;autre.
                   </p>
                 </div>
               </div>
 
-              {/* ── Multi-scene tour (scenes linked by hotspots) ── */}
-              <div className="rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-500/[0.08] to-transparent p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/10">
-                    <Route className="size-4 text-purple-300" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 text-sm font-semibold text-purple-200">
-                      Visite multi-scènes
-                      <span className="rounded-full border border-purple-400/30 bg-purple-400/10 px-1.5 text-[9px] font-bold uppercase tracking-wide text-purple-300">
-                        Avec liens
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">
-                      Créez plusieurs scènes (chambre, salle de bain, balcon…) et <strong className="text-zinc-300">reliez-les entre elles</strong> avec
-                      des hotspots cliquables. Le client navigue d&apos;une vue à l&apos;autre comme dans un vrai tour virtuel.
-                    </p>
-
-                    {isNew ? (
-                      <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-[11px] text-zinc-400">
-                        <Lock className="size-3.5 text-zinc-500" />
-                        Enregistrez d&apos;abord la chambre pour construire la visite multi-scènes.
-                      </div>
-                    ) : (
-                      <>
-                        {panoCount > 0 && (
-                          <p className="mt-2.5 rounded-lg border border-purple-400/20 bg-purple-400/[0.06] px-3 py-2 text-[11px] text-purple-200/90">
-                            💡 Vos <strong>{panoCount} vue{panoCount > 1 ? 's' : ''} 360°</strong> ci-dessous seront importables en 1 clic comme scènes dans le constructeur — vous pourrez ensuite les relier.
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setTourOpen(true)}
-                          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-purple-500/25 transition-all hover:-translate-y-0.5 hover:shadow-purple-500/40"
-                        >
-                          <Link2 className="size-4" />
-                          Construire / éditer la visite 360°
-                          <ArrowRight className="size-4" />
-                        </button>
-                      </>
-                    )}
-                  </div>
+              {isNew ? (
+                <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 py-14 text-center">
+                  <Lock className="size-7 text-zinc-600" />
+                  <p className="text-sm font-semibold text-zinc-300">Enregistrez d&apos;abord la chambre</p>
+                  <p className="max-w-xs text-xs text-zinc-500">La visite 360° multi-scènes sera disponible dès que la chambre est créée.</p>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3 py-1">
-                <div className="h-px flex-1 bg-zinc-800" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">ou vue 360° simple</span>
-                <div className="h-px flex-1 bg-zinc-800" />
-              </div>
-
-              {/* Big upload zone */}
-              <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-amber-400/30 bg-amber-400/[0.04] text-amber-300/80 transition-colors hover:border-amber-400/60 hover:bg-amber-400/[0.08]">
-                <input
-                  type="file" accept="image/*" multiple className="hidden"
-                  onChange={(e) => { const files = e.target.files; if (files?.length) uploadPanoramic(files); e.currentTarget.value = ''; }}
+              ) : tourLoading ? (
+                <div className="flex h-64 items-center justify-center gap-2 text-zinc-400">
+                  <Loader2 className="size-5 animate-spin" />
+                  <span className="text-sm">Chargement des scènes 360°…</span>
+                </div>
+              ) : (
+                <VirtualTourBuilder
+                  venueId={hotelId}
+                  roomId={room!._id}
+                  initialScenes={tourData?.scenes ?? []}
+                  initialHotspots={tourData?.hotspots ?? []}
+                  fallbackImages={form.panoramicImages ?? []}
+                  onUpdated={() => refetchTour()}
                 />
-                {panoramicUploading ? (
-                  <><Loader2 className="size-6 animate-spin" /><span className="text-sm font-semibold">Upload 360° en cours…</span></>
-                ) : (
-                  <>
-                    <RotateCw className="size-6" />
-                    <span className="text-sm font-semibold">Ajouter une ou plusieurs vues 360°</span>
-                    <span className="text-[11px] text-amber-300/50">JPG / PNG · équirectangulaire 2:1</span>
-                  </>
-                )}
-              </label>
-
-              {/* Existing panoramas with live preview */}
-              {panoCount > 0 && (
-                <div className="space-y-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                    {panoCount} vue{panoCount > 1 ? 's' : ''} 360° · ordre d&apos;affichage
-                  </p>
-                  {(form.panoramicImages ?? []).map((url, idx) => (
-                    <div key={url} className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
-                      {/* Live rotatable preview */}
-                      <div className="relative h-48 w-full bg-black">
-                        {previewPano === url ? (
-                          <PanoramaEngine
-                            imageUrl={url}
-                            markers={[]}
-                            mode="navigate"
-                            scenes={[]}
-                            activeSceneId={null}
-                            onSceneChange={() => undefined}
-                            onMarkerClick={() => undefined}
-                          />
-                        ) : (
-                          <>
-                            <Image src={url} alt={`360° ${idx + 1}`} fill className="object-cover" sizes="480px" />
-                            <button
-                              type="button"
-                              onClick={() => setPreviewPano(url)}
-                              className="absolute inset-0 flex items-center justify-center bg-black/35 transition-colors hover:bg-black/50"
-                            >
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-[12px] font-black text-black shadow-lg">
-                                <RotateCw className="size-3.5" /> Tester la rotation 360°
-                              </span>
-                            </button>
-                          </>
-                        )}
-                        <div className="pointer-events-none absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-300">
-                          Scène {idx + 1}
-                        </div>
-                        {previewPano === url && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewPano(null)}
-                            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-full border border-white/15 bg-black/70 text-white hover:bg-black"
-                            aria-label="Arrêter l'aperçu"
-                          >
-                            <X className="size-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      {/* Row actions */}
-                      <div className="flex items-center justify-between px-3 py-2">
-                        <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => movePanoramic(url, -1)} disabled={idx === 0} className="flex size-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30">↑</button>
-                          <button type="button" onClick={() => movePanoramic(url, 1)} disabled={idx === panoCount - 1} className="flex size-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:text-white disabled:opacity-30">↓</button>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removePanoramic(url)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-300 transition-colors hover:bg-red-500/20"
-                        >
-                          <Trash2 className="size-3.5" /> Retirer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {panoCount === 0 && !panoramicUploading && (
-                <p className="text-center text-xs text-zinc-600">
-                  Aucune vue 360° pour cette chambre. Les clients ne verront que les photos.
-                </p>
               )}
             </div>
           )}
@@ -781,11 +634,5 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
         </div>
       </motion.div>
     </motion.div>
-
-    {/* Full-screen multi-scene tour builder (scenes + linking hotspots) */}
-    {tourOpen && room && (
-      <RoomTourModal venueId={hotelId} room={room} onClose={() => setTourOpen(false)} />
-    )}
-    </>
   );
 }

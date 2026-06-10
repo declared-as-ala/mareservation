@@ -124,6 +124,15 @@ function RoomGridCard({
           </span>
         </div>
 
+        {/* 360° tour indicator */}
+        {(room.hasVirtualTour || (room.panoramicImages?.length ?? 0) > 0) && (
+          <div className="absolute bottom-2 left-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-purple-400/40 bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold text-purple-200 backdrop-blur-sm">
+              <Globe2 className="size-2.5" /> 360°
+            </span>
+          </div>
+        )}
+
         {/* Price */}
         <div className="absolute bottom-2 right-2">
           <span className="rounded-lg bg-black/80 border border-white/10 px-2 py-0.5 text-xs font-bold text-[#D4AF37]">
