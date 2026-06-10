@@ -98,8 +98,8 @@ const categoryGroup: CategoryGroup = {
       subtitle: 'Restaurants • Cafés',
       icon: Utensils,
       children: [
-        { href: '/admin/venues?type=RESTAURANT', label: 'Restaurants', icon: Utensils, typeQuery: 'RESTAURANT' },
-        { href: '/admin/venues?type=CAFE', label: 'Cafés', icon: Coffee, typeQuery: 'CAFE' },
+        { href: '/admin/restaurants', label: 'Restaurants', icon: Utensils },
+        { href: '/admin/cafes', label: 'Cafés', icon: Coffee },
       ],
     },
     {
@@ -132,7 +132,7 @@ const categoryGroup: CategoryGroup = {
       subtitle: 'Réunions • Coworking',
       icon: BriefcaseBusiness,
       children: [
-        { href: '/admin/venues?type=COWORKING', label: 'Coworking', icon: BriefcaseBusiness, typeQuery: 'COWORKING' },
+        { href: '/admin/coworking', label: 'Coworking', icon: BriefcaseBusiness },
         { href: '/admin/venues?q=Reunion', label: 'Salles de réunion', icon: Users, qQuery: 'Reunion' },
       ],
     },

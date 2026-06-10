@@ -1,0 +1,7 @@
+'use client';
+
+import { AdminCategoryVenuesList } from '@/components/admin/venue/AdminCategoryVenuesList';
+
+export default function AdminCinemaListPage() {
+  return <AdminCategoryVenuesList category="CINEMA" />;
+}

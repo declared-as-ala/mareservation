@@ -26,6 +26,8 @@ export interface VenueTab {
 export interface VenueCategoryConfig {
   /** Singular label shown in the hero badge. */
   label: string;
+  /** Plural label shown on the list page. */
+  labelPlural: string;
   Icon: LucideIcon;
   /** Tailwind text + soft-bg accent classes for the category. */
   accentText: string;
@@ -45,6 +47,7 @@ const HEAD: VenueTab[] = [
 export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig> = {
   RESTAURANT: {
     label: 'Restaurant',
+    labelPlural: 'Restaurants',
     Icon: UtensilsCrossed,
     accentText: 'text-amber-300',
     accentBg: 'bg-amber-500/20',
@@ -57,6 +60,7 @@ export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig
   },
   CAFE: {
     label: 'Café',
+    labelPlural: 'Cafés',
     Icon: Coffee,
     accentText: 'text-orange-300',
     accentBg: 'bg-orange-500/20',
@@ -69,6 +73,7 @@ export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig
   },
   COWORKING: {
     label: 'Coworking',
+    labelPlural: 'Espaces coworking',
     Icon: BriefcaseBusiness,
     accentText: 'text-sky-300',
     accentBg: 'bg-sky-500/20',
@@ -80,6 +85,7 @@ export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig
   },
   CINEMA: {
     label: 'Cinéma',
+    labelPlural: 'Cinémas',
     Icon: Clapperboard,
     accentText: 'text-blue-300',
     accentBg: 'bg-blue-500/20',
@@ -87,6 +93,7 @@ export const VENUE_CATEGORY_CONFIG: Record<VenueCategoryKey, VenueCategoryConfig
   },
   EVENT_SPACE: {
     label: 'Espace événementiel',
+    labelPlural: 'Espaces événementiels',
     Icon: PartyPopper,
     accentText: 'text-fuchsia-300',
     accentBg: 'bg-fuchsia-500/20',
