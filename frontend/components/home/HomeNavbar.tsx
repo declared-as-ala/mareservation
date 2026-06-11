@@ -12,139 +12,143 @@ import {
   CalendarDays,
   Compass,
   BriefcaseBusiness,
+  BedDouble,
+  UtensilsCrossed,
+  Martini,
+  Flower2,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useCartStore } from '@/stores/cart';
 import { UserMenuDropdown } from '@/components/layout/UserMenuDropdown';
 import { CartDrawer } from '@/components/layout/CartDrawer';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetClose } from '@/components/ui/sheet';
 
-const navigationItems = [
+const primaryNav = [
   { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
   { label: 'Coworking', href: '/coworking', icon: BriefcaseBusiness },
   { label: 'Événements', href: '/evenements', icon: CalendarDays },
 ];
 
+const categoryNav = [
+  { label: 'Hôtels', href: '/hotels', icon: BedDouble },
+  { label: 'Restauration', href: '/restauration', icon: UtensilsCrossed },
+  { label: 'Sorties', href: '/sorties', icon: Martini },
+  { label: 'Bien-être', href: '/bien-etre', icon: Flower2 },
+];
+
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(href + '?') || pathname.startsWith(href + '/');
+}
+
+/* Reusable brand lockup (logo emblem + gold wordmark + slogan). */
+function Brand({ onClick, size = 'bar' }: { onClick?: () => void; size?: 'bar' | 'drawer' }) {
+  const logoCls =
+    size === 'drawer'
+      ? 'h-12 w-auto'
+      : 'h-10 w-auto sm:h-11 lg:h-12';
+  const nameCls =
+    size === 'drawer'
+      ? 'text-[18px] tracking-[0.15em]'
+      : 'text-[14px] tracking-[0.13em] sm:text-[15px] lg:text-[17px] lg:tracking-[0.16em]';
+  const sloganCls =
+    size === 'drawer'
+      ? 'text-[8px] tracking-[0.45em]'
+      : 'text-[6.5px] tracking-[0.3em] sm:text-[7px] lg:text-[8px] lg:tracking-[0.4em]';
+  return (
+    <Link
+      href="/"
+      onClick={onClick}
+      className="group flex shrink-0 items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:gap-3"
+      aria-label="Look and Book — accueil"
+    >
+      <Image src="/logo.png" alt="" width={1024} height={1536} priority className={cn('object-contain transition-transform duration-300 group-hover:scale-[1.04]', logoCls)} style={{ width: 'auto' }} />
+      <span aria-hidden className="h-8 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:h-9 lg:h-10" />
+      <span className="flex flex-col items-stretch leading-none">
+        <span className={cn('bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif font-bold uppercase text-transparent drop-shadow-[0_2px_10px_rgba(212,175,55,0.25)]', nameCls)}>
+          Look and Book
+        </span>
+        <span className="mt-1 flex items-center gap-1.5">
+          <span className="h-px flex-1 bg-gradient-to-r from-amber-400/0 to-amber-400/50" />
+          <span className="size-[3px] rotate-45 bg-amber-400/80 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+          <span className="h-px flex-1 bg-gradient-to-l from-amber-400/0 to-amber-400/50" />
+        </span>
+        <span className={cn('mt-1 text-center font-semibold uppercase text-amber-300/75', sloganCls)}>Book your moment</span>
+      </span>
+    </Link>
+  );
+}
+
 export function HomeNavbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const { user, isLoading: authLoading } = useAuth();
   const totalQuantity = useCartStore((s) => s.totalQuantity());
-
   const isHome = pathname === '/';
 
   useEffect(() => {
-    if (!isHome) return;
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [isHome]);
+  }, []);
 
-  useEffect(() => {
-    if (searchFocused) setTimeout(() => searchRef.current?.focus(), 50);
-  }, [searchFocused]);
-
-  const bgClass = isHome
-    ? scrolled
-      ? 'bg-gradient-to-r from-black via-zinc-950/98 to-amber-900/55 shadow-lg shadow-black/35'
-      : 'bg-gradient-to-r from-black/95 via-zinc-950/85 to-amber-900/45'
-    : 'bg-gradient-to-r from-black via-zinc-950/98 to-amber-900/55 shadow-sm shadow-black/10';
-
-  const handleSearch = (e: React.FormEvent) => {
+  function go(e: React.FormEvent, close?: boolean) {
     e.preventDefault();
-    if (searchValue.trim()) {
-      window.location.href = `/recherche?q=${encodeURIComponent(searchValue.trim())}`;
-    }
-  };
-
-  const handleMobileSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setMobileOpen(false);
-    if (searchValue.trim()) {
-      window.location.href = `/recherche?q=${encodeURIComponent(searchValue.trim())}`;
-    }
-  };
+    if (close) setMobileOpen(false);
+    const q = searchValue.trim();
+    if (q) window.location.href = `/recherche?q=${encodeURIComponent(q)}`;
+  }
 
   return (
     <>
       <header
         className={cn(
-          'fixed inset-x-0 top-0 z-50 border-b border-amber-300/[0.08] backdrop-blur-2xl transition-all duration-500',
-          bgClass
+          'fixed inset-x-0 top-0 z-50 border-b transition-all duration-300',
+          scrolled || !isHome
+            ? 'border-white/[0.07] bg-[#0a0a0b]/90 shadow-lg shadow-black/30 backdrop-blur-xl'
+            : 'border-transparent bg-gradient-to-b from-black/70 to-transparent backdrop-blur-md'
         )}
       >
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-zinc-950 to-amber-900/45" aria-hidden />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_50%,rgba(245,158,11,0.20),transparent_45%)]" aria-hidden />
-        <div className="relative mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-1.5 px-2.5 sm:h-[104px] sm:gap-4 sm:px-5 lg:h-[116px] lg:px-8">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="group flex items-center gap-3 shrink-0 outline-none transition-all duration-300 hover:scale-[1.012] focus-visible:ring-2 focus-visible:ring-amber-300/70 py-1 sm:gap-4"
-          >
-            {/* Logo emblem — visible on every breakpoint incl. mobile */}
-            <Image
-              src="/logo.png"
-              alt="Look and Book"
-              width={1024}
-              height={1536}
-              className="h-[48px] w-auto object-contain transition-transform duration-300 sm:h-[66px] lg:h-[82px] xl:h-[88px]"
-              style={{ width: 'auto' }}
-              priority
-            />
-            <span aria-hidden className="h-9 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:h-12 lg:h-14" />
-            {/* Luxury wordmark + slogan (always visible, incl. mobile) */}
-            <span className="flex flex-col items-stretch">
-              <span className="bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif text-[16px] font-bold uppercase tracking-[0.14em] text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] sm:text-[19px] sm:tracking-[0.16em] lg:text-[24px]">
-                Look and Book
-              </span>
-              <span className="mt-1 flex items-center gap-1.5 sm:mt-1.5 sm:gap-2">
-                <span className="h-px flex-1 bg-gradient-to-r from-amber-400/0 to-amber-400/55" />
-                <span className="size-1 rotate-45 bg-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                <span className="h-px flex-1 bg-gradient-to-l from-amber-400/0 to-amber-400/55" />
-              </span>
-              <span className="mt-1 text-center text-[7px] font-semibold uppercase tracking-[0.34em] text-amber-300/75 sm:mt-1.5 sm:text-[8px] sm:tracking-[0.42em] lg:text-[9.5px] lg:tracking-[0.5em]">
-                Book your moment
-              </span>
-            </span>
-          </Link>
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_94%_-20%,rgba(245,158,11,0.14),transparent_42%)]" />
 
-          {/* Desktop nav */}
-          <nav className="hidden min-h-12 shrink-0 items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.035] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] xl:flex">
-            {navigationItems.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href || pathname.startsWith(link.href + '?');
+        <div className="relative mx-auto flex h-[68px] max-w-[1480px] items-center gap-3 px-3 sm:h-[76px] sm:px-5 lg:h-[84px] lg:gap-5 lg:px-8">
+          {/* Brand */}
+          <Brand />
+
+          {/* Center nav (lg+) */}
+          <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="Navigation principale">
+            {primaryNav.map(({ label, href, icon: Icon }) => {
+              const active = isActivePath(pathname, href);
               return (
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  key={href}
+                  href={href}
                   className={cn(
-                    'flex min-h-10 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
-                    isActive
-                      ? 'bg-amber-300 text-black shadow-[0_8px_22px_rgba(245,158,11,0.22)]'
-                      : 'text-neutral-300 hover:bg-white/[0.07] hover:text-white'
+                    'flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
+                    active ? 'bg-white/[0.08] text-white' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
                   )}
                 >
                   <Icon className="size-4 shrink-0" strokeWidth={1.8} />
-                  {link.label}
+                  <span className="hidden xl:inline">{label}</span>
+                  <span className="xl:hidden">{label.replace(' en 360°', '')}</span>
                 </Link>
               );
             })}
-
-            {/* SOS Conseil pill */}
             <Link
               href="/sos-conseil"
               className={cn(
-                'ml-1 flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
+                'ml-1 flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
                 pathname === '/sos-conseil'
-                  ? 'border-amber-300 bg-amber-300 text-black shadow-[0_0_24px_rgba(251,191,36,0.42)]'
-                  : 'border-amber-300/55 bg-amber-300/[0.06] text-amber-200 hover:-translate-y-0.5 hover:border-amber-300 hover:bg-amber-300 hover:text-black hover:shadow-[0_14px_26px_rgba(245,158,11,0.22)]'
+                  ? 'border-amber-300 bg-amber-300 text-black shadow-[0_0_22px_rgba(251,191,36,0.4)]'
+                  : 'border-amber-300/50 bg-amber-300/[0.06] text-amber-200 hover:border-amber-300 hover:bg-amber-300 hover:text-black'
               )}
             >
               <Sparkles className="size-4 shrink-0" strokeWidth={1.9} />
@@ -153,196 +157,199 @@ export function HomeNavbar() {
           </nav>
 
           {/* Right actions */}
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            {/* Search bar — desktop */}
-            <form onSubmit={handleSearch} className="hidden xl:block relative shrink-0">
-              <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-neutral-500 transition-colors" style={{ pointerEvents: 'none' }} />
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 lg:ml-0">
+            {/* Search (lg+) */}
+            <form onSubmit={(e) => go(e)} className="relative hidden lg:block" role="search">
+              <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
               <input
-                ref={searchRef}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Rechercher..."
-                className={cn(
-                  'h-12 w-[180px] rounded-2xl border bg-white/[0.045] pl-11 pr-4 text-sm font-medium text-neutral-100 placeholder:text-neutral-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 focus:outline-none 2xl:w-[260px]',
-                  searchFocused
-                    ? 'border-amber-300/55 bg-white/[0.08] shadow-[0_0_0_3px_rgba(245,158,11,0.12),0_0_26px_rgba(245,158,11,0.12)]'
-                    : 'border-white/[0.09] hover:border-white/[0.16] hover:bg-white/[0.06]'
-                )}
+                placeholder="Rechercher…"
+                aria-label="Rechercher"
+                className="h-11 w-36 rounded-full border border-white/[0.09] bg-white/[0.04] pl-10 pr-4 text-sm text-neutral-100 placeholder:text-neutral-500 outline-none transition-all focus:border-amber-300/50 focus:bg-white/[0.07] xl:w-44 xl:focus:w-60"
               />
             </form>
 
-            {/* Cart — Premium luxury circular button */}
+            {/* Cart */}
             <button
               type="button"
               onClick={() => setCartOpen(true)}
-              className="group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all duration-300 hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70"
               aria-label="Panier"
+              className="group relative flex size-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70"
             >
-              <ShoppingBag className="size-4 sm:size-5 transition-transform duration-300 group-hover:scale-110" strokeWidth={1.8} />
-              {/* Premium badge */}
+              <ShoppingBag className="size-[18px] transition-transform group-hover:scale-110" strokeWidth={1.8} />
               {!authLoading && totalQuantity > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex min-w-[18px] h-4.5 sm:h-5 px-1 sm:px-1.5 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-[9px] sm:text-[10px] font-bold text-black shadow-lg shadow-amber-500/30">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-1 text-[10px] font-bold text-black shadow-lg shadow-amber-500/30">
                   {totalQuantity > 99 ? '99+' : totalQuantity}
                 </span>
               )}
             </button>
-
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
 
-            {/* Auth — desktop only (xl+) */}
-            <div className="ml-1 hidden min-h-12 items-center gap-2 border-l border-white/[0.09] pl-3 xl:flex">
+            {/* Auth (lg+) */}
+            <div className="ml-1 hidden items-center gap-2 border-l border-white/[0.09] pl-3 lg:flex">
               {authLoading ? (
-                <div className="h-10 w-[140px] rounded-xl bg-white/5" aria-hidden />
+                <div className="h-10 w-24 rounded-full bg-white/5" aria-hidden />
               ) : user ? (
                 <UserMenuDropdown />
               ) : (
                 <>
-                  <Link
-                    href="/login"
-                    className="flex min-h-11 items-center rounded-xl border border-white/[0.09] px-3 py-2 text-[12px] font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70 whitespace-nowrap"
-                  >
+                  <Link href="/login" className="flex h-10 items-center rounded-full px-3.5 text-sm font-semibold text-neutral-300 outline-none transition-all hover:bg-white/[0.07] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70">
                     Connexion
                   </Link>
-                  <Link
-                    href="/register"
-                    className="group relative flex min-h-11 items-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-3.5 py-2 text-[12px] font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all duration-300 hover:-translate-y-0.5 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 hover:shadow-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-200 whitespace-nowrap"
-                  >
+                  <Link href="/register" className="flex h-10 items-center rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-4 text-sm font-bold text-black shadow-lg shadow-amber-500/25 outline-none transition-all hover:-translate-y-0.5 hover:shadow-amber-500/40 focus-visible:ring-2 focus-visible:ring-amber-200">
                     S&apos;inscrire
                   </Link>
                 </>
               )}
             </div>
 
-            {/* Mobile profile dropdown — anchored to the top bar (logged in) */}
+            {/* Profile (mobile, logged-in) */}
             {!authLoading && user && (
-              <div className="xl:hidden">
+              <div className="lg:hidden">
                 <UserMenuDropdown />
               </div>
             )}
 
-            {/* Mobile hamburger — fully circular, visible below xl */}
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-300 outline-none transition-all hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:hidden"
-                  aria-label="Menu"
-                  suppressHydrationWarning
-                >
-                  <Menu className="size-5" />
-                </button>
-              </SheetTrigger>
-              <SheetContent side="right" className="flex h-dvh w-[calc(100%-1rem)] max-w-[400px] flex-col gap-0 border-white/[0.08] bg-[#050504] p-0 pb-[env(safe-area-inset-bottom)]">
-                <SheetHeader className="border-b border-white/[0.06] px-4 pb-3 pt-4 sm:px-5 sm:pb-4 sm:pt-5">
-                  <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
-                  <Link href="/" onClick={() => setMobileOpen(false)} className="inline-block rounded-xl px-1 py-1 outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70">
-                    <Image
-                      src="/logo.png"
-                      alt="Look and Book"
-                      width={1024}
-                      height={1536}
-                      className="h-[56px] w-auto object-contain sm:h-[64px]"
-                      style={{ width: 'auto' }}
-                    />
-                  </Link>
-                </SheetHeader>
-
-                {/* Auth: profile lives in the top-bar dropdown now; the sheet only
-                    surfaces sign-in CTAs for logged-out visitors. */}
-                {!user && (
-                  <div className="border-b border-white/[0.06] px-4 py-4 sm:px-5">
-                    {authLoading ? (
-                      <div className="h-12 animate-pulse rounded-xl bg-white/5" aria-hidden />
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <SheetClose asChild>
-                          <Link
-                            href="/login"
-                            className="flex min-h-12 items-center justify-center rounded-xl border border-white/[0.12] px-3 py-3 text-center text-sm font-semibold text-neutral-300 outline-none transition-all duration-200 hover:border-white/[0.2] hover:bg-white/[0.05] hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/70"
-                          >
-                            Connexion
-                          </Link>
-                        </SheetClose>
-                        <SheetClose asChild>
-                          <Link
-                            href="/register"
-                            className="flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 px-3 py-3 text-center text-sm font-bold text-black shadow-lg shadow-amber-500/20 outline-none transition-all duration-300 hover:from-amber-200 hover:via-amber-300 hover:to-amber-200 focus-visible:ring-2 focus-visible:ring-amber-200"
-                          >
-                            S&apos;inscrire
-                          </Link>
-                        </SheetClose>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-                  {/* Mobile search */}
-                  <form onSubmit={handleMobileSearch} className="mb-5">
-                    <div className="relative">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-neutral-500" style={{ pointerEvents: 'none' }} />
-                      <input
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        placeholder="Rechercher un lieu, restaurant..."
-                        className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-4 text-[14px] text-neutral-100 placeholder:text-neutral-600 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
-                      />
-                    </div>
-                  </form>
-
-                  {/* Nav links */}
-                  <nav className="flex flex-col gap-1.5 mb-5">
-                    {navigationItems.map((link) => {
-                      const Icon = link.icon;
-                      const isActive = pathname === link.href || pathname.startsWith(link.href + '?');
-                      return (
-                        <SheetClose key={link.href} asChild>
-                          <Link
-                            href={link.href}
-                            className={cn(
-                              'flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
-                              isActive
-                                ? 'bg-amber-300 text-black'
-                                : 'text-neutral-300 hover:text-white hover:bg-white/[0.06]'
-                            )}
-                          >
-                            <Icon className="size-4" />
-                            {link.label}
-                          </Link>
-                        </SheetClose>
-                      );
-                    })}
-
-                    {/* SOS Conseil */}
-                    <SheetClose asChild>
-                      <Link
-                        href="/sos-conseil"
-                        className={cn(
-                          'flex min-h-12 items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
-                          pathname === '/sos-conseil'
-                            ? 'border-amber-300 bg-amber-300 text-black'
-                            : 'border-amber-400/40 bg-amber-300/[0.05] text-amber-300 hover:border-amber-400 hover:bg-amber-400/10'
-                        )}
-                      >
-                        <Sparkles className="size-4 shrink-0" />
-                        SOS Conseil
-                      </Link>
-                    </SheetClose>
-                  </nav>
-                </div>
-
-                {/* Auth section — bottom of sheet */}
-              </SheetContent>
-            </Sheet>
+            {/* Hamburger (<lg) */}
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              aria-label="Ouvrir le menu"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.045] text-neutral-200 outline-none transition-all hover:border-amber-300/40 hover:bg-amber-300/[0.07] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 lg:hidden"
+            >
+              <Menu className="size-5" />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Spacer for fixed header on non-home pages */}
-      {!isHome && <div className="h-[68px] sm:h-[104px] lg:h-[116px]" />}
+      {/* ── Premium mobile drawer ── */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="flex h-dvh w-full max-w-[380px] flex-col gap-0 border-white/[0.07] bg-gradient-to-b from-[#0b0b0c] to-black p-0"
+        >
+          <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
 
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-4">
+            <Brand onClick={() => setMobileOpen(false)} size="drawer" />
+            <SheetClose asChild>
+              <button type="button" aria-label="Fermer" className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.05] text-neutral-300 transition-colors hover:bg-white/10 hover:text-white">
+                <X className="size-4" />
+              </button>
+            </SheetClose>
+          </div>
+
+          {/* Auth CTA (logged-out) */}
+          {!authLoading && !user && (
+            <div className="grid grid-cols-2 gap-2.5 border-b border-white/[0.06] px-4 py-4">
+              <SheetClose asChild>
+                <Link href="/login" className="flex h-12 items-center justify-center rounded-xl border border-white/[0.12] text-sm font-semibold text-neutral-200 transition-all hover:bg-white/[0.05] hover:text-white">Connexion</Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link href="/register" className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300 text-sm font-bold text-black shadow-lg shadow-amber-500/20">S&apos;inscrire</Link>
+              </SheetClose>
+            </div>
+          )}
+
+          {/* Scrollable body */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            {/* Search */}
+            <form onSubmit={(e) => go(e, true)} className="mb-5" role="search">
+              <div className="relative">
+                <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
+                <input
+                  ref={mobileSearchRef}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder="Rechercher un lieu, restaurant…"
+                  aria-label="Rechercher"
+                  className="h-12 w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] pl-11 pr-4 text-sm text-neutral-100 placeholder:text-neutral-600 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/15"
+                />
+              </div>
+            </form>
+
+            {/* SOS Conseil */}
+            <SheetClose asChild>
+              <Link
+                href="/sos-conseil"
+                className={cn(
+                  'mb-5 flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm font-bold transition-all',
+                  pathname === '/sos-conseil'
+                    ? 'border-amber-300 bg-amber-300 text-black'
+                    : 'border-amber-400/35 bg-gradient-to-r from-amber-400/[0.12] to-transparent text-amber-200 hover:border-amber-400/60'
+                )}
+              >
+                <span className="flex size-9 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><Sparkles className="size-5" /></span>
+                <span className="flex-1">
+                  SOS Conseil
+                  <span className="block text-[11px] font-medium text-amber-200/60">Conciergerie sur‑mesure</span>
+                </span>
+                <ChevronRight className="size-4 text-amber-300/60" />
+              </Link>
+            </SheetClose>
+
+            <DrawerSection title="Naviguer" items={primaryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+            <DrawerSection title="Catégories" items={categoryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-white/[0.06] px-4 py-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
+            <p className="text-center text-[11px] text-neutral-600">
+              <span className="font-serif font-bold text-amber-300/80">Look and Book</span> — Book your moment
+            </p>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Spacer for fixed header on non-home pages */}
+      {!isHome && <div className="h-[68px] sm:h-[76px] lg:h-[84px]" />}
     </>
+  );
+}
+
+function DrawerSection({
+  title,
+  items,
+  pathname,
+  onNavigate,
+}: {
+  title: string;
+  items: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[];
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <div className="mb-5">
+      <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500">{title}</p>
+      <nav className="flex flex-col gap-1">
+        {items.map(({ label, href, icon: Icon }) => {
+          const active = isActivePath(pathname, href);
+          return (
+            <SheetClose key={href} asChild>
+              <Link
+                href={href}
+                onClick={onNavigate}
+                className={cn(
+                  'group flex min-h-[52px] items-center gap-3 rounded-xl border px-3 text-sm font-semibold transition-all',
+                  active
+                    ? 'border-amber-300/30 bg-amber-300/[0.08] text-amber-100'
+                    : 'border-transparent text-neutral-300 hover:border-white/[0.08] hover:bg-white/[0.04] hover:text-white'
+                )}
+              >
+                <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors', active ? 'bg-amber-300/15 text-amber-300' : 'bg-white/[0.05] text-neutral-400 group-hover:text-amber-200')}>
+                  <Icon className="size-4" />
+                </span>
+                <span className="flex-1">{label}</span>
+                <ChevronRight className={cn('size-4 transition-all', active ? 'text-amber-300/70' : 'text-neutral-600 group-hover:translate-x-0.5 group-hover:text-amber-300')} />
+              </Link>
+            </SheetClose>
+          );
+        })}
+      </nav>
+    </div>
   );
 }
