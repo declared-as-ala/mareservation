@@ -88,17 +88,17 @@ export function HomeNavbar() {
             href="/"
             className="group flex items-center gap-3 shrink-0 outline-none transition-all duration-300 hover:scale-[1.012] focus-visible:ring-2 focus-visible:ring-amber-300/70 py-1 sm:gap-4"
           >
-            {/* Logo emblem — from sm up (the styled wordmark carries the brand on mobile) */}
+            {/* Logo emblem — visible on every breakpoint incl. mobile */}
             <Image
               src="/logo.png"
               alt="Look and Book"
-              width={540}
-              height={152}
-              className="hidden h-[78px] w-auto object-contain transition-transform duration-300 sm:block lg:h-[92px] xl:h-[96px]"
+              width={1024}
+              height={1536}
+              className="h-[48px] w-auto object-contain transition-transform duration-300 sm:h-[66px] lg:h-[82px] xl:h-[88px]"
               style={{ width: 'auto' }}
               priority
             />
-            <span aria-hidden className="hidden h-12 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:block lg:h-14" />
+            <span aria-hidden className="h-9 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:h-12 lg:h-14" />
             {/* Luxury wordmark + slogan (always visible, incl. mobile) */}
             <span className="flex flex-col items-stretch">
               <span className="bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif text-[16px] font-bold uppercase tracking-[0.14em] text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] sm:text-[19px] sm:tracking-[0.16em] lg:text-[24px]">
@@ -241,9 +241,9 @@ export function HomeNavbar() {
                     <Image
                       src="/logo.png"
                       alt="Look and Book"
-                      width={420}
-                      height={120}
-                      className="h-[44px] w-auto object-contain drop-shadow-[0_6px_20px_rgba(212,175,55,0.3)] sm:h-[52px]"
+                      width={1024}
+                      height={1536}
+                      className="h-[56px] w-auto object-contain sm:h-[64px]"
                       style={{ width: 'auto' }}
                     />
                   </Link>
