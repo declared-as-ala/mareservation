@@ -82,33 +82,34 @@ export function HomeNavbar() {
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black via-zinc-950 to-amber-900/45" aria-hidden />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_50%,rgba(245,158,11,0.20),transparent_45%)]" aria-hidden />
-        <div className="relative mx-auto flex h-[80px] max-w-[1440px] items-center justify-between gap-1.5 px-2.5 sm:h-[104px] sm:gap-4 sm:px-5 lg:h-[116px] lg:px-8">
+        <div className="relative mx-auto flex h-[68px] max-w-[1440px] items-center justify-between gap-1.5 px-2.5 sm:h-[104px] sm:gap-4 sm:px-5 lg:h-[116px] lg:px-8">
           {/* Logo */}
           <Link
             href="/"
             className="group flex items-center gap-3 shrink-0 outline-none transition-all duration-300 hover:scale-[1.012] focus-visible:ring-2 focus-visible:ring-amber-300/70 py-1 sm:gap-4"
           >
+            {/* Logo emblem — from sm up (the styled wordmark carries the brand on mobile) */}
             <Image
               src="/logo.png"
               alt="Look and Book"
               width={540}
               height={152}
-              className="h-[62px] w-auto object-contain transition-transform duration-300 sm:h-[80px] lg:h-[92px] xl:h-[96px]"
+              className="hidden h-[78px] w-auto object-contain transition-transform duration-300 sm:block lg:h-[92px] xl:h-[96px]"
               style={{ width: 'auto' }}
               priority
             />
-            {/* Luxury wordmark + slogan */}
             <span aria-hidden className="hidden h-12 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:block lg:h-14" />
-            <span className="hidden flex-col items-stretch sm:flex">
-              <span className="bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif text-[19px] font-bold uppercase tracking-[0.16em] text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] lg:text-[24px]">
+            {/* Luxury wordmark + slogan (always visible, incl. mobile) */}
+            <span className="flex flex-col items-stretch">
+              <span className="bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif text-[16px] font-bold uppercase tracking-[0.14em] text-transparent drop-shadow-[0_2px_12px_rgba(212,175,55,0.25)] sm:text-[19px] sm:tracking-[0.16em] lg:text-[24px]">
                 Look and Book
               </span>
-              <span className="mt-1.5 flex items-center gap-2">
+              <span className="mt-1 flex items-center gap-1.5 sm:mt-1.5 sm:gap-2">
                 <span className="h-px flex-1 bg-gradient-to-r from-amber-400/0 to-amber-400/55" />
                 <span className="size-1 rotate-45 bg-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
                 <span className="h-px flex-1 bg-gradient-to-l from-amber-400/0 to-amber-400/55" />
               </span>
-              <span className="mt-1.5 text-center text-[8px] font-semibold uppercase tracking-[0.42em] text-amber-300/75 lg:text-[9.5px] lg:tracking-[0.5em]">
+              <span className="mt-1 text-center text-[7px] font-semibold uppercase tracking-[0.34em] text-amber-300/75 sm:mt-1.5 sm:text-[8px] sm:tracking-[0.42em] lg:text-[9.5px] lg:tracking-[0.5em]">
                 Book your moment
               </span>
             </span>
@@ -340,7 +341,7 @@ export function HomeNavbar() {
       </header>
 
       {/* Spacer for fixed header on non-home pages */}
-      {!isHome && <div className="h-[80px] sm:h-[104px] lg:h-[116px]" />}
+      {!isHome && <div className="h-[68px] sm:h-[104px] lg:h-[116px]" />}
 
     </>
   );
