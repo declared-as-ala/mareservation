@@ -100,7 +100,11 @@ router.post('/hold', authenticate, checkoutLimiter, async (req: AuthRequest, res
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
       return sendError(res, { message: "Dates invalides. La date d'arrivée doit précéder la date de départ.", statusCode: 400 });
     }
-    if (start < new Date(new Date().setHours(0, 0, 0, 0))) {
+    // Compare date-only in UTC so day-based bookings are validated reliably
+    const now = new Date();
+    const startDateUTC = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    if (startDateUTC < todayUTC) {
       return sendError(res, { message: 'La date d\'arrivée est dans le passé.', statusCode: 400 });
     }
 

@@ -229,7 +229,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
               <span className="flex size-6 items-center justify-center rounded-lg bg-amber-400/[0.10] text-amber-400 transition-all group-hover:bg-amber-400/[0.18] group-hover:shadow-[0_0_14px_rgba(245,158,11,0.30)]">
                 <Icon className="size-3" strokeWidth={1.8} />
               </span>
-              <span className="text-[10px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
+              <span className="text-[12px] font-bold leading-none text-white group-hover:text-amber-200">{title}</span>
               <span className="line-clamp-1 text-[8px] font-medium leading-tight text-white/40">{subtitle}</span>
             </Link>
           ))}

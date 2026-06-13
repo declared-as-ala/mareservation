@@ -122,8 +122,6 @@ function ExplorerContent() {
   const q               = sp.get('q')          ?? '';
   const categoryId      = sp.get('categoryId') ?? '';
   const sort            = sp.get('sort')       ?? 'featured';
-  const isFeaturedFilter = sp.get('isFeatured') === 'true';
-  const isVedetteFilter  = sp.get('isVedette')  === 'true';
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -152,12 +150,10 @@ function ExplorerContent() {
   });
 
   const { data: rawVenues = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['venues', type, city, q, categoryId, isFeaturedFilter, isVedetteFilter],
+    queryKey: ['venues', type, city, q, categoryId],
     queryFn: () => fetchVenues({
       type: type || undefined, city: city || undefined, q: q || undefined,
       categoryId: categoryId || undefined,
-      isFeatured: isFeaturedFilter || undefined,
-      isVedette: isVedetteFilter || undefined,
     }),
   });
 
@@ -177,9 +173,8 @@ function ExplorerContent() {
     updateParams({ q: localSearch.trim() });
   };
 
-  const activeFiltersCount = [type, city, q, categoryId,
-    isFeaturedFilter ? '1' : '', isVedetteFilter ? '1' : '',
-    sort !== 'featured' ? sort : '',
+  const activeFiltersCount = [
+    type, city, q, categoryId, sort !== 'featured' ? sort : '',
   ].filter(Boolean).length;
 
   /* ──────────────────────────── RENDER ──────────────────────────── */
@@ -417,34 +412,6 @@ function ExplorerContent() {
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Special filters */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateParams({ isFeatured: isFeaturedFilter ? '' : 'true' })}
-                  className={cn(
-                    'rounded-full border px-4 py-1.5 text-xs font-medium transition-all',
-                    isFeaturedFilter
-                      ? 'bg-amber-400/10 text-amber-400 border-amber-400/40'
-                      : 'bg-white/[0.03] text-zinc-500 border-white/[0.06] hover:border-white/20 hover:text-zinc-300'
-                  )}
-                >
-                  Mis en avant
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateParams({ isVedette: isVedetteFilter ? '' : 'true' })}
-                  className={cn(
-                    'rounded-full border px-4 py-1.5 text-xs font-medium transition-all',
-                    isVedetteFilter
-                      ? 'bg-amber-400/10 text-amber-400 border-amber-400/40'
-                      : 'bg-white/[0.03] text-zinc-500 border-white/[0.06] hover:border-white/20 hover:text-zinc-300'
-                  )}
-                >
-                  Vedette ✦
-                </button>
               </div>
             </div>
           )}

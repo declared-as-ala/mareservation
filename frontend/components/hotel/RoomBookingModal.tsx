@@ -422,8 +422,9 @@ export function RoomBookingModal({
     const params = new URLSearchParams({
       venueId: venue._id,
       roomId: room._id,
-      checkIn: checkIn.toISOString(),
-      checkOut: checkOut.toISOString(),
+      // send date-only (YYYY-MM-DD) to avoid timezone shifts between client/server
+      checkIn: checkIn.toISOString().slice(0, 10),
+      checkOut: checkOut.toISOString().slice(0, 10),
       adults: String(guests),
       children: '0',
     });

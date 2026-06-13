@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, ScanLine, Loader2, BedDouble } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,19 @@ export function RoomTourModal({ venueId, room, onClose }: RoomTourModalProps) {
     queryKey: ['admin-room-tour', roomId],
     queryFn: () => fetchAdminRoomScenes(roomId),
   });
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <motion.div

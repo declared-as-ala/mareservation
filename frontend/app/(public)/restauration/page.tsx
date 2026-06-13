@@ -12,7 +12,6 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
-import { fetchHomepageConfig } from '@/lib/api/meta';
 import type { Venue } from '@/lib/api/types';
 import { RestaurantCard } from '@/components/cards/RestaurantCard';
 import { CafeCard } from '@/components/cards/CafeCard';
@@ -44,13 +43,6 @@ export default function RestaurationPage() {
     queryFn: () => fetchVenues({ type: 'CAFE' }),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: homeConfig } = useQuery({
-    queryKey: ['homepage-config'],
-    queryFn: fetchHomepageConfig,
-    staleTime: 10 * 60 * 1000,
-  });
-  const bannerImages = homeConfig?.restaurationImages ?? {};
-
   const isLoading = restoQuery.isLoading || cafeQuery.isLoading;
   const allVenues = useMemo(
     () => [...(restoQuery.data ?? []), ...(cafeQuery.data ?? [])],
@@ -101,47 +93,6 @@ export default function RestaurationPage() {
           <p className="mt-2.5 max-w-xl text-sm text-white/55 sm:text-base">
             Choisissez votre humeur — une table gastronomique ou un café cosy.
           </p>
-
-          {/* Category banners (editable in admin) — also act as quick filters */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-            {([
-              { key: 'RESTAURANT' as const, label: 'Restaurants', img: bannerImages.restaurant, Icon: UtensilsCrossed, count: restaurantCount, glow: 'from-amber-500/30' },
-              { key: 'CAFE' as const, label: 'Cafés', img: bannerImages.cafe, Icon: Coffee, count: cafeCount, glow: 'from-orange-500/30' },
-            ]).map(({ key, label, img, Icon, count, glow }) => {
-              const active = type === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setType(active ? 'all' : key)}
-                  className={cn(
-                    'group relative aspect-[16/10] overflow-hidden rounded-3xl border text-left transition-all sm:aspect-[2/1]',
-                    active ? 'border-amber-400 ring-2 ring-amber-400/40' : 'border-white/[0.08] hover:border-amber-400/40'
-                  )}
-                >
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={label} className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  ) : (
-                    <div className={cn('absolute inset-0 bg-gradient-to-br to-transparent', glow)} />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                  <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-2 sm:inset-x-4 sm:bottom-4">
-                    <div className="min-w-0">
-                      <span className="flex items-center gap-1.5 text-base font-black text-white sm:text-xl">
-                        <Icon className="size-4 text-amber-300 sm:size-5" />
-                        {label}
-                      </span>
-                      {!isLoading && <span className="text-[11px] font-semibold text-white/70 sm:text-xs">{count} lieux</span>}
-                    </div>
-                    <span className={cn('hidden shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold backdrop-blur-md sm:inline-flex', active ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/25 bg-black/50 text-white')}>
-                      {active ? 'Affiché' : 'Voir'}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
 
           {/* Type toggle */}
           <div className="mt-6 grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.07] bg-[#111111] p-1.5 sm:inline-grid sm:w-auto sm:grid-flow-col">

@@ -1,13 +1,17 @@
 import { useAuthStore } from '@/stores/auth';
 
 let refreshPromise: Promise<boolean> | null = null;
+const REFRESH_TIMEOUT_MS = 15_000;
 
 export function refreshAuthSession(apiBase: string): Promise<boolean> {
   if (!refreshPromise) {
+    const controller = new AbortController();
+    const timeout = globalThis.setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
     refreshPromise = fetch(`${apiBase}/api/v1/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
     })
       .then(async (res) => {
         if (!res.ok) return false;
@@ -24,6 +28,7 @@ export function refreshAuthSession(apiBase: string): Promise<boolean> {
       })
       .catch(() => false)
       .finally(() => {
+        globalThis.clearTimeout(timeout);
         refreshPromise = null;
       });
   }

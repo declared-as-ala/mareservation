@@ -20,6 +20,33 @@ export type ApiResponse<T = unknown> = {
 };
 
 type ApiOptions = Omit<RequestInit, 'body'> & { body?: unknown };
+const API_TIMEOUT_MS = 30_000;
+const UPLOAD_TIMEOUT_MS = 90_000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs = API_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  if (init.signal) {
+    if (init.signal.aborted) controller.abort();
+    else init.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('La requête a expiré. Veuillez réessayer.');
+    }
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+}
 
 /**
  * Handle a 401 from a non-bootstrap endpoint.
@@ -93,7 +120,7 @@ async function apiFetchInternal<T = unknown>(
     },
   };
 
-  const res = await fetch(url, baseOpts);
+  const res = await fetchWithTimeout(url, baseOpts);
 
   if (res.status === 401 && !isAuthBootstrapPath(path)) {
     const refreshed = await refreshAuthSession(API_BASE);
@@ -101,7 +128,7 @@ async function apiFetchInternal<T = unknown>(
     if (refreshed) {
       // Refresh may have returned a fresh accessToken — pick up the new one.
       const freshToken = useAuthStore.getState().accessToken;
-      const retryRes = await fetch(url, {
+      const retryRes = await fetchWithTimeout(url, {
         ...baseOpts,
         headers: {
           ...baseOpts.headers,
@@ -166,12 +193,12 @@ export async function uploadImageFile(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
   const token = useAuthStore.getState().accessToken;
-  const res = await fetch(`${API_BASE}/api/v1/uploads/image`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/v1/uploads/image`, {
     method: 'POST',
     credentials: 'include',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: formData,
-  });
+  }, UPLOAD_TIMEOUT_MS);
   const json = (await res.json().catch(() => ({}))) as { data?: { url?: string }; message?: string };
   if (!res.ok) throw new Error(json.message || 'Upload failed.');
   if (!json.data?.url) throw new Error('Reponse upload invalide.');

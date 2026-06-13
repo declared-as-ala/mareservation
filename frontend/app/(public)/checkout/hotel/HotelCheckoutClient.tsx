@@ -246,8 +246,18 @@ export default function HotelCheckoutClient() {
   // ── State ────────────────────────────────────────────────────────────
   const [step, setStep] = useState(1);
 
-  const [checkIn, setCheckIn] = useState<Date | null>(initialCheckIn ? new Date(initialCheckIn) : null);
-  const [checkOut, setCheckOut] = useState<Date | null>(initialCheckOut ? new Date(initialCheckOut) : null);
+  function parseDateParam(s: string | null) {
+    if (!s) return null;
+    // If date-only (YYYY-MM-DD) parse into local midnight to avoid timezone shifts
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const [y, m, d] = s.split('-').map((v) => Number(v));
+      return new Date(y, m - 1, d);
+    }
+    return new Date(s);
+  }
+
+  const [checkIn, setCheckIn] = useState<Date | null>(parseDateParam(initialCheckIn));
+  const [checkOut, setCheckOut] = useState<Date | null>(parseDateParam(initialCheckOut));
   const [adults, setAdults] = useState(Math.max(1, initialAdults));
   const [children, setChildren] = useState(Math.max(0, initialChildren));
   const [childrenAges, setChildrenAges] = useState<number[]>([]);
@@ -372,8 +382,9 @@ export default function HotelCheckoutClient() {
       const h = await createHotelHold({
         venueId,
         roomId,
-        checkIn: checkIn.toISOString(),
-        checkOut: checkOut.toISOString(),
+        // send date-only to avoid timezone shifts (YYYY-MM-DD)
+        checkIn: checkIn.toISOString().slice(0, 10),
+        checkOut: checkOut.toISOString().slice(0, 10),
         adults,
         children,
         rooms: 1,

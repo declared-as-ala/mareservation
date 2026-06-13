@@ -723,6 +723,33 @@ router.patch('/reservations/:id/verify-qr', authenticate, requireEstablishmentOw
 // Rooms management for hotel owners (full CRUD scoped to their venues)
 // ─────────────────────────────────────────────────────────────────────
 
+const OWNER_ROOM_MUTABLE_FIELDS = [
+  'name', 'roomNumber', 'roomType', 'capacity', 'capacityAdults', 'capacityChildren',
+  'bedType', 'pricePerNight', 'surface', 'floor', 'view', 'description',
+  'bathroomType', 'amenities', 'services', 'isActive', 'isReservable', 'isVip',
+  'hasBalcony', 'smokingAllowed', 'minimumNights', 'defaultStatus', 'coverImage',
+  'gallery', 'hasVirtualTour', 'virtualTourUrl', 'panoramicImages',
+] as const;
+
+function sanitizeOwnerRoomInput(body: unknown) {
+  const source = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+  const output: Record<string, unknown> = {};
+
+  for (const field of OWNER_ROOM_MUTABLE_FIELDS) {
+    if (field in source) output[field] = source[field];
+  }
+
+  for (const field of ['amenities', 'services', 'gallery', 'panoramicImages'] as const) {
+    if (field in output) {
+      output[field] = Array.isArray(output[field])
+        ? Array.from(new Set((output[field] as unknown[]).filter((item): item is string => typeof item === 'string' && item.length > 0)))
+        : [];
+    }
+  }
+
+  return output;
+}
+
 async function assertHotelOwnedByCaller(venueId: string, req: AuthRequest) {
   if (!mongoose.Types.ObjectId.isValid(venueId)) return null;
   const venue = await Venue.findById(venueId).select('_id type ownerId').lean();
@@ -763,7 +790,8 @@ router.post('/hotels/:id/rooms', authenticate, requireEstablishmentOwner, requir
     if (!roomNumber || !roomType || !capacity || !pricePerNight) {
       return res.status(400).json({ error: 'roomNumber, roomType, capacity, pricePerNight requis.' });
     }
-    const room = await Room.create({ venueId: (venue as any)._id, ...req.body });
+    const roomInput = sanitizeOwnerRoomInput(req.body);
+    const room = await Room.create({ ...roomInput, venueId: (venue as any)._id });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'ROOM_CREATED',
@@ -784,14 +812,15 @@ router.patch('/rooms/:id', authenticate, requireEstablishmentOwner, requireAnySe
   try {
     const room = await assertRoomOwnedByCaller(req.params.id, req);
     if (!room) return res.status(404).json({ error: 'Chambre introuvable ou non autorisé.' });
-    Object.assign(room, req.body);
+    const roomInput = sanitizeOwnerRoomInput(req.body);
+    Object.assign(room, roomInput);
     await room.save();
     await logAudit(req, {
       userId: req.userId as any,
       action: 'ROOM_UPDATED',
       entityType: 'venue',
       entityId: room.venueId as any,
-      details: { roomId: String(room._id), flow: 'owner', fields: Object.keys(req.body || {}) },
+      details: { roomId: String(room._id), flow: 'owner', fields: Object.keys(roomInput) },
     });
     res.json({ success: true, data: room });
   } catch (error: any) {

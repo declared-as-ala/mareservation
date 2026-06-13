@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -125,6 +125,24 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
   const [customAmenity, setCustomAmenity] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [saving, setSaving] = useState(false);
+  const busy = saving || galleryUploading || uploadingCover;
+
+  // This is a custom full-screen modal, so it must restore global page state
+  // even when a mutation fails, times out, or the component unmounts abruptly.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [busy, onClose]);
 
   const photoCount = (form.gallery ?? []).length;
   // 360 count = built scenes (once loaded) or simple panoramas otherwise.
@@ -146,6 +164,7 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
   }
 
   async function uploadCover(file: File) {
+    if (busy) return;
     setUploadingCover(true);
     try {
       const url = await uploadImageFile(file);
@@ -159,6 +178,7 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
   }
 
   async function uploadGalleryFiles(files: FileList | File[]) {
+    if (busy) return;
     setGalleryUploading(true);
     try {
       const arr = Array.from(files);
@@ -188,6 +208,7 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
   }
 
   async function handleSave() {
+    if (busy) return;
     if (!form.roomNumber || !form.roomType || !form.capacity || !form.pricePerNight) {
       toast.error('Numéro, type, capacité et prix requis. (onglet Infos)');
       setTab('infos');
@@ -195,10 +216,22 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     }
     setSaving(true);
     try {
-      await onSave(form, isNew);
+      const payload: Partial<AdminHotelRoom> = {
+        ...form,
+        roomNumber: Number(form.roomNumber),
+        capacity: Number(form.capacity),
+        capacityAdults: Number(form.capacityAdults ?? form.capacity),
+        capacityChildren: Number(form.capacityChildren ?? 0),
+        pricePerNight: Number(form.pricePerNight),
+        amenities: Array.from(new Set((form.amenities ?? []).filter(Boolean))),
+        gallery: Array.from(new Set((form.gallery ?? []).filter(Boolean))),
+        panoramicImages: Array.from(new Set((form.panoramicImages ?? []).filter(Boolean))),
+      };
+      await onSave(payload, isNew);
       onClose();
-    } catch {
-      toast.error('Erreur lors de la sauvegarde.');
+    } catch (error) {
+      console.error('Room save failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la sauvegarde.');
     } finally {
       setSaving(false);
     }
@@ -211,7 +244,7 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4"
-      onClick={onClose}
+      onClick={() => { if (!busy) onClose(); }}
     >
       <motion.div
         initial={{ y: 60, opacity: 0 }}
@@ -235,7 +268,9 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
             </p>
           </div>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => { if (!busy) onClose(); }}
+            disabled={busy}
             className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
           >
             <X className="size-4" />
@@ -620,12 +655,12 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
             <span className="inline-flex items-center gap-1 text-amber-400/80"><Compass className="size-3.5" /> {panoCount}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={onClose} className="rounded-xl border-zinc-700 text-zinc-400">
+            <Button variant="outline" onClick={onClose} disabled={busy} className="rounded-xl border-zinc-700 text-zinc-400">
               Annuler
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving}
+              disabled={busy}
               className="rounded-xl bg-[#D4AF37] px-6 font-semibold text-black shadow-lg shadow-[#D4AF37]/20 hover:bg-[#c9a227]"
             >
               {saving ? <><Loader2 className="mr-2 size-4 animate-spin" /> Sauvegarde...</> : isNew ? 'Créer la chambre' : 'Enregistrer'}

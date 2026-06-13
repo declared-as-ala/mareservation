@@ -48,14 +48,16 @@ function isPanoramaImage(url?: string): url is string {
 }
 
 export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
+  const typeLabel = ROOM_TYPE_LABELS[group?.roomType?.toUpperCase?.() ?? ''] ?? group?.roomType ?? 'Chambre';
+
   const scenes: SceneEntry[] = useMemo(() => {
     if (!group) return [];
     return group.rooms.flatMap((room) => {
-      const roomName = room.name ?? `Chambre ${room.roomNumber}`;
+      const roomLabel = `Ch. ${room.roomNumber}`;
       if (room.tourScenes?.length) {
         return room.tourScenes.map((scene) => ({
           _id: scene._id,
-          name: `${roomName} - ${scene.name}`,
+          name: `${typeLabel} ${roomLabel} — ${scene.name}`,
           description: scene.description,
           image: scene.image,
           room,
@@ -69,7 +71,7 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
       }
       const entries: SceneEntry[] = legacyImages.map((image, index) => ({
         _id: `${room._id}-panorama-${index}`,
-        name: legacyImages.length > 1 ? `${roomName} - vue ${index + 1}` : roomName,
+        name: legacyImages.length > 1 ? `${typeLabel} ${roomLabel} — vue ${index + 1}` : `${typeLabel} ${roomLabel}`,
         description: undefined,
         image,
         room,
@@ -78,7 +80,7 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
       if (room.virtualTourUrl && !isPanoramaImage(room.virtualTourUrl)) {
         entries.push({
           _id: `${room._id}-embedded-tour`,
-          name: roomName,
+          name: `${typeLabel} ${roomLabel}`,
           embedUrl: room.virtualTourUrl,
           room,
           hotspots: [],
@@ -86,7 +88,7 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
       }
       return entries;
     });
-  }, [group]);
+  }, [group, typeLabel]);
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -121,7 +123,6 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
   }, [open, activeId, scenes]);
 
   if (!group) return null;
-  const typeLabel = ROOM_TYPE_LABELS[group.roomType?.toUpperCase?.()] ?? group.roomType ?? 'Chambre';
 
   function navigate(delta: number) {
     if (!activeId || scenes.length < 2) return;
@@ -133,15 +134,6 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
   const activeScene = scenes.find((s) => s._id === activeId) ?? scenes[0];
   const activeImage = activeScene?.image;
   const activeRoom = activeScene?.room;
-  const activeHotspots = (activeScene?.hotspots ?? []).filter(
-    (hotspot) => hotspot.virtualTourId === activeScene?._id
-  );
-  const navHotspots = activeHotspots.map((hotspot) => ({
-    id: hotspot._id,
-    label: hotspot.label,
-    yaw: hotspot.yaw ?? ((hotspot.xPercent / 100) - 0.5) * Math.PI * 2,
-    pitch: hotspot.pitch ?? (0.5 - (hotspot.yPercent / 100)) * Math.PI,
-  }));
 
   return (
     <AnimatePresence>
@@ -175,7 +167,7 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
                   Visite 360°
                 </span>
                 <span className="truncate text-sm font-semibold text-white">
-                  {activeScene?.name ?? activeRoom?.name ?? `Chambre ${activeRoom?.roomNumber}`}
+                  {typeLabel} · Ch. {activeRoom?.roomNumber}
                 </span>
               </div>
             </div>
@@ -204,11 +196,6 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
                     .map(({ _id, name, image }) => ({ _id, name, image }))}
                   activeSceneId={activeId}
                   onSceneChange={(id) => setActiveId(id)}
-                  navHotspots={navHotspots}
-                  onNavHotspotClick={(hotspotId) => {
-                    const hotspot = activeHotspots.find((item) => item._id === hotspotId);
-                    if (hotspot) setActiveId(hotspot.targetId);
-                  }}
                 />
               ) : activeScene?.embedUrl ? (
                 <iframe
@@ -265,10 +252,10 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
                         Vous visitez
                       </p>
                       <h3 className="mt-1 font-serif text-lg font-bold leading-tight text-white">
-                        {activeRoom.name ?? `Chambre ${activeRoom.roomNumber}`}
+                        {typeLabel}
                       </h3>
                       <p className="mt-0.5 text-[12px] text-neutral-500">
-                        Étage {activeRoom.floor ?? '—'} · {typeLabel}
+                        Ch. {activeRoom.roomNumber} · Étage {activeRoom.floor ?? '—'}
                       </p>
                     </div>
 

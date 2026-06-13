@@ -15,13 +15,12 @@ import {
   Sparkles,
   Star,
   MapPin,
-  ChevronDown,
   Video,
+  ShieldCheck,
 } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { HotelCard } from '@/components/hotel/HotelCard';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -151,8 +150,18 @@ function filterAndSort(
   if (opts.amenities.length > 0) {
     result = result.filter((h) =>
       opts.amenities.every((a) => {
-        const desc = (h.description ?? '').toLowerCase();
-        return desc.includes(a);
+        const haystack = [
+          h.description,
+          h.shortDescription,
+          ...(h.amenities ?? []),
+        ].filter(Boolean).join(' ').toLowerCase();
+        const aliases: Record<string, string[]> = {
+          piscine: ['piscine', 'pool'],
+          wifi: ['wifi', 'wi-fi'],
+          parking: ['parking'],
+          spa: ['spa', 'hammam', 'bien-être'],
+        };
+        return (aliases[a] ?? [a]).some((term) => haystack.includes(term));
       })
     );
   }
@@ -206,8 +215,12 @@ interface FilterPanelProps {
   onStars: (n: number) => void;
   typeFilter: string | null;
   onTypeFilter: (v: string | null) => void;
-  sort: string;
-  onSort: (v: string) => void;
+  amenities: string[];
+  onToggleAmenity: (v: string) => void;
+  virtualTour: boolean;
+  onVirtualTour: (v: boolean) => void;
+  freeCancellation: boolean;
+  onFreeCancellation: (v: boolean) => void;
   onClear: () => void;
   hasFilters: boolean;
 }
@@ -216,7 +229,8 @@ function FilterPanel({
   q, onQ, governorate, onGovernorate,
   priceIdx, onPriceIdx, stars, onStars,
   typeFilter, onTypeFilter,
-  sort, onSort, onClear, hasFilters,
+  amenities, onToggleAmenity, virtualTour, onVirtualTour,
+  freeCancellation, onFreeCancellation, onClear, hasFilters,
 }: FilterPanelProps) {
   return (
     <div className="space-y-5">
@@ -230,6 +244,62 @@ function FilterPanel({
           placeholder="Nom d'hôtel, ville..."
           className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 pl-9 pr-4 text-sm text-neutral-200 placeholder:text-neutral-700 focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition-all"
         />
+      </div>
+
+      {/* Services */}
+      <div>
+        <label className="mb-2 block text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Services recherchés
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {AMENITY_FILTERS.map(({ key, label, icon }) => {
+            const active = amenities.includes(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onToggleAmenity(key)}
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium transition-all ${
+                  active
+                    ? 'border-amber-400/50 bg-amber-400/10 text-amber-300'
+                    : 'border-white/[0.07] bg-white/[0.03] text-neutral-500 hover:border-white/20 hover:text-neutral-300'
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Flexible stay */}
+      <div>
+        <label className="mb-2 block text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Expérience
+        </label>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => onVirtualTour(!virtualTour)}
+            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-xs font-medium transition-all ${
+              virtualTour ? 'border-amber-400/50 bg-amber-400/10 text-amber-300' : 'border-white/[0.07] bg-white/[0.03] text-neutral-500'
+            }`}
+          >
+            <span className="flex items-center gap-2"><Video className="size-3.5" /> Visite immersive 360°</span>
+            <span className={`size-2 rounded-full ${virtualTour ? 'bg-amber-400' : 'bg-neutral-700'}`} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onFreeCancellation(!freeCancellation)}
+            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-xs font-medium transition-all ${
+              freeCancellation ? 'border-emerald-400/40 bg-emerald-400/[0.08] text-emerald-300' : 'border-white/[0.07] bg-white/[0.03] text-neutral-500'
+            }`}
+          >
+            <span className="flex items-center gap-2"><ShieldCheck className="size-3.5" /> Annulation flexible</span>
+            <span className={`size-2 rounded-full ${freeCancellation ? 'bg-emerald-400' : 'bg-neutral-700'}`} />
+          </button>
+        </div>
       </div>
 
       {/* Region */}
@@ -352,12 +422,11 @@ export default function HotelsPage() {
   const [stars, setStars] = useState(0);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [sort, setSort] = useState('default');
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [virtualTour, setVirtualTour] = useState(false);
+  const [freeCancellation, setFreeCancellation] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Legacy filter values kept as constants so the existing filterAndSort signature stays stable
-  const amenities: string[] = [];
-  const virtualTour = false;
-  const freeCancellation = false;
   const immersive360 = false;
 
   const hasFilters =
@@ -365,7 +434,16 @@ export default function HotelsPage() {
     governorate !== '__all__' ||
     priceIdx !== 0 ||
     stars !== 0 ||
-    !!typeFilter;
+    !!typeFilter ||
+    amenities.length > 0 ||
+    virtualTour ||
+    freeCancellation;
+
+  const activeFilterCount = [
+    q, governorate !== '__all__' ? governorate : '', priceIdx ? String(priceIdx) : '',
+    stars ? String(stars) : '', typeFilter ?? '', ...amenities,
+    virtualTour ? '360' : '', freeCancellation ? 'cancel' : '',
+  ].filter(Boolean).length;
 
   function clearFilters() {
     setQ('');
@@ -374,6 +452,15 @@ export default function HotelsPage() {
     setStars(0);
     setTypeFilter(null);
     setSort('default');
+    setAmenities([]);
+    setVirtualTour(false);
+    setFreeCancellation(false);
+  }
+
+  function toggleAmenity(value: string) {
+    setAmenities((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+    );
   }
 
   // Fetch hotels + maisons d'hôte in parallel and merge
@@ -393,7 +480,7 @@ export default function HotelsPage() {
   const hotels = useMemo(() => {
     const filtered = filterAndSort(raw, { q, governorate, priceIdx, stars, amenities, virtualTour, freeCancellation, immersive360, sort });
     return typeFilter ? filtered.filter((v) => v.type === typeFilter) : filtered;
-  }, [raw, q, governorate, priceIdx, stars, sort, typeFilter]);
+  }, [raw, q, governorate, priceIdx, stars, amenities, virtualTour, freeCancellation, sort, typeFilter]);
 
   const filterProps = {
     q, onQ: setQ,
@@ -401,7 +488,9 @@ export default function HotelsPage() {
     priceIdx, onPriceIdx: setPriceIdx,
     stars, onStars: setStars,
     typeFilter, onTypeFilter: setTypeFilter,
-    sort, onSort: setSort,
+    amenities, onToggleAmenity: toggleAmenity,
+    virtualTour, onVirtualTour: setVirtualTour,
+    freeCancellation, onFreeCancellation: setFreeCancellation,
     onClear: clearFilters,
     hasFilters,
   };
@@ -554,7 +643,7 @@ export default function HotelsPage() {
                       Filtres
                       {hasFilters && (
                         <span className="flex size-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
-                          !
+                          {activeFilterCount}
                         </span>
                       )}
                     </Button>
@@ -636,6 +725,26 @@ export default function HotelsPage() {
                     <button type="button" onClick={() => setTypeFilter(null)} aria-label="Retirer">
                       <X className="size-3" />
                     </button>
+                  </span>
+                )}
+                {amenities.map((amenity) => (
+                  <span key={amenity} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-xs text-neutral-400">
+                    {AMENITY_FILTERS.find((item) => item.key === amenity)?.label ?? amenity}
+                    <button type="button" onClick={() => toggleAmenity(amenity)} aria-label="Retirer">
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+                {virtualTour && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/5 px-3 py-1 text-xs text-amber-400">
+                    <Video className="size-3" /> Visite 360°
+                    <button type="button" onClick={() => setVirtualTour(false)} aria-label="Retirer"><X className="size-3" /></button>
+                  </span>
+                )}
+                {freeCancellation && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/5 px-3 py-1 text-xs text-emerald-400">
+                    <ShieldCheck className="size-3" /> Annulation flexible
+                    <button type="button" onClick={() => setFreeCancellation(false)} aria-label="Retirer"><X className="size-3" /></button>
                   </span>
                 )}
               </div>

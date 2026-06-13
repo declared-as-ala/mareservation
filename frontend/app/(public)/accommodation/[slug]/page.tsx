@@ -560,7 +560,7 @@ export default function HotelDetailPage() {
     enabled: !!slug,
   });
 
-  const { data: rooms = [], isLoading: roomsLoading } = useQuery({
+  const { data: rawRooms = [], isLoading: roomsLoading } = useQuery({
     queryKey: ['hotel-rooms', venue?._id, checkIn?.toISOString(), checkOut?.toISOString(), guests],
     queryFn: () =>
       fetchVenueRooms(venue!._id, {
@@ -572,6 +572,25 @@ export default function HotelDetailPage() {
   });
 
   const allImages = useMemo(() => (venue ? getAllImages(venue) : []), [venue]);
+  const rooms = useMemo(
+    () => rawRooms.filter((room) =>
+      !!room?._id &&
+      Number.isFinite(room.roomNumber) &&
+      typeof room.roomType === 'string' &&
+      Number.isFinite(room.pricePerNight) &&
+      room.pricePerNight >= 0
+    ),
+    [rawRooms]
+  );
+
+  const minimumRoomPrice = useMemo(() => {
+    const prices = rooms
+      .filter((room) => room.isActive && room.isReservable)
+      .map((room) => room.pricePerNight)
+      .filter((price) => Number.isFinite(price) && price > 0);
+
+    return prices.length > 0 ? Math.min(...prices) : undefined;
+  }, [rooms]);
 
   // ── Group rooms by roomType for premium type-level booking UX ──
   const roomTypeGroups = useMemo<RoomTypeGroup[]>(() => {
@@ -1059,12 +1078,12 @@ export default function HotelDetailPage() {
               {/* Desktop trigger card */}
               <div className="hidden lg:block overflow-hidden rounded-3xl border border-amber-400/[0.18] bg-gradient-to-br from-[#1a1408] via-[#111111] to-[#0B0B0B] shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(245,158,11,0.18)]">
                 <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-gradient-to-r from-amber-400/[0.08] to-transparent px-5 py-4">
-                  {(venue.startingPrice ?? venue.priceRangeMin) ? (
+                  {minimumRoomPrice ? (
                     <div className="min-w-0">
                       <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/85">À partir de</span>
                       <div className="mt-0.5 flex items-baseline gap-1.5">
                         <span className="font-serif text-2xl font-black text-amber-400">
-                          {(venue.startingPrice ?? venue.priceRangeMin)!.toLocaleString('fr-TN')}
+                          {minimumRoomPrice.toLocaleString('fr-TN')}
                         </span>
                         <span className="text-xs font-bold text-amber-300/80">DT</span>
                         <span className="text-xs text-neutral-500">/ nuit</span>
@@ -1105,10 +1124,10 @@ export default function HotelDetailPage() {
               <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
                 <div className="flex items-center justify-between gap-3 border-t border-amber-400/20 bg-[#0D0D0D]/95 backdrop-blur-xl px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
                   <div className="min-w-0">
-                    {(venue.startingPrice ?? venue.priceRangeMin) ? (
+                    {minimumRoomPrice ? (
                       <div className="flex items-baseline gap-1">
                         <span className="font-serif text-lg font-black text-amber-400">
-                          {(venue.startingPrice ?? venue.priceRangeMin)!.toLocaleString('fr-TN')}
+                          {minimumRoomPrice.toLocaleString('fr-TN')}
                         </span>
                         <span className="text-xs font-bold text-amber-300/80">DT</span>
                         <span className="text-[10px] text-neutral-500">/nuit</span>
@@ -1133,21 +1152,6 @@ export default function HotelDetailPage() {
               </div>
 
               <section className="mt-5 space-y-6 rounded-3xl border border-white/[0.07] bg-gradient-to-br from-white/[0.035] to-transparent p-5">
-                {venue.description && (
-                  <div>
-                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.08] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-                      <Sparkles className="size-3" />
-                      Aperçu
-                    </div>
-                    <h2 className="mb-3 font-serif text-xl font-bold text-white">
-                      À propos de l&apos;hôtel
-                    </h2>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-400">
-                      {venue.description}
-                    </p>
-                  </div>
-                )}
-
                 <div>
                   <h2 className="mb-3 text-sm font-semibold text-neutral-200">
                     Équipements &amp; Services
@@ -1196,7 +1200,7 @@ export default function HotelDetailPage() {
       <BookingReservationModal
         open={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)}
-        startingPrice={venue.startingPrice ?? venue.priceRangeMin}
+        startingPrice={minimumRoomPrice}
         groups={roomTypeGroups}
         checkIn={checkIn}
         checkOut={checkOut}

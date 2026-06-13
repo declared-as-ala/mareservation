@@ -408,7 +408,7 @@ function HotelInfoTab({ hotel, onSaved }: { hotel: AdminHotel; onSaved: () => vo
 // ── Rooms tab ──────────────────────────────────────────────────────────────────
 
 function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: AdminHotelRoom[]; onRefresh: () => void }) {
-  const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null | 'new'>('void' as any);
+  const [editingRoom, setEditingRoom] = useState<AdminHotelRoom | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [touringRoom, setTouringRoom] = useState<AdminHotelRoom | null>(null);
 
@@ -419,7 +419,7 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
     if (isNew) {
       await createAdminHotelRoom(hotelId, payload);
       toast.success('Chambre créée.');
-    } else if (editingRoom && editingRoom !== 'new' && typeof editingRoom !== 'string') {
+    } else if (editingRoom) {
       await updateAdminHotelRoom(editingRoom._id, payload);
       toast.success('Chambre mise à jour.');
     }
@@ -501,7 +501,7 @@ function RoomsTab({ hotelId, rooms, onRefresh }: { hotelId: string; rooms: Admin
           <RoomEditorModal
             key="room-editor"
             hotelId={hotelId}
-            room={editingRoom === null ? null : (editingRoom as AdminHotelRoom)}
+            room={editingRoom}
             onClose={() => { setModalOpen(false); setEditingRoom(null); }}
             onSave={handleSave}
             onOpenTour={(room) => {

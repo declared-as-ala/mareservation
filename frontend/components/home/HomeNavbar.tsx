@@ -286,7 +286,7 @@ export function HomeNavbar() {
                 <span className="flex size-9 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><Sparkles className="size-5" /></span>
                 <span className="flex-1">
                   SOS Conseil
-                  <span className="block text-[11px] font-medium text-amber-200/60">Conciergerie sur‑mesure</span>
+                  <span className="block text-[11px] font-medium text-amber-200/60">Conseil sur mesure</span>
                 </span>
                 <ChevronRight className="size-4 text-amber-300/60" />
               </Link>

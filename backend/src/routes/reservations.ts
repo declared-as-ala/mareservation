@@ -65,6 +65,19 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       bookingType === 'ROOM' || bookingType === 'SEAT' || bookingType === 'COWORKING'
         ? bookingType
         : 'TABLE';
+    // Validate against past dates/time
+    const now = new Date();
+    if (type === 'ROOM') {
+      // Compare date-only (UTC) so day-based bookings are validated correctly
+      const startDateUTC = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+      const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+      if (startDateUTC < todayUTC) {
+        return res.status(400).json({ error: 'La date d\'arrivée ne peut pas être dans le passé' });
+      }
+    } else {
+      // For time-based bookings (tables, seats, coworking) ensure start is not in the past
+      if (start < now) return res.status(400).json({ error: 'La date/heure de début ne peut pas être dans le passé' });
+    }
     let total = Number(totalPrice) || 0;
 
     if (isCoworking) {
@@ -314,6 +327,9 @@ router.post('/holds', authenticate, async (req: AuthRequest, res) => {
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
       return res.status(400).json({ error: 'Période invalide.' });
     }
+    // Prevent creating holds in the past
+    const now = new Date();
+    if (start < now) return res.status(400).json({ error: 'La période demandée est dans le passé.' });
     await ReservationHold.updateMany(
       { status: 'active', expiresAt: { $lte: new Date() } },
       { $set: { status: 'expired' } }

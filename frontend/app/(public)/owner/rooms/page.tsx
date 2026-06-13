@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -123,11 +123,9 @@ export default function OwnerRoomsPage() {
   );
   const [selectedHotelId, setSelectedHotelId] = useState<string>('');
 
-  // Auto-select first hotel
-  if (!selectedHotelId && hotels.length > 0) {
-    // can't useState setter during render directly; defer
-    queueMicrotask(() => setSelectedHotelId(hotels[0]._id));
-  }
+  useEffect(() => {
+    if (!selectedHotelId && hotels.length > 0) setSelectedHotelId(hotels[0]._id);
+  }, [hotels, selectedHotelId]);
 
   const { data: rooms = [], isLoading: loadingRooms } = useQuery({
     queryKey: ['owner-rooms', selectedHotelId],
@@ -289,8 +287,13 @@ export default function OwnerRoomsPage() {
             room={null}
             onClose={() => setShowNew(false)}
             onSave={async (payload) => {
-              await createOwnerRoom(selectedHotelId, payload);
-              await queryClient.invalidateQueries({ queryKey: ['owner-rooms', selectedHotelId] });
+              const created = await createOwnerRoom(selectedHotelId, payload);
+              queryClient.setQueryData<AdminHotelRoom[]>(
+                ['owner-rooms', selectedHotelId],
+                (current = []) => current.some((room) => room._id === created._id) ? current : [...current, created],
+              );
+              void queryClient.invalidateQueries({ queryKey: ['owner-rooms', selectedHotelId] })
+                .catch((error) => console.error('Owner rooms refresh failed:', error));
               toast.success('Chambre créée.');
             }}
           />
@@ -305,8 +308,13 @@ export default function OwnerRoomsPage() {
             room={editing}
             onClose={() => setEditing(null)}
             onSave={async (payload) => {
-              await updateOwnerRoom(editing._id, payload);
-              await queryClient.invalidateQueries({ queryKey: ['owner-rooms', selectedHotelId] });
+              const updated = await updateOwnerRoom(editing._id, payload);
+              queryClient.setQueryData<AdminHotelRoom[]>(
+                ['owner-rooms', selectedHotelId],
+                (current = []) => current.map((room) => room._id === updated._id ? updated : room),
+              );
+              void queryClient.invalidateQueries({ queryKey: ['owner-rooms', selectedHotelId] })
+                .catch((error) => console.error('Owner rooms refresh failed:', error));
               toast.success('Chambre mise à jour.');
             }}
           />
