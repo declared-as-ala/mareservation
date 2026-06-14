@@ -191,11 +191,12 @@ export function RoomTypeViewer({ group, open, onClose }: RoomTypeViewerProps) {
                   imageUrl={activeImage}
                   markers={[]}
                   mode="navigate"
-                  scenes={scenes
-                    .filter((scene): scene is SceneEntry & { image: string } => !!scene.image)
-                    .map(({ _id, name, image }) => ({ _id, name, image }))}
-                  activeSceneId={activeId}
-                  onSceneChange={(id) => setActiveId(id)}
+                  /* Scene switching is handled by this viewer's own arrows +
+                     thumbnail rail, so we don't render the engine's built-in
+                     scene-pill overlay (scenes left empty on purpose). */
+                  scenes={[]}
+                  activeSceneId={null}
+                  onSceneChange={() => undefined}
                 />
               ) : activeScene?.embedUrl ? (
                 <iframe
