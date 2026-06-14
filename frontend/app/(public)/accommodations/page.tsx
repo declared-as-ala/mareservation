@@ -661,9 +661,16 @@ export default function HotelsPage() {
                 <p className="text-sm text-neutral-500">
                   {isLoading ? (
                     <span className="animate-pulse">Chargement...</span>
-                  ) : (
-                    <>{hotels.length} hôtel{hotels.length !== 1 ? 's' : ''} trouvé{hotels.length !== 1 ? 's' : ''}</>
-                  )}
+                  ) : (() => {
+                    const plural = hotels.length !== 1;
+                    const noun =
+                      typeFilter === 'HOTEL'
+                        ? `hôtel${plural ? 's' : ''} trouvé${plural ? 's' : ''}`
+                        : typeFilter === 'MAISON_DHOTE'
+                          ? `maison${plural ? 's' : ''} d'hôte trouvée${plural ? 's' : ''}`
+                          : `hébergement${plural ? 's' : ''} trouvé${plural ? 's' : ''}`;
+                    return <>{hotels.length} {noun}</>;
+                  })()}
                 </p>
               </div>
 
@@ -769,12 +776,12 @@ export default function HotelsPage() {
               <div className="flex flex-col items-center gap-4 py-20 text-center">
                 <Building2 className="size-14 text-neutral-700" />
                 <h3 className="text-lg font-semibold text-neutral-300">
-                  {hasFilters ? 'Aucun hôtel ne correspond' : 'Aucun hôtel disponible'}
+                  {hasFilters ? 'Aucun hébergement ne correspond' : 'Aucun hébergement disponible'}
                 </h3>
                 <p className="max-w-sm text-sm text-neutral-600">
                   {hasFilters
                     ? 'Essayez de modifier vos filtres pour voir plus de résultats.'
-                    : 'Revenez bientôt pour découvrir nos hôtels partenaires.'}
+                    : 'Revenez bientôt pour découvrir nos hôtels et maisons d\'hôte partenaires.'}
                 </p>
                 {hasFilters && (
                   <Button

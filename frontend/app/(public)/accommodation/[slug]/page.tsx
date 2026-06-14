@@ -1151,21 +1151,6 @@ export default function HotelDetailPage() {
                 </div>
               </div>
 
-              <section className="mt-5 space-y-6 rounded-3xl border border-white/[0.07] bg-gradient-to-br from-white/[0.035] to-transparent p-5">
-                <div>
-                  <h2 className="mb-3 text-sm font-semibold text-neutral-200">
-                    Équipements &amp; Services
-                  </h2>
-                  <HotelAmenitiesGrid
-                    amenities={
-                      venue.amenities?.length
-                        ? venue.amenities
-                        : ['Wi-Fi gratuit', 'Parking', 'Climatisation', 'Conciergerie']
-                    }
-                  />
-                </div>
-              </section>
-
               {/* Quick contact */}
               {venue.phone && (
                 <a
