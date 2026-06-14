@@ -64,6 +64,8 @@ export interface Venue {
   startingPrice?: number;
   priceRangeMin?: number;
   priceRangeMax?: number;
+  /** Lowest active room pricePerNight (hotels/maisons d'hôte), computed in the venue list. */
+  minRoomPrice?: number | null;
   isPublished?: boolean;
   isFeatured?: boolean;
   isVedette?: boolean;

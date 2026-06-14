@@ -128,11 +128,20 @@ router.get('/', async (req, res) => {
     let venues = await Venue.find(filter).sort({ rating: -1, isFeatured: -1 }).lean();
 
     const venueIds = venues.map((v) => (v as any)._id);
-    const [venuesWithEvents, venueIdsWithTours, venueIdsWithScenes] = await Promise.all([
+    const [venuesWithEvents, venueIdsWithTours, venueIdsWithScenes, roomPriceAgg] = await Promise.all([
       Event.distinct('venueId', { venueId: { $in: venueIds } }),
       VirtualTour.distinct('venueId', { venueId: { $in: venueIds }, isActive: true }),
       Scene.distinct('venueId', { venueId: { $in: venueIds }, roomId: null, isActive: true }),
+      Room.aggregate([
+        { $match: { venueId: { $in: venueIds }, isActive: true } },
+        { $group: { _id: '$venueId', minPrice: { $min: '$pricePerNight' } } },
+      ]),
     ]);
+    const minRoomPriceByVenue = new Map<string, number>(
+      (roomPriceAgg as any[])
+        .filter((r) => typeof r.minPrice === 'number')
+        .map((r) => [String(r._id), r.minPrice as number])
+    );
     const immersiveVenueIds = new Set([
       ...venueIdsWithTours.map((id: any) => id.toString()),
       ...venueIdsWithScenes.map((id: any) => id.toString()),
@@ -154,6 +163,7 @@ router.get('/', async (req, res) => {
         return {
           ...venue,
           availableTables: tables,
+          minRoomPrice: minRoomPriceByVenue.get(vid.toString()) ?? null,
           hasEvent: venuesWithEvents.some((id: any) => id.toString() === vid.toString()),
           hasVirtualTour: Boolean((venue as any).hasVirtualTour || (venue as any).immersiveFile || immersiveVenueIds.has(vid.toString())),
         };

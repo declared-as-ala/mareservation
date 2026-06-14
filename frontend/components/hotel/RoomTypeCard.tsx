@@ -236,7 +236,7 @@ export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCa
         {/* Title + description */}
         <div>
           <h3 className="font-serif text-lg font-bold leading-tight text-white transition-colors group-hover:text-amber-100 sm:text-xl">
-            {typeLabel}
+            {rep.name?.trim() || typeLabel}
           </h3>
           {rep.description && (
             <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-neutral-500">

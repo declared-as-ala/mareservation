@@ -84,7 +84,7 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
 
   const href = `/hotel/${venue.slug || venue._id}`;
   const img = getVenueImage(venue);
-  const price = venue.startingPrice ?? venue.priceRangeMin;
+  const price = venue.minRoomPrice ?? venue.startingPrice ?? venue.priceRangeMin;
   const amenities = guessAmenities(venue);
   const isLuxury = starRating >= 5;
 
@@ -199,7 +199,6 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
               <div>
                 {price ? (
                   <>
-                    <span className="text-[10px] text-neutral-600 uppercase tracking-wider">À partir de</span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-amber-400">
                         {price.toLocaleString('fr-TN')} DT
