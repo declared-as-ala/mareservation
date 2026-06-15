@@ -14,26 +14,6 @@ interface RestaurantCardProps {
   className?: string;
 }
 
-function PriceTier({ tier }: { tier: number }) {
-  return (
-    <span className="inline-flex items-center font-bold tracking-tight">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <span key={i} className={i < tier ? 'text-amber-400' : 'text-white/15'}>
-          €
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function getPriceTier(venue: Venue): number {
-  const p = venue.startingPrice ?? venue.priceRangeMin ?? 0;
-  if (p === 0) return 1;
-  if (p < 40) return 1;
-  if (p < 100) return 2;
-  return 3;
-}
-
 function getCuisineFromTags(venue: Venue): string | null {
   const map: Record<string, string> = {
     tunisien: 'Tunisien',
@@ -55,7 +35,6 @@ function getCuisineFromTags(venue: Venue): string | null {
 
 export function RestaurantCard({ venue, slot, className }: RestaurantCardProps) {
   const cuisine = (venue as any).cuisineType ?? getCuisineFromTags(venue);
-  const tier = getPriceTier(venue);
 
   return (
     <Link
@@ -122,9 +101,8 @@ export function RestaurantCard({ venue, slot, className }: RestaurantCardProps) 
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
           <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-neutral-500">
-            <PriceTier tier={tier} />
-            <span className="hidden text-neutral-600 sm:inline">·</span>
-            <span className="hidden truncate sm:inline">Réservation rapide</span>
+            <UtensilsCrossed className="size-3 shrink-0 text-amber-400/70" />
+            <span className="truncate">Réservation rapide</span>
           </div>
           <span className="shrink-0 text-[12px] font-bold text-amber-400 transition-transform group-hover:translate-x-0.5">
             Voir →

@@ -16,6 +16,7 @@ import {
   fetchAdminReservableUnits,
 } from '@/lib/api/admin';
 import { fetchOwnerCoworkingBlocks, deleteOwnerCoworkingBlock } from '@/lib/api/owner-coworking';
+import { fetchOwnerTableBlocks, deleteOwnerTableBlock } from '@/lib/api/owner-table';
 
 const sceneCommon = {
   fetchScenes: async (venueId: string) => {
@@ -60,6 +61,9 @@ export function buildTablePlacementApis(): Panorama360EditorApis {
     },
     updateTable: (_venueId, tableId, payload) => updateAdminTable(tableId, payload),
     deleteTable: (_venueId, tableId) => deleteAdminTable(tableId),
+    // Enables the "Bloquer" action on each table card (close a time slot).
+    fetchBlocks: (venueId: string) => fetchOwnerTableBlocks(venueId),
+    deleteBlock: deleteOwnerTableBlock,
   } as Panorama360EditorApis;
 }
 

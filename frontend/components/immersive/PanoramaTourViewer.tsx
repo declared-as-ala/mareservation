@@ -52,14 +52,40 @@ export function PanoramaTourViewer({
     () => hotspots.filter((hotspot) => hotspot.virtualTourId === activeScene?._id),
     [activeScene?._id, hotspots]
   );
-  const navHotspots: NavHotspot[] = activeHotspots.map((hotspot) => ({
-    id: hotspot._id,
-    yaw: hotspotYaw(hotspot),
-    pitch: hotspotPitch(hotspot),
-    label: hotspot.label,
-  }));
+
+  // Navigation arrows: prefer the hotspots placed in the admin builder. When a
+  // scene has none (common when an operator added scenes without linking them),
+  // fall back to automatic next / previous arrows so visitors can always move
+  // between views.
+  const navHotspots: NavHotspot[] = useMemo(() => {
+    if (activeHotspots.length > 0) {
+      return activeHotspots.map((hotspot) => ({
+        id: hotspot._id,
+        yaw: hotspotYaw(hotspot),
+        pitch: hotspotPitch(hotspot),
+        label: hotspot.label,
+      }));
+    }
+    if (scenes.length < 2 || activeIndex < 0) return [];
+    const auto: NavHotspot[] = [];
+    const nextScene = scenes[(activeIndex + 1) % scenes.length];
+    const prevScene = scenes[(activeIndex - 1 + scenes.length) % scenes.length];
+    if (nextScene && nextScene._id !== activeScene?._id) {
+      auto.push({ id: `auto:${nextScene._id}`, yaw: 0, pitch: -0.05, label: nextScene.name });
+    }
+    if (prevScene && prevScene._id !== activeScene?._id && prevScene._id !== nextScene?._id) {
+      auto.push({ id: `auto:${prevScene._id}`, yaw: Math.PI, pitch: -0.05, label: prevScene.name });
+    }
+    return auto;
+  }, [activeHotspots, scenes, activeIndex, activeScene?._id]);
 
   function navigateFromHotspot(hotspotId: string) {
+    // Auto arrows encode their destination scene id directly.
+    if (hotspotId.startsWith('auto:')) {
+      const targetId = hotspotId.slice(5);
+      if (scenes.some((scene) => scene._id === targetId)) setActiveSceneId(targetId);
+      return;
+    }
     const hotspot = activeHotspots.find((item) => item._id === hotspotId);
     if (hotspot && scenes.some((scene) => scene._id === hotspot.targetId)) {
       setActiveSceneId(hotspot.targetId);

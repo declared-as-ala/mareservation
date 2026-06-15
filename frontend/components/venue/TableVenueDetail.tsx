@@ -143,6 +143,13 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
         onBack={() => router.back()}
       />
 
+      {/* ── Gallery (directly under the cover, like hotels & maisons d'hôte) ── */}
+      {allImages.length > 1 && (
+        <div className="mx-auto max-w-5xl px-4 pt-6">
+          <VenueGallery images={allImages} venueName={venue.name} />
+        </div>
+      )}
+
       {/* ── Main content ── */}
       <div className="mx-auto max-w-5xl px-4 py-8 lg:py-10">
         <div className="space-y-8">
@@ -194,8 +201,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
                       <p className="whitespace-pre-wrap leading-relaxed text-neutral-400">{venue.description}</p>
                     </div>
                   )}
-
-                  <VenueGallery images={allImages} venueName={venue.name} />
 
                   {/* Menu preview */}
                   {menu.length > 0 && (
