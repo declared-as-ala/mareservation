@@ -21,6 +21,7 @@ import {
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { HotelCard } from '@/components/hotel/HotelCard';
+import { DiscoverSearchBar } from '@/components/discover/DiscoverSearchBar';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -235,16 +236,11 @@ function FilterPanel({
   return (
     <div className="space-y-5">
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-600" />
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => onQ(e.target.value)}
-          placeholder="Nom d'hôtel, ville..."
-          className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 pl-9 pr-4 text-sm text-neutral-200 placeholder:text-neutral-700 focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20 transition-all"
-        />
-      </div>
+      <DiscoverSearchBar
+        search={q}
+        onSearch={onQ}
+        placeholder="Nom d'hôtel, ville…"
+      />
 
       {/* Services */}
       <div>

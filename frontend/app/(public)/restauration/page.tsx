@@ -7,14 +7,13 @@ import {
   ArrowLeft,
   UtensilsCrossed,
   Coffee,
-  MapPin,
-  ChevronDown,
   LayoutGrid,
 } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { RestaurantCard } from '@/components/cards/RestaurantCard';
 import { CafeCard } from '@/components/cards/CafeCard';
+import { DiscoverSearchBar } from '@/components/discover/DiscoverSearchBar';
 import { cn } from '@/lib/utils';
 
 type TypeFilter = 'all' | 'RESTAURANT' | 'CAFE';
@@ -32,6 +31,7 @@ function isCafe(v: Venue) {
 export default function RestaurationPage() {
   const [type, setType] = useState<TypeFilter>('all');
   const [city, setCity] = useState('all');
+  const [search, setSearch] = useState('');
 
   const restoQuery = useQuery({
     queryKey: ['venues', 'RESTAURANT'],
@@ -55,13 +55,15 @@ export default function RestaurationPage() {
   );
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return allVenues.filter((v) => {
       if (type === 'RESTAURANT' && v.type !== 'RESTAURANT') return false;
       if (type === 'CAFE' && !isCafe(v)) return false;
       if (city !== 'all' && v.city !== city) return false;
+      if (q && ![v.name, v.city, v.address, v.governorate].filter(Boolean).some((s) => String(s).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [allVenues, type, city]);
+  }, [allVenues, type, city, search]);
 
   const restaurantCount = allVenues.filter((v) => v.type === 'RESTAURANT').length;
   const cafeCount = allVenues.filter(isCafe).length;
@@ -121,23 +123,16 @@ export default function RestaurationPage() {
             })}
           </div>
 
-          {/* City filter */}
-          <div className="mt-3">
-            <div className="relative sm:w-72">
-              <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="h-[46px] w-full appearance-none rounded-2xl border border-white/[0.07] bg-[#161616] pl-10 pr-9 text-sm text-white outline-none transition [color-scheme:dark] focus:border-amber-400/60"
-              >
-                <option value="all" className="bg-[#161616] text-white">Toutes les villes</option>
-                {cities.map((c) => (
-                  <option key={c} value={c} className="bg-[#161616] text-white">{c}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-            </div>
-          </div>
+          {/* Search + city filter */}
+          <DiscoverSearchBar
+            className="mt-3"
+            search={search}
+            onSearch={setSearch}
+            placeholder="Rechercher un restaurant, un café, une ville…"
+            city={city}
+            onCity={setCity}
+            cities={cities}
+          />
         </div>
       </section>
 

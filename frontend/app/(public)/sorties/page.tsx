@@ -22,6 +22,7 @@ export default function SortiesPage() {
       subtitle="Les meilleurs spots pour sortir en Tunisie — un verre en rooftop, un cocktail au lounge ou une nuit en club."
       emptyLabel="Aucune sortie trouvée"
       categories={CATEGORIES}
+      types={['CAFE_LOUNGE']}
     />
   );
 }

@@ -3,10 +3,11 @@
 import { useMemo, useState, type ComponentType } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { ArrowLeft, Search, X, MapPin, ChevronDown, LayoutGrid, Compass } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Compass } from 'lucide-react';
 import { fetchVenues } from '@/lib/api/venues';
 import type { Venue } from '@/lib/api/types';
 import { VenueCard } from '@/components/cards/VenueCard';
+import { DiscoverSearchBar } from '@/components/discover/DiscoverSearchBar';
 import { cn } from '@/lib/utils';
 
 export interface CollectionCategory {
@@ -28,6 +29,13 @@ interface CollectionExplorerProps {
   emptyLabel: string;
   /** Sub-categories (a "Tous" tab is added automatically). */
   categories: CollectionCategory[];
+  /**
+   * Backend venue types that belong to this collection (e.g. ['CAFE_LOUNGE']).
+   * When provided, the collection lists ALL venues of these types and assigns
+   * sub-categories from the keywords locally — reliable and excludes other
+   * types. When omitted, falls back to keyword `$text` search.
+   */
+  types?: string[];
 }
 
 type Entry = { venue: Venue; cats: Set<string> };
@@ -41,29 +49,54 @@ export function CollectionExplorer({
   subtitle,
   emptyLabel,
   categories,
+  types,
 }: CollectionExplorerProps) {
   const [active, setActive] = useState('all');
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('all');
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ['collection', cacheKey],
+    queryKey: ['collection', cacheKey, types ?? null],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const byId = new Map<string, Entry>();
-      await Promise.all(
-        categories.flatMap((cat) =>
-          cat.keywords.map(async (kw) => {
-            const res = await fetchVenues({ q: kw });
-            for (const v of res) {
-              if (!v?._id) continue;
-              const entry = byId.get(v._id) ?? { venue: v, cats: new Set<string>() };
-              entry.cats.add(cat.value);
-              byId.set(v._id, entry);
-            }
-          })
-        )
-      );
+
+      // Local sub-category assignment from keywords (name + description + tags).
+      const assignCats = (v: Venue): Set<string> => {
+        const hay = `${v.name ?? ''} ${(v as { description?: string }).description ?? ''} ${((v as { amenities?: string[] }).amenities ?? []).join(' ')}`.toLowerCase();
+        const cats = new Set<string>();
+        for (const cat of categories) {
+          if (cat.keywords.some((kw) => hay.includes(kw.toLowerCase()))) cats.add(cat.value);
+        }
+        return cats;
+      };
+
+      if (types && types.length) {
+        // Type-driven: list every venue of these types (reliable, no missing /
+        // mis-typed entries), then tag sub-categories locally.
+        const lists = await Promise.all(types.map((t) => fetchVenues({ type: t })));
+        for (const list of lists) {
+          for (const v of list) {
+            if (!v?._id || byId.has(v._id)) continue;
+            byId.set(v._id, { venue: v, cats: assignCats(v) });
+          }
+        }
+      } else {
+        // Keyword-driven fallback (collections without a dedicated venue type).
+        await Promise.all(
+          categories.flatMap((cat) =>
+            cat.keywords.map(async (kw) => {
+              const res = await fetchVenues({ q: kw });
+              for (const v of res) {
+                if (!v?._id) continue;
+                const entry = byId.get(v._id) ?? { venue: v, cats: new Set<string>() };
+                entry.cats.add(cat.value);
+                byId.set(v._id, entry);
+              }
+            })
+          )
+        );
+      }
       return Array.from(byId.values());
     },
   });
@@ -149,36 +182,14 @@ export function CollectionExplorer({
           </div>
 
           {/* Search + city */}
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3.5 py-3">
-              <Search className="size-4 shrink-0 text-neutral-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un lieu, une ville…"
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-600 focus:outline-none"
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch('')} aria-label="Effacer" className="text-neutral-500 hover:text-white">
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
-            <div className="relative sm:w-56">
-              <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="h-[46px] w-full appearance-none rounded-2xl border border-white/[0.07] bg-[#161616] pl-10 pr-9 text-sm text-white outline-none transition [color-scheme:dark] focus:border-amber-400/60"
-              >
-                <option value="all" className="bg-[#161616] text-white">Toutes les villes</option>
-                {cities.map((c) => (
-                  <option key={c} value={c} className="bg-[#161616] text-white">{c}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
-            </div>
-          </div>
+          <DiscoverSearchBar
+            className="mt-3"
+            search={search}
+            onSearch={setSearch}
+            city={city}
+            onCity={setCity}
+            cities={cities}
+          />
         </div>
       </section>
 

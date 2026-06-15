@@ -161,8 +161,9 @@ export function createReservationTicketEmail(
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
           <tr>
             <td style="padding:0 0 18px;text-align:center;">
-              <span style="color:#1c1917;font-size:24px;font-weight:800;letter-spacing:-0.04em;">Ma</span>
-              <span style="color:#b58516;font-size:24px;font-weight:800;letter-spacing:-0.04em;"> Reservation</span>
+              <span style="color:#1c1917;font-size:22px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;">LOOK AND</span>
+              <span style="color:#b58516;font-size:22px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;"> BOOK</span>
+              <div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.34em;color:#a8a29e;text-transform:uppercase;">Book your moment</div>
             </td>
           </tr>
           <tr>
@@ -223,7 +224,7 @@ export function createReservationTicketEmail(
           </tr>
           <tr>
             <td style="padding:20px 12px 0;text-align:center;">
-              <p style="margin:0;color:#78716c;font-size:11px;line-height:1.6;">© ${new Date().getFullYear()} Ma Reservation · Conservez cet email jusqu'à votre arrivée.</p>
+              <p style="margin:0;color:#78716c;font-size:11px;line-height:1.6;">© ${new Date().getFullYear()} Look and Book · Conservez cet email jusqu'à votre arrivée.</p>
             </td>
           </tr>
         </table>
