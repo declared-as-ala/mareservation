@@ -124,6 +124,26 @@ export function getRoomNights(checkIn: Date, checkOut: Date): number {
   return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
+/**
+ * Format a Date as a `YYYY-MM-DD` string using LOCAL calendar parts.
+ * Never use `toISOString()` for `<input type="date">`: it converts to UTC,
+ * which shifts the day back by one in positive-offset timezones (e.g. UTC+1).
+ */
+export function toDateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** Parse a `YYYY-MM-DD` value from a date input into a LOCAL midnight Date. */
+export function parseDateInput(value: string): Date | null {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
 export function formatNightPrice(price: number): string {
   return `${price.toLocaleString('fr-TN')} DT`;
 }

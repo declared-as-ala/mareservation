@@ -32,7 +32,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { fetchVenueByIdOrSlug, fetchVenueScenes } from '@/lib/api/venues';
-import { fetchVenueRooms, getRoomNights, ROOM_TYPE_LABELS } from '@/lib/api/rooms';
+import { fetchVenueRooms, getRoomNights, ROOM_TYPE_LABELS, toDateInputValue, parseDateInput } from '@/lib/api/rooms';
 import type { Venue, HotelRoom } from '@/lib/api/types';
 import { RoomBookingModal } from '@/components/hotel/RoomBookingModal';
 import { BookingReservationModal } from '@/components/hotel/BookingReservationModal';
@@ -420,10 +420,10 @@ function BookingWidget({
             </label>
             <input
               type="date"
-              min={today.toISOString().slice(0, 10)}
-              value={checkIn ? checkIn.toISOString().slice(0, 10) : ''}
+              min={toDateInputValue(today)}
+              value={checkIn ? toDateInputValue(checkIn) : ''}
               onChange={(e) => {
-                const d = e.target.value ? new Date(e.target.value) : null;
+                const d = parseDateInput(e.target.value);
                 onCheckInChange(d);
                 if (d && checkOut && checkOut <= d) onCheckOutChange(null);
               }}
@@ -436,9 +436,9 @@ function BookingWidget({
             </label>
             <input
               type="date"
-              min={checkIn ? new Date(checkIn.getTime() + 86400000).toISOString().slice(0, 10) : tomorrow.toISOString().slice(0, 10)}
-              value={checkOut ? checkOut.toISOString().slice(0, 10) : ''}
-              onChange={(e) => onCheckOutChange(e.target.value ? new Date(e.target.value) : null)}
+              min={checkIn ? toDateInputValue(new Date(checkIn.getTime() + 86400000)) : toDateInputValue(tomorrow)}
+              value={checkOut ? toDateInputValue(checkOut) : ''}
+              onChange={(e) => onCheckOutChange(parseDateInput(e.target.value))}
               className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
             />
           </div>

@@ -23,7 +23,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { HotelRoom, Venue } from '@/lib/api/types';
-import { ROOM_TYPE_LABELS, getRoomNights } from '@/lib/api/rooms';
+import { ROOM_TYPE_LABELS, getRoomNights, toDateInputValue } from '@/lib/api/rooms';
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { Dialog } from '@/components/ui/dialog';
@@ -422,9 +422,9 @@ export function RoomBookingModal({
     const params = new URLSearchParams({
       venueId: venue._id,
       roomId: room._id,
-      // send date-only (YYYY-MM-DD) to avoid timezone shifts between client/server
-      checkIn: checkIn.toISOString().slice(0, 10),
-      checkOut: checkOut.toISOString().slice(0, 10),
+      // send date-only (YYYY-MM-DD) using LOCAL parts to avoid timezone shifts
+      checkIn: toDateInputValue(checkIn),
+      checkOut: toDateInputValue(checkOut),
       adults: String(guests),
       children: '0',
     });
