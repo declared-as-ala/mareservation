@@ -329,8 +329,12 @@ export function StepReservationModal({
     }
   }, [slotData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startAtIso = buildIso(selectedDate, selectedTime);
-  const endAtIso = new Date(new Date(startAtIso).getTime() + durationMinutes * 60 * 1000).toISOString();
+  // Book the EXACT instant the slots endpoint evaluated (venue timezone), so a
+  // slot shown as free can never 409 on create due to a server/client TZ gap.
+  const selectedSlot = availableSlots.find((s) => s.time === selectedTime);
+  const startAtIso = selectedSlot?.startAt ?? buildIso(selectedDate, selectedTime);
+  const endAtIso = selectedSlot?.endAt
+    ?? new Date(new Date(startAtIso).getTime() + durationMinutes * 60 * 1000).toISOString();
 
   const menuTotal = menuData.reduce((acc, item) => acc + (menuQty[item._id] ?? 0) * item.price, 0);
   const selectedMenuItems = menuData

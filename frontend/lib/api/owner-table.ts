@@ -117,6 +117,12 @@ export async function cancelOwnerTableReservation(id: string) {
   await api.post(`/owner-table/reservations/${id}/cancel`, {});
 }
 
+/** Fully free a table: release holds, cancel current/upcoming reservations, clear blocks. */
+export async function freeOwnerTable(tableId: string): Promise<{ holdsReleased: number; reservationsCancelled: number; blocksCleared: number }> {
+  const res = await api.post<{ data?: { holdsReleased: number; reservationsCancelled: number; blocksCleared: number } }>(`/owner-table/tables/${tableId}/free`, {});
+  return res?.data?.data ?? { holdsReleased: 0, reservationsCancelled: 0, blocksCleared: 0 };
+}
+
 export async function fetchOwnerPreorders(query?: { venueId?: string; prepStatus?: string }): Promise<OwnerTableReservation[]> {
   const qs = new URLSearchParams();
   if (query?.venueId) qs.set('venueId', query.venueId);

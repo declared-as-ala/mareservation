@@ -25,11 +25,12 @@ export async function fetchMyReservations(): Promise<Reservation[]> {
   return Array.isArray(data) ? data : [];
 }
 
+export type TableSlot = { time: string; available: boolean; startAt?: string; endAt?: string };
 export type TableSlots = {
   slotMinutes: number;
   durationMinutes: number;
   date: string;
-  slots: Array<{ time: string; available: boolean }>;
+  slots: TableSlot[];
 };
 
 /** Available reservation start times for a table on a given day (YYYY-MM-DD). */

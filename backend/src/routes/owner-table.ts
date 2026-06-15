@@ -353,6 +353,54 @@ router.post('/reservations/:id/cancel', async (req: AuthRequest, res) => {
   return res.json({ success: true, data: row });
 });
 
+// Free a table completely: release active holds, cancel current + upcoming
+// reservations, and clear active blocks. Use to unstick a table that shows
+// reserved/blocked on the client while the operator considers it free.
+router.post('/tables/:tableId/free', async (req: AuthRequest, res) => {
+  const tableId = req.params.tableId;
+  if (!mongoose.Types.ObjectId.isValid(tableId)) return res.status(400).json({ error: 'tableId invalide.' });
+  const table = await Table.findById(tableId).select('_id venueId locationLabel').lean();
+  if (!table) return res.status(404).json({ error: 'Table introuvable.' });
+  const venue = await assertOwnedVenue(String((table as any).venueId), req);
+  if (!venue) return res.status(403).json({ error: 'Acces refuse.' });
+
+  const now = new Date();
+  const [holds, reservations, blocks] = await Promise.all([
+    ReservationHold.updateMany({ tableId, status: 'active' }, { $set: { status: 'released' } }),
+    Reservation.updateMany(
+      { tableId, bookingType: 'TABLE', status: { $in: ['PENDING', 'CONFIRMED'] }, endAt: { $gt: now } },
+      { $set: { status: 'CANCELLED' } }
+    ),
+    TableBlock.updateMany(
+      { tableId, isActive: true, endsAt: { $gt: now } },
+      { $set: { isActive: false } }
+    ),
+  ]);
+
+  await logAudit(req as any, {
+    action: 'RESERVATION_CANCELLED',
+    userId: req.userId as any,
+    entityType: 'reservation',
+    entityId: tableId as any,
+    details: {
+      flow: 'owner_table_free',
+      tableId,
+      holdsReleased: holds.modifiedCount ?? 0,
+      reservationsCancelled: reservations.modifiedCount ?? 0,
+      blocksCleared: blocks.modifiedCount ?? 0,
+    },
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      holdsReleased: holds.modifiedCount ?? 0,
+      reservationsCancelled: reservations.modifiedCount ?? 0,
+      blocksCleared: blocks.modifiedCount ?? 0,
+    },
+  });
+});
+
 router.get('/preorders', async (req: AuthRequest, res) => {
   const owned = await Venue.find({
     ownerId: req.userRole === 'ADMIN' ? { $exists: true } : req.userId,

@@ -227,15 +227,20 @@ router.get('/:venueId/tables/:tableId/slots', async (req, res) => {
     const openingHour = policy?.openingHour ?? 12;
     const closingHour = policy?.closingHour ?? 23;
 
-    // Parse the requested local day (default today). Slots are built in local time.
-    const dateStr = String(req.query.date ?? '');
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+    // Slots are computed in the VENUE timezone (Tunisia, fixed UTC+1 — no DST)
+    // so the absolute instants match what the Tunisian client books, regardless
+    // of the server's own timezone (the VPS runs in UTC). Mixing the two is what
+    // made a "free" slot 409 on create.
+    const TZ_OFFSET = '+01:00';
     const now = new Date();
-    const base = m
-      ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
-    const dayEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1, 0, 0, 0, 0);
+    // Today in venue-local time (for default date + past-slot checks).
+    const nowLocalStr = new Date(now.getTime() + 60 * 60 * 1000).toISOString().slice(0, 10);
+    const dateStr = /^(\d{4})-(\d{2})-(\d{2})$/.test(String(req.query.date ?? ''))
+      ? String(req.query.date)
+      : nowLocalStr;
+    const atVenue = (hhmm: string) => new Date(`${dateStr}T${hhmm}:00${TZ_OFFSET}`);
+    const dayStart = atVenue('00:00');
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
     // Load everything that could occupy this table on that day, once.
     const [reservations, holds, blocks] = await Promise.all([
@@ -267,22 +272,29 @@ router.get('/:venueId/tables/:tableId/slots', async (req, res) => {
       ...blocks.map((b: any) => ({ start: +new Date(b.startsAt), end: +new Date(b.endsAt) })),
     ];
 
-    const slots: Array<{ time: string; available: boolean }> = [];
+    // Each slot carries the exact start/end instant it was evaluated against, so
+    // the client books that same instant (no re-derivation, no drift).
+    const slots: Array<{ time: string; available: boolean; startAt: string; endAt: string }> = [];
     const openMin = openingHour * 60;
     const closeMin = closingHour * 60;
     for (let t = openMin; t < closeMin; t += slotMinutes) {
       const hour = Math.floor(t / 60);
       const min = t % 60;
-      const slotStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, min, 0, 0);
+      const time = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      const slotStart = atVenue(time);
       const s = slotStart.getTime();
       const e = s + durationMinutes * 60 * 1000;
       const inPast = slotStart < now;
       const overlapsBusy = busy.some((b) => s < b.end && e > b.start);
-      const time = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-      slots.push({ time, available: !inPast && !overlapsBusy });
+      slots.push({
+        time,
+        available: !inPast && !overlapsBusy,
+        startAt: new Date(s).toISOString(),
+        endAt: new Date(e).toISOString(),
+      });
     }
 
-    res.json({ slotMinutes, durationMinutes, date: `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`, slots });
+    res.json({ slotMinutes, durationMinutes, date: dateStr, slots });
   } catch (error) {
     console.error('Error computing table slots:', error);
     res.status(500).json({ error: 'Échec du chargement des créneaux.' });

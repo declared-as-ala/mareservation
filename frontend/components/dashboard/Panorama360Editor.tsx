@@ -19,6 +19,7 @@ import {
   MousePointer2,
   Navigation,
   Plus,
+  Sparkles,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -70,6 +71,8 @@ type PlacementApis = {
   fetchUnits?: (venueId: string) => Promise<CoworkingUnit[]>;
   fetchBlocks?: (venueId: string) => Promise<SchedulerBlock[]>;
   deleteBlock?: (blockId: string) => Promise<unknown>;
+  /** Fully free a table: release holds, cancel current/upcoming reservations, clear blocks. */
+  freeTable?: (tableId: string) => Promise<{ holdsReleased: number; reservationsCancelled: number; blocksCleared: number }>;
   fetchHotspots?: (venueId: string) => Promise<OwnerSceneHotspot[]>;
   createHotspot?: (
     venueId: string,
@@ -425,6 +428,22 @@ export function Panorama360Editor({
       toast.success('Blocage retire.');
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur suppression blocage.'),
+  });
+
+  const freeTableMut = useMutation({
+    mutationFn: (tableId: string) => {
+      if (!api.freeTable) throw new Error('freeTable API missing.');
+      return api.freeTable(tableId);
+    },
+    onSuccess: async (r) => {
+      await qc.invalidateQueries({ queryKey: ['panorama-blocks', venueId, mode] });
+      await qc.invalidateQueries({ queryKey: ['panorama-placements', venueId, mode] });
+      await qc.invalidateQueries({ queryKey: ['owner-table-blocks'] });
+      toast.success(
+        `Table libérée — ${r.reservationsCancelled} réservation(s) annulée(s), ${r.holdsReleased} pré-réservation(s) levée(s), ${r.blocksCleared} blocage(s) retiré(s).`
+      );
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : 'Erreur libération table.'),
   });
 
   const openBlockScheduler = (ids: string[] = []) => {
@@ -958,6 +977,21 @@ export function Panorama360Editor({
                                   <Ban className="mr-1 size-3.5" /> Bloquer
                                 </Button>
                               )
+                            )}
+                            {api.freeTable && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9 rounded-xl border-emerald-500/25 text-xs text-emerald-300 hover:bg-emerald-500/10"
+                                disabled={freeTableMut.isPending && freeTableMut.variables === table._id}
+                                onClick={() => {
+                                  if (window.confirm('Libérer cette table ? Cela annule ses réservations en cours et à venir, lève les pré-réservations et retire les blocages.')) {
+                                    freeTableMut.mutate(table._id);
+                                  }
+                                }}
+                              >
+                                <Sparkles className="mr-1 size-3.5" /> Libérer
+                              </Button>
                             )}
                             <Button
                               type="button"
