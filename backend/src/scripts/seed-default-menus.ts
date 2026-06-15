@@ -65,7 +65,9 @@ const CAFE_MENU: Line[] = [
 async function run() {
   await connectDatabase();
   try {
-    const venues = await Venue.find({ type: { $in: ['RESTAURANT', 'CAFE', 'CAFE_LOUNGE'] } })
+    const venues = await Venue.find({
+      type: { $in: ['RESTAURANT', 'CAFE', 'CAFE_LOUNGE', 'BAR', 'ROOFTOP', 'BEACH_CLUB', 'CLUB', 'LOUNGE'] },
+    })
       .select('_id name type')
       .lean();
 

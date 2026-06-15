@@ -22,6 +22,7 @@ export default function BienEtrePage() {
       subtitle="Réservez une parenthèse détente — spa, thalasso, hammam traditionnel ou journée piscine dans les plus beaux établissements."
       emptyLabel="Aucun établissement trouvé"
       categories={CATEGORIES}
+      types={['SPA']}
     />
   );
 }

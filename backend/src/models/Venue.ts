@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export type VenueType = 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'MAISON_DHOTE' | 'CINEMA' | 'EVENT_SPACE' | 'COWORKING';
+export type VenueType =
+  | 'CAFE' | 'CAFE_LOUNGE' | 'RESTAURANT' | 'HOTEL' | 'MAISON_DHOTE' | 'CINEMA' | 'EVENT_SPACE' | 'COWORKING' | 'SPA'
+  | 'BAR' | 'ROOFTOP' | 'BEACH_CLUB' | 'CLUB' | 'LOUNGE';
 export type VenueApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'changes_requested' | 'suspended';
 export type VenueImmersiveType = 'none' | 'virtual-tour' | 'view-360';
 export type VenueImmersiveSourceType = 'upload' | 'embed' | 'klapty' | 'matterport' | null;
@@ -66,7 +68,7 @@ const VenueSchema = new Schema<IVenue>(
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true },
     slug: { type: String, unique: true, sparse: true },
-    type: { type: String, enum: ['CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'MAISON_DHOTE', 'CINEMA', 'EVENT_SPACE', 'COWORKING'], required: true },
+    type: { type: String, enum: ['CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'MAISON_DHOTE', 'CINEMA', 'EVENT_SPACE', 'COWORKING', 'SPA', 'BAR', 'ROOFTOP', 'BEACH_CLUB', 'CLUB', 'LOUNGE'], required: true },
     shortDescription: { type: String },
     description: { type: String, required: true },
     city: { type: String, required: true },

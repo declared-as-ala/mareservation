@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdminVenues, fetchAdminOwners, deleteAdminVenue, assignVenueOwner, archiveAdminVenue, restoreAdminVenue, createAdminVenue } from '@/lib/api/admin';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { getVenueHref, getAdminVenueHref } from '@/lib/venueHref';
+import { getVenueHref, getAdminVenueHref, getAdminVenueListHref } from '@/lib/venueHref';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -291,10 +291,11 @@ export default function AdminVenuesPage() {
           onClose={() => setCreateOpen(false)}
           onCreated={(id, type) => {
             setCreateOpen(false);
-            toast.success('Établissement créé. Complétez ses détails.');
+            toast.success(`${VENUE_TYPE_LABELS[type] ?? 'Établissement'} créé.`);
             queryClient.invalidateQueries({ queryKey: ['admin', 'venues'] });
-            // Jump straight to the dedicated category editor of the new venue
-            router.push(getAdminVenueHref({ _id: id, type }));
+            // Land in the new venue's own category list (e.g. a Café → cafés list),
+            // regardless of which section it was created from.
+            router.push(getAdminVenueListHref(type));
           }}
         />
       )}
@@ -850,6 +851,12 @@ function CreateVenueModal({
     { value: 'COWORKING', label: 'Coworking' },
     { value: 'CINEMA', label: 'Cinéma' },
     { value: 'EVENT_SPACE', label: 'Salle d\'événements' },
+    { value: 'BAR', label: 'Bar' },
+    { value: 'ROOFTOP', label: 'Rooftop' },
+    { value: 'BEACH_CLUB', label: 'Beach Club' },
+    { value: 'CLUB', label: 'Club' },
+    { value: 'LOUNGE', label: 'Lounge' },
+    { value: 'SPA', label: 'Spa & Bien-être' },
   ];
 
   async function handleCreate() {

@@ -108,10 +108,11 @@ const categoryGroup: CategoryGroup = {
       subtitle: 'Bars • Rooftops • Clubs',
       icon: Martini,
       children: [
-        { href: '/admin/venues?q=Bar', label: 'Bars', icon: Wine, qQuery: 'Bar' },
-        { href: '/admin/venues?q=Rooftop', label: 'Rooftops', icon: Martini, qQuery: 'Rooftop' },
-        { href: '/admin/venues?q=Club', label: 'Clubs', icon: Music2, qQuery: 'Club' },
-        { href: '/admin/venues?q=Beach', label: 'Beach Clubs', icon: Waves, qQuery: 'Beach' },
+        { href: '/admin/venues?type=BAR', label: 'Bars', icon: Wine, typeQuery: 'BAR' },
+        { href: '/admin/venues?type=ROOFTOP', label: 'Rooftops', icon: Martini, typeQuery: 'ROOFTOP' },
+        { href: '/admin/venues?type=CLUB', label: 'Clubs', icon: Music2, typeQuery: 'CLUB' },
+        { href: '/admin/venues?type=BEACH_CLUB', label: 'Beach Clubs', icon: Waves, typeQuery: 'BEACH_CLUB' },
+        { href: '/admin/venues?type=LOUNGE', label: 'Lounges', icon: Wine, typeQuery: 'LOUNGE' },
       ],
     },
     {
@@ -141,7 +142,7 @@ const categoryGroup: CategoryGroup = {
       label: 'Bien-être',
       subtitle: 'Spas • Centres',
       icon: Flower2,
-      href: '/admin/venues?q=Spa',
+      href: '/admin/venues?type=SPA',
     },
   ],
 };

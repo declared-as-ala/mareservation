@@ -7,7 +7,13 @@ export type VenueType =
   | 'MAISON_DHOTE'
   | 'COWORKING'
   | 'CINEMA'
-  | 'EVENT_SPACE';
+  | 'EVENT_SPACE'
+  | 'SPA'
+  | 'BAR'
+  | 'ROOFTOP'
+  | 'BEACH_CLUB'
+  | 'CLUB'
+  | 'LOUNGE';
 
 export const VENUE_TYPE_LABELS: Record<string, string> = {
   CAFE: 'Café',
@@ -18,6 +24,12 @@ export const VENUE_TYPE_LABELS: Record<string, string> = {
   COWORKING: 'Coworking',
   CINEMA: 'Cinéma',
   EVENT_SPACE: 'Événements',
+  SPA: 'Spa & Bien-être',
+  BAR: 'Bar',
+  ROOFTOP: 'Rooftop',
+  BEACH_CLUB: 'Beach Club',
+  CLUB: 'Club',
+  LOUNGE: 'Lounge',
 };
 
 /** Options for Explorer Type filter */

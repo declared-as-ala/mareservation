@@ -16,6 +16,8 @@ export interface CollectionCategory {
   Icon: ComponentType<{ className?: string }>;
   /** Backend $text keywords that define this sub-category. */
   keywords: string[];
+  /** Venue types that map to this sub-category (authoritative over keywords). */
+  types?: string[];
 }
 
 interface CollectionExplorerProps {
@@ -65,11 +67,18 @@ export function CollectionExplorer({
       // two tabs. Prefer a keyword found in the name, then the description/tags,
       // in the categories' declared priority order. null ⇒ shows only in "Tous".
       const assignCat = (v: Venue): string | null => {
+        const vType = (v.type ?? '').toUpperCase();
+        // 1) Authoritative: the venue's own type (e.g. BAR → Bars).
+        for (const cat of categories) {
+          if (cat.types?.includes(vType)) return cat.value;
+        }
+        // 2) Fallback for legacy/umbrella types: a keyword in the name…
         const name = (v.name ?? '').toLowerCase();
         const desc = `${(v as { description?: string }).description ?? ''} ${((v as { amenities?: string[] }).amenities ?? []).join(' ')}`.toLowerCase();
         for (const cat of categories) {
           if (cat.keywords.some((kw) => name.includes(kw.toLowerCase()))) return cat.value;
         }
+        // 3) …then the description.
         for (const cat of categories) {
           if (cat.keywords.some((kw) => desc.includes(kw.toLowerCase()))) return cat.value;
         }

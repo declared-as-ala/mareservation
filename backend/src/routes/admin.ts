@@ -380,7 +380,8 @@ router.get('/reservations', async (req, res) => {
 // Admins can create / edit / delete any venue regardless of ownership.
 const ALLOWED_VENUE_TYPES = [
   'CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'MAISON_DHOTE',
-  'COWORKING', 'CINEMA', 'EVENT_SPACE',
+  'COWORKING', 'CINEMA', 'EVENT_SPACE', 'SPA',
+  'BAR', 'ROOFTOP', 'BEACH_CLUB', 'CLUB', 'LOUNGE',
 ] as const;
 
 function slugify(input: string): string {
