@@ -33,7 +33,7 @@ const TableSchema = new Schema<ITable>(
     capacity: { type: Number, required: true, min: 1 },
     capacityMin: { type: Number },
     capacityMax: { type: Number },
-    locationLabel: { type: String, required: true },
+    locationLabel: { type: String, default: '' },
     priceType: { type: String, enum: ['fixed', 'perPerson', 'eventPackage'], default: 'fixed' },
     basePrice: { type: Number, default: 0 },
     price: { type: Number, required: true },
