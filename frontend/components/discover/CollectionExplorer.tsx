@@ -239,9 +239,11 @@ export function CollectionExplorer({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-              {filtered.map(({ venue }) => (
-                <VenueCard key={venue._id} venue={venue} />
-              ))}
+              {filtered.map(({ venue, cats }) => {
+                const cat = [...cats][0];
+                const label = cat ? categories.find((c) => c.value === cat)?.label : undefined;
+                return <VenueCard key={venue._id} venue={venue} categoryLabel={label} />;
+              })}
             </div>
           )}
         </div>

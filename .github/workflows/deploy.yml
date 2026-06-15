@@ -144,6 +144,9 @@ jobs:
             exit 1
           fi
 
+          echo "🍽️ Seeding default menus for restaurants/cafés without one (idempotent)..."
+          docker compose exec -T backend npx tsx src/scripts/seed-default-menus.ts || echo "⚠️ Menu seed skipped/failed (non-fatal)."
+
           echo "🧽 Pruning dangling images to reclaim disk..."
           docker image prune -f >/dev/null 2>&1 || true
 

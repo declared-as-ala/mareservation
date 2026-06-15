@@ -18,9 +18,11 @@ function getVenueImage(venue: Venue): string | null {
 interface VenueCardProps {
   venue: Venue;
   className?: string;
+  /** Overrides the type badge (e.g. "Bar", "Rooftop") in collection views. */
+  categoryLabel?: string;
 }
 
-export function VenueCard({ venue, className }: VenueCardProps) {
+export function VenueCard({ venue, className, categoryLabel }: VenueCardProps) {
   if (!venue?._id) return null;
 
   const href = getVenueHref(venue);
@@ -71,7 +73,13 @@ export function VenueCard({ venue, className }: VenueCardProps) {
           </div>
 
           <div className="absolute bottom-3 right-3">
-            <TypeBadge type={venue.type} />
+            {categoryLabel ? (
+              <span className="inline-flex items-center rounded-full border-none bg-amber-400/15 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                {categoryLabel}
+              </span>
+            ) : (
+              <TypeBadge type={venue.type} />
+            )}
           </div>
         </div>
 
