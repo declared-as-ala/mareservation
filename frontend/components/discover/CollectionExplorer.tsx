@@ -61,41 +61,48 @@ export function CollectionExplorer({
     queryFn: async () => {
       const byId = new Map<string, Entry>();
 
-      // Local sub-category assignment from keywords (name + description + tags).
-      const assignCats = (v: Venue): Set<string> => {
-        const hay = `${v.name ?? ''} ${(v as { description?: string }).description ?? ''} ${((v as { amenities?: string[] }).amenities ?? []).join(' ')}`.toLowerCase();
-        const cats = new Set<string>();
+      // Assign each venue to EXACTLY ONE sub-category so it never shows under
+      // two tabs. Prefer a keyword found in the name, then the description/tags,
+      // in the categories' declared priority order. null ⇒ shows only in "Tous".
+      const assignCat = (v: Venue): string | null => {
+        const name = (v.name ?? '').toLowerCase();
+        const desc = `${(v as { description?: string }).description ?? ''} ${((v as { amenities?: string[] }).amenities ?? []).join(' ')}`.toLowerCase();
         for (const cat of categories) {
-          if (cat.keywords.some((kw) => hay.includes(kw.toLowerCase()))) cats.add(cat.value);
+          if (cat.keywords.some((kw) => name.includes(kw.toLowerCase()))) return cat.value;
         }
-        return cats;
+        for (const cat of categories) {
+          if (cat.keywords.some((kw) => desc.includes(kw.toLowerCase()))) return cat.value;
+        }
+        return null;
       };
 
       if (types && types.length) {
         // Type-driven: list every venue of these types (reliable, no missing /
-        // mis-typed entries), then tag sub-categories locally.
+        // mis-typed entries), then tag a single sub-category locally.
         const lists = await Promise.all(types.map((t) => fetchVenues({ type: t })));
         for (const list of lists) {
           for (const v of list) {
             if (!v?._id || byId.has(v._id)) continue;
-            byId.set(v._id, { venue: v, cats: assignCats(v) });
+            const cat = assignCat(v);
+            byId.set(v._id, { venue: v, cats: new Set<string>(cat ? [cat] : []) });
           }
         }
       } else {
-        // Keyword-driven fallback (collections without a dedicated venue type).
+        // Keyword-driven fallback (collections without a dedicated venue type):
+        // a venue keeps only its first-matched (highest-priority) category.
+        const all = new Map<string, Venue>();
         await Promise.all(
           categories.flatMap((cat) =>
             cat.keywords.map(async (kw) => {
               const res = await fetchVenues({ q: kw });
-              for (const v of res) {
-                if (!v?._id) continue;
-                const entry = byId.get(v._id) ?? { venue: v, cats: new Set<string>() };
-                entry.cats.add(cat.value);
-                byId.set(v._id, entry);
-              }
+              for (const v of res) if (v?._id && !all.has(v._id)) all.set(v._id, v);
             })
           )
         );
+        for (const v of all.values()) {
+          const cat = assignCat(v);
+          byId.set(v._id, { venue: v, cats: new Set<string>(cat ? [cat] : []) });
+        }
       }
       return Array.from(byId.values());
     },
