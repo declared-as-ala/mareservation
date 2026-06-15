@@ -10,6 +10,12 @@ export interface ReservationTicketDetail {
   accent?: boolean;
 }
 
+export interface ReservationMenuLine {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface ReservationTicketEmailParams {
   guestName: string;
   reservationCode: string;
@@ -22,6 +28,9 @@ export interface ReservationTicketEmailParams {
   address?: string;
   phone?: string;
   note?: string;
+  /** Optional café/restaurant menu pre-order to display on the ticket. */
+  menuOrder?: ReservationMenuLine[];
+  currency?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -87,6 +96,29 @@ export function createReservationTicketEmail(
         </tr>`
     )
     .join('');
+
+  const currency = params.currency ?? 'TND';
+  const menuLines = (params.menuOrder ?? []).filter((l) => l && l.name && l.quantity > 0);
+  const menuTotal = menuLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
+  const menuBlock = menuLines.length
+    ? `
+      <p style="margin:0 0 10px;color:#78716c;font-size:11px;line-height:1.4;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">Votre commande</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;border-top:1px solid #ece9e2;">
+        ${menuLines
+          .map(
+            (l) => `
+        <tr>
+          <td style="padding:11px 0;border-bottom:1px solid #ece9e2;color:#1c1917;font-size:13px;line-height:1.4;vertical-align:top;">${escapeHtml(String(l.quantity))} × ${escapeHtml(l.name)}</td>
+          <td style="padding:11px 0;border-bottom:1px solid #ece9e2;color:#1c1917;font-size:13px;line-height:1.4;font-weight:700;text-align:right;vertical-align:top;">${escapeHtml((l.unitPrice * l.quantity).toLocaleString('fr-FR'))} ${escapeHtml(currency)}</td>
+        </tr>`
+          )
+          .join('')}
+        <tr>
+          <td style="padding:11px 0;color:#78716c;font-size:13px;line-height:1.4;font-weight:700;vertical-align:top;">Sous-total commande</td>
+          <td style="padding:11px 0;color:#9a6700;font-size:13px;line-height:1.4;font-weight:800;text-align:right;vertical-align:top;">${escapeHtml(menuTotal.toLocaleString('fr-FR'))} ${escapeHtml(currency)}</td>
+        </tr>
+      </table>`
+    : '';
 
   const contactBlock = params.address || params.phone
     ? `
@@ -164,6 +196,8 @@ export function createReservationTicketEmail(
                 ${detailRows}
               </table>
 
+              ${menuBlock}
+
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafaf9;border:1px solid #ece9e2;border-radius:18px;">
                 <tr>
                   <td style="padding:22px;text-align:center;">
@@ -213,7 +247,7 @@ Référence : ${params.reservationCode}
 Expérience : ${params.experienceLabel}
 Établissement : ${params.venueName}
 ${detailsText}
-${params.address ? `Adresse : ${params.address}\n` : ''}${params.phone ? `Téléphone : ${params.phone}\n` : ''}
+${menuLines.length ? `\nVotre commande :\n${menuLines.map((l) => `- ${l.quantity} × ${l.name} : ${(l.unitPrice * l.quantity).toLocaleString('fr-FR')} ${currency}`).join('\n')}\nSous-total commande : ${menuTotal.toLocaleString('fr-FR')} ${currency}\n` : ''}${params.address ? `Adresse : ${params.address}\n` : ''}${params.phone ? `Téléphone : ${params.phone}\n` : ''}
 Ouvrir mon ticket : ${params.ticketUrl}
 
 ${params.note ?? 'Présentez votre QR code ou votre référence à votre arrivée.'}`;

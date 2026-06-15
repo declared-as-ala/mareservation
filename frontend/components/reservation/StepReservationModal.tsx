@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import {
   createReservation,
+  fetchTableSlots,
 } from '@/lib/api/reservations';
 import { toast } from 'sonner';
 import {
@@ -63,15 +64,6 @@ export type StepReservationModalProps = {
   initialStartAt: string;
   initialEndAt: string;
 };
-
-const TIME_SLOTS = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-  '17:00', '17:30', '18:00', '18:30', '19:00', '19:30',
-  '20:00', '20:30', '21:00', '21:30', '22:00', '22:30',
-  '23:00', '23:30', '00:00',
-];
 
 const STEPS = [
   { id: 0, label: 'Table',     icon: MapPin },
@@ -314,8 +306,31 @@ export function StepReservationModal({
     staleTime: 5 * 60 * 1000,
   });
 
+  // Real availability for THIS table on the chosen day (open/close hours, slot
+  // step, reservation duration — all from the venue's table policy).
+  const { data: slotData } = useQuery({
+    queryKey: ['table-slots', venue._id, placement.table._id, selectedDate],
+    queryFn: () => fetchTableSlots(venue._id, placement.table._id, selectedDate),
+    enabled: open && !!placement.table._id && !!selectedDate,
+    staleTime: 15_000,
+  });
+  const availableSlots = slotData?.slots ?? [];
+  const durationMinutes = slotData?.durationMinutes ?? 240;
+  const durationHours = Math.round((durationMinutes / 60) * 10) / 10;
+
+  // Keep the selected time valid: if it's taken/missing once slots load, snap to
+  // the first available slot.
+  useEffect(() => {
+    if (!availableSlots.length) return;
+    const current = availableSlots.find((s) => s.time === selectedTime);
+    if (!current || !current.available) {
+      const firstFree = availableSlots.find((s) => s.available);
+      if (firstFree) setSelectedTime(firstFree.time);
+    }
+  }, [slotData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const startAtIso = buildIso(selectedDate, selectedTime);
-  const endAtIso = new Date(new Date(startAtIso).getTime() + 2 * 60 * 60 * 1000).toISOString();
+  const endAtIso = new Date(new Date(startAtIso).getTime() + durationMinutes * 60 * 1000).toISOString();
 
   const menuTotal = menuData.reduce((acc, item) => acc + (menuQty[item._id] ?? 0) * item.price, 0);
   const selectedMenuItems = menuData
@@ -334,12 +349,15 @@ export function StepReservationModal({
   const canProceed = useMemo(() => {
     switch (step) {
       case 0: return isAvailable;
-      case 1: return partySize >= 1 && partySize <= maxCapacity && !!selectedTime;
+      case 1: return (
+        partySize >= 1 && partySize <= maxCapacity && !!selectedTime &&
+        (availableSlots.length === 0 || availableSlots.some((s) => s.time === selectedTime && s.available))
+      );
       case 2: return orderMode !== 'with_menu' || menuMeetsMinimum;
       case 3: return true;
       default: return false;
     }
-  }, [step, isAvailable, partySize, maxCapacity, orderMode, menuMeetsMinimum, selectedTime]);
+  }, [step, isAvailable, partySize, maxCapacity, orderMode, menuMeetsMinimum, selectedTime, availableSlots]);
 
   const nextStep = () => { if (canProceed && step < STEPS_COUNT - 1) setStep((s) => s + 1); };
   const prevStep = () => { if (step > 0) setStep((s) => s - 1); };
@@ -391,6 +409,10 @@ export function StepReservationModal({
         startAt: startAtIso, endAt: endAtIso, partySize,
         guestFirstName: firstName, guestLastName: lastName,
         guestPhone: guestPhone.trim(), guestEmail: user.email,
+        orderType: orderMode,
+        menuItems: orderMode === 'with_menu'
+          ? selectedMenuItems.map((m) => ({ itemId: m.itemId, quantity: m.quantity }))
+          : undefined,
       });
       toast.success('Réservation confirmée !');
       onOpenChange(false);
@@ -475,14 +497,21 @@ export function StepReservationModal({
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
                   Créneaux disponibles — {formatDate(selectedDate)}
                 </h4>
+                <span className="text-[10px] font-semibold text-amber-400/80">
+                  {durationHours} h / réservation
+                </span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {TIME_SLOTS.map((time) => (
-                  <span key={time} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-400">
-                    {time}
-                  </span>
-                ))}
-              </div>
+              {availableSlots.filter((s) => s.available).length === 0 ? (
+                <p className="text-[12px] text-neutral-600">Aucun créneau libre ce jour — essayez une autre date.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableSlots.filter((s) => s.available).map((s) => (
+                    <span key={s.time} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-400">
+                      {s.time}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -490,7 +519,7 @@ export function StepReservationModal({
       // ── STEP 1: Date, time & party size ───────────────────────────────────
       case 1: {
         const dayStrip = getDayStrip(14);
-        const slots = TIME_SLOTS.map((time) => ({ time, available: true }));
+        const slots = availableSlots;
         return (
           <div className="space-y-5">
 
@@ -533,11 +562,15 @@ export function StepReservationModal({
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                 <Clock className="size-3.5 text-amber-400" /> Heure d'arrivée
+                <span className="ml-auto normal-case tracking-normal text-[10px] font-medium text-neutral-600">
+                  Table réservée {durationHours} h
+                </span>
               </label>
               <SimpleTimePicker
                 slots={slots}
                 selectedTime={selectedTime}
                 onSelect={setSelectedTime}
+                emptyMessage="Aucun créneau disponible pour cette date. Choisissez une autre journée."
               />
             </div>
 
@@ -765,7 +798,7 @@ export function StepReservationModal({
               <div className="p-4 space-y-2.5">
                 {[
                   { icon: Calendar, label: 'Date',      value: formatDate(selectedDate) },
-                  { icon: Clock,    label: 'Arrivée',   value: selectedTime },
+                  { icon: Clock,    label: 'Créneau',   value: `${formatRange(startAtIso, endAtIso)} (${durationHours} h)` },
                   { icon: Users,    label: 'Personnes', value: `${partySize} pers.` },
                   { icon: Phone,    label: 'Téléphone', value: guestPhone || '—' },
                 ].map(({ icon: Icon, label, value }) => (

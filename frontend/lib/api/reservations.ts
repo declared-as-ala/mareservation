@@ -25,6 +25,26 @@ export async function fetchMyReservations(): Promise<Reservation[]> {
   return Array.isArray(data) ? data : [];
 }
 
+export type TableSlots = {
+  slotMinutes: number;
+  durationMinutes: number;
+  date: string;
+  slots: Array<{ time: string; available: boolean }>;
+};
+
+/** Available reservation start times for a table on a given day (YYYY-MM-DD). */
+export async function fetchTableSlots(venueId: string, tableId: string, date: string): Promise<TableSlots> {
+  const raw = await apiGetRaw<TableSlots>(
+    `/venues/${venueId}/tables/${tableId}/slots?date=${encodeURIComponent(date)}`
+  );
+  return {
+    slotMinutes: raw?.slotMinutes ?? 30,
+    durationMinutes: raw?.durationMinutes ?? 240,
+    date: raw?.date ?? date,
+    slots: Array.isArray(raw?.slots) ? raw.slots : [],
+  };
+}
+
 export async function fetchTableAvailabilityTimeline(tableId: string, date: string): Promise<TableAvailabilityTimeline> {
   const raw = await apiGetRaw<{ success?: boolean; data?: TableAvailabilityTimeline } | TableAvailabilityTimeline>(
     `/reservations/availability/table/${tableId}?date=${encodeURIComponent(date)}`

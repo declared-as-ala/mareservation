@@ -33,7 +33,7 @@ const VenueTablePolicySchema = new Schema<IVenueTablePolicy>(
   {
     venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true, unique: true, index: true },
     slotMinutes: { type: Number, default: 30, min: 15, max: 120 },
-    reservationDurationMinutes: { type: Number, default: 120, min: 30, max: 480 },
+    reservationDurationMinutes: { type: Number, default: 240, min: 30, max: 480 },
     openingHour: { type: Number, default: 12, min: 0, max: 23 },
     closingHour: { type: Number, default: 23, min: 1, max: 24 },
     shifts: { type: [VenueShiftSchema], default: [] },

@@ -1,15 +1,18 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { Reservation } from '../models/Reservation';
 import { Table } from '../models/Table';
 import { Room } from '../models/Room';
 import { Seat } from '../models/Seat';
 import { ReservableUnit } from '../models/ReservableUnit';
 import { ReservationHold } from '../models/ReservationHold';
+import { MenuItem } from '../models/MenuItem';
+import { VenueTablePolicy } from '../models/VenueTablePolicy';
 import { User } from '../models/User';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { generateConfirmationCode } from '../utils/confirmationCode';
 import { generateQRDataURL } from '../utils/qr';
-import { sendEmail } from '../services/email.service';
+import { sendEmail, createOwnerReservationEmail } from '../services/email.service';
 import {
   createReservationQrAttachment,
   createReservationTicketEmail,
@@ -21,6 +24,15 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 function overlaps(start1: Date, end1: Date, start2: Date, end2: Date): boolean {
   return start1 < end2 && end1 > start2;
+}
+
+/**
+ * Single seam for payment status on reservation creation. Today the platform
+ * confirms reservations as paid immediately; when a real payment gateway is
+ * integrated, return 'unpaid'/'pending' here and confirm via the webhook.
+ */
+function finalizePaymentStatus(): 'paid' | 'unpaid' | 'pending' {
+  return 'paid';
 }
 
 // POST /api/reservations — create reservation (TABLE | ROOM | SEAT); prevent conflicts
@@ -43,9 +55,11 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       guestPhone,
       guestEmail,
       partySize,
+      menuItems,
+      durationMinutes,
     } = req.body;
-    if (!venueId || !startAt || !endAt) {
-      return res.status(400).json({ error: 'venueId, startAt and endAt are required' });
+    if (!venueId || !startAt) {
+      return res.status(400).json({ error: 'venueId and startAt are required' });
     }
     if (!guestFirstName?.trim()) return res.status(400).json({ error: 'Prénom est requis' });
     if (!guestLastName?.trim()) return res.status(400).json({ error: 'Nom est requis' });
@@ -57,14 +71,30 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
     const party = Number(partySize) || 1;
     if (party < 1 || party > 20) return res.status(400).json({ error: 'Nombre de personnes doit être entre 1 et 20' });
     const start = new Date(startAt);
-    const end = new Date(endAt);
-    if (start >= end) return res.status(400).json({ error: 'startAt must be before endAt' });
 
     const isCoworking = bookingType === 'COWORKING';
     const type =
       bookingType === 'ROOM' || bookingType === 'SEAT' || bookingType === 'COWORKING'
         ? bookingType
         : 'TABLE';
+
+    // Resolve the end of the window. Prefer an explicit endAt; otherwise derive
+    // it from a duration (request → venue table policy → 4h default for tables).
+    let end: Date;
+    if (endAt) {
+      end = new Date(endAt);
+    } else {
+      let durMin = Number(durationMinutes) || 0;
+      if (!durMin && type === 'TABLE') {
+        const policy = await VenueTablePolicy.findOne({ venueId }).select('reservationDurationMinutes').lean();
+        durMin = policy?.reservationDurationMinutes ?? 240;
+      }
+      if (!durMin) durMin = 120;
+      end = new Date(start.getTime() + durMin * 60 * 1000);
+    }
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+      return res.status(400).json({ error: 'startAt must be before endAt' });
+    }
     // Validate against past dates/time
     const now = new Date();
     if (type === 'ROOM') {
@@ -139,6 +169,29 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       }
     }
 
+    // ── Optional menu pre-order (cafés & restaurants) ──
+    // Validate every line against the venue's menu and price it server-side so
+    // the client can never spoof prices. The total is augmented with the menu.
+    const menuLines: { menuItemId: any; name: string; unitPrice: number; quantity: number }[] = [];
+    let menuTotal = 0;
+    if (type === 'TABLE' && Array.isArray(menuItems) && menuItems.length > 0) {
+      const lineId = (m: any) => m?.menuItemId ?? m?.itemId;
+      const ids = menuItems
+        .map((m: any) => lineId(m))
+        .filter((id: any) => mongoose.Types.ObjectId.isValid(id));
+      const docs = await MenuItem.find({ _id: { $in: ids }, venueId, isAvailable: true }).lean();
+      const byId = new Map(docs.map((d: any) => [String(d._id), d]));
+      for (const line of menuItems) {
+        const doc = byId.get(String(lineId(line)));
+        if (!doc) continue;
+        const qty = Math.max(1, Math.min(99, Number(line?.quantity) || 1));
+        const unitPrice = Number((doc as any).price) || 0;
+        menuLines.push({ menuItemId: (doc as any)._id, name: (doc as any).name, unitPrice, quantity: qty });
+        menuTotal += unitPrice * qty;
+      }
+      total += menuTotal;
+    }
+
     let confirmationCode = generateConfirmationCode(8);
     let exists = await Reservation.findOne({ confirmationCode });
     while (exists) {
@@ -157,9 +210,14 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       startAt: start,
       endAt: end,
       status: 'CONFIRMED',
-      paymentStatus: 'unpaid',
+      // Payment is stubbed as paid for now; swap finalizePaymentStatus() for a
+      // real gateway (Konnect is already wired in payments.ts) later.
+      paymentStatus: finalizePaymentStatus(),
       confirmationCode,
       totalPrice: total,
+      orderType: menuLines.length > 0 ? 'with_menu' : 'standard',
+      menuOrder: menuLines,
+      menuTotal,
       guestFirstName: String(guestFirstName).trim(),
       guestLastName: String(guestLastName).trim(),
       guestPhone: phone,
@@ -220,6 +278,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         qrImageSrc: qrCodeImageUrl ? `cid:${RESERVATION_QR_CONTENT_ID}` : undefined,
         address: [venue?.address, venue?.city].filter(Boolean).join(', ') || undefined,
         phone: venue?.phone,
+        menuOrder: menuLines.map((l) => ({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice })),
         details: [
           {
             label: type === 'ROOM' ? 'Arrivée' : 'Date',
@@ -262,6 +321,42 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         text: template.text,
         attachments: qrAttachment ? [qrAttachment] : undefined,
       });
+    }
+
+    // ── Notify the venue owner of café/restaurant table reservations ──
+    if (type === 'TABLE') {
+      try {
+        const venue = reservation.venueId as any;
+        const table = reservation.tableId as any;
+        const ownerEmail =
+          venue?.email ||
+          (venue?.ownerId ? (await User.findById(venue.ownerId).select('email').lean())?.email : undefined);
+        if (ownerEmail) {
+          const tableLabel =
+            table?.locationLabel || table?.name || (table?.tableNumber != null ? `Table ${table.tableNumber}` : undefined);
+          const ownerTemplate = createOwnerReservationEmail({
+            venueName: venue?.name || 'Votre établissement',
+            reservationCode: confirmationCode,
+            guestName: `${reservation.guestFirstName ?? ''} ${reservation.guestLastName ?? ''}`.trim() || 'Client',
+            guestPhone: reservation.guestPhone,
+            guestEmail: reservation.customerEmail,
+            dateLabel: start.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }),
+            timeLabel: start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            partySize: party,
+            tableLabel,
+            menuOrder: menuLines.map((l) => ({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice })),
+            total,
+          });
+          void sendEmail({
+            to: ownerEmail,
+            subject: ownerTemplate.subject,
+            html: ownerTemplate.html,
+            text: ownerTemplate.text,
+          });
+        }
+      } catch (error) {
+        console.warn('Owner reservation notification failed:', error);
+      }
     }
 
     res.status(201).json({

@@ -39,8 +39,9 @@ export type OwnerTableReservation = {
   guestLastName?: string;
   guestPhone?: string;
   totalPrice?: number;
-  orderType?: 'table_only' | 'with_menu';
+  orderType?: 'table_only' | 'with_menu' | 'standard';
   menuTotal?: number;
+  menuOrder?: Array<{ name: string; quantity: number; unitPrice: number }>;
   menuPrepStatus?: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
   menuPrepUpdatedAt?: string;
   venueId?: { _id: string; name?: string; city?: string } | string;
@@ -109,6 +110,11 @@ export async function checkOutOwnerTableReservation(id: string) {
 }
 export async function noShowOwnerTableReservation(id: string) {
   await api.post(`/owner-table/reservations/${id}/no-show`, {});
+}
+
+/** Free the table now by cancelling the reservation. */
+export async function cancelOwnerTableReservation(id: string) {
+  await api.post(`/owner-table/reservations/${id}/cancel`, {});
 }
 
 export async function fetchOwnerPreorders(query?: { venueId?: string; prepStatus?: string }): Promise<OwnerTableReservation[]> {

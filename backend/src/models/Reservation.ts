@@ -31,6 +31,14 @@ export interface IReservationExtraItem {
   unit: ReservationExtraUnit;
 }
 
+/** A café/restaurant menu pre-order line attached to a table reservation. */
+export interface IReservationMenuLine {
+  menuItemId?: Types.ObjectId | string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+}
+
 export interface IReservationPriceBreakdown {
   subtotal?: number;
   taxes?: number;
@@ -85,6 +93,9 @@ export interface IReservationExtra {
   acceptedPlatformTerms?: boolean;
   extras?: IReservationExtraItem[];
   extrasTotal?: number;
+  /** Café/restaurant menu pre-order lines (when orderType === 'with_menu'). */
+  menuOrder?: IReservationMenuLine[];
+  menuTotal?: number;
   priceBreakdown?: IReservationPriceBreakdown;
   cancellationDeadline?: Date;
   holdId?: Types.ObjectId | string;
@@ -196,6 +207,18 @@ const ReservationSchema = new Schema<IReservation>(
       default: [],
     },
     extrasTotal: { type: Number, default: 0 },
+    menuOrder: {
+      type: [
+        {
+          menuItemId: { type: Schema.Types.ObjectId, ref: 'MenuItem' },
+          name: { type: String, required: true },
+          unitPrice: { type: Number, required: true },
+          quantity: { type: Number, default: 1, min: 1 },
+        },
+      ],
+      default: [],
+    },
+    menuTotal: { type: Number, default: 0 },
     priceBreakdown: {
       subtotal: { type: Number },
       taxes: { type: Number },

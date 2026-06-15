@@ -14,6 +14,7 @@ import { Scene } from '../models/Scene';
 import { TablePlacement } from '../models/TablePlacement';
 import { ReservationHold } from '../models/ReservationHold';
 import { TableBlock } from '../models/TableBlock';
+import { VenueTablePolicy } from '../models/VenueTablePolicy';
 import { subscribeToVenueAvailability } from '../services/availabilityEvents';
 
 const router = Router();
@@ -203,6 +204,88 @@ router.get('/:id/scenes', async (req, res) => {
   } catch (error) {
     console.error('Error fetching venue scenes:', error);
     res.status(500).json({ error: 'Échec du chargement des scènes.' });
+  }
+});
+
+// GET /api/v1/venues/:venueId/tables/:tableId/slots?date=YYYY-MM-DD
+// Public: available reservation start times for a table on a given day, derived
+// from the venue's table policy (opening/closing hours, slot step, duration) and
+// existing reservations / holds / blocks.
+router.get('/:venueId/tables/:tableId/slots', async (req, res) => {
+  try {
+    const venueId = await findVenueId(req.params.venueId);
+    if (!venueId) return res.status(404).json({ error: 'Lieu non trouvé' });
+    const tableId = req.params.tableId;
+    if (!mongoose.Types.ObjectId.isValid(tableId)) return res.status(400).json({ error: 'tableId invalide.' });
+
+    const table = await Table.findOne({ _id: tableId, venueId }).lean();
+    if (!table) return res.status(404).json({ error: 'Table non trouvée.' });
+
+    const policy = await VenueTablePolicy.findOne({ venueId }).lean();
+    const slotMinutes = policy?.slotMinutes ?? 30;
+    const durationMinutes = policy?.reservationDurationMinutes ?? 240;
+    const openingHour = policy?.openingHour ?? 12;
+    const closingHour = policy?.closingHour ?? 23;
+
+    // Parse the requested local day (default today). Slots are built in local time.
+    const dateStr = String(req.query.date ?? '');
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+    const now = new Date();
+    const base = m
+      ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+    const dayEnd = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1, 0, 0, 0, 0);
+
+    // Load everything that could occupy this table on that day, once.
+    const [reservations, holds, blocks] = await Promise.all([
+      Reservation.find({
+        tableId,
+        status: { $in: ['PENDING', 'CONFIRMED'] },
+        startAt: { $lt: dayEnd },
+        endAt: { $gt: dayStart },
+      }).select('startAt endAt').lean(),
+      ReservationHold.find({
+        tableId,
+        status: 'active',
+        expiresAt: { $gt: now },
+        startsAt: { $lt: dayEnd },
+        endsAt: { $gt: dayStart },
+      }).select('startsAt endsAt').lean(),
+      TableBlock.find({
+        venueId,
+        isActive: true,
+        $or: [{ tableId }, { tableId: null, zone: (table as any).locationLabel || null }],
+        startsAt: { $lt: dayEnd },
+        endsAt: { $gt: dayStart },
+      }).select('startsAt endsAt').lean(),
+    ]);
+
+    const busy: Array<{ start: number; end: number }> = [
+      ...reservations.map((r: any) => ({ start: +new Date(r.startAt), end: +new Date(r.endAt) })),
+      ...holds.map((h: any) => ({ start: +new Date(h.startsAt), end: +new Date(h.endsAt) })),
+      ...blocks.map((b: any) => ({ start: +new Date(b.startsAt), end: +new Date(b.endsAt) })),
+    ];
+
+    const slots: Array<{ time: string; available: boolean }> = [];
+    const openMin = openingHour * 60;
+    const closeMin = closingHour * 60;
+    for (let t = openMin; t < closeMin; t += slotMinutes) {
+      const hour = Math.floor(t / 60);
+      const min = t % 60;
+      const slotStart = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, min, 0, 0);
+      const s = slotStart.getTime();
+      const e = s + durationMinutes * 60 * 1000;
+      const inPast = slotStart < now;
+      const overlapsBusy = busy.some((b) => s < b.end && e > b.start);
+      const time = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      slots.push({ time, available: !inPast && !overlapsBusy });
+    }
+
+    res.json({ slotMinutes, durationMinutes, date: `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`, slots });
+  } catch (error) {
+    console.error('Error computing table slots:', error);
+    res.status(500).json({ error: 'Échec du chargement des créneaux.' });
   }
 });
 

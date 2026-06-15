@@ -334,6 +334,25 @@ router.post('/reservations/:id/no-show', async (req: AuthRequest, res) => {
   return res.json({ success: true, data: row });
 });
 
+// Free a table now: cancel the reservation so the slot becomes available again.
+router.post('/reservations/:id/cancel', async (req: AuthRequest, res) => {
+  const row = await Reservation.findById(req.params.id).populate('venueId', 'ownerId type');
+  if (!row) return res.status(404).json({ error: 'Reservation introuvable.' });
+  const venue = row.venueId as any;
+  if (!venue || !['RESTAURANT', 'CAFE', 'CAFE_LOUNGE'].includes(String(venue.type || ''))) return res.status(400).json({ error: 'Non supporte.' });
+  if (req.userRole !== 'ADMIN' && String(venue.ownerId) !== String(req.userId)) return res.status(403).json({ error: 'Acces refuse.' });
+  row.status = 'CANCELLED';
+  await row.save();
+  await logAudit(req as any, {
+    action: 'RESERVATION_CANCELLED',
+    userId: req.userId as any,
+    entityType: 'reservation',
+    entityId: row._id as any,
+    details: { flow: 'owner_table' },
+  });
+  return res.json({ success: true, data: row });
+});
+
 router.get('/preorders', async (req: AuthRequest, res) => {
   const owned = await Venue.find({
     ownerId: req.userRole === 'ADMIN' ? { $exists: true } : req.userId,

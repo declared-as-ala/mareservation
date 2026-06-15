@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle2, ClipboardList, Clock3, Plus, Save, ShieldBan } from 'lucide-react';
 import { fetchOwnerDashboard } from '@/lib/api/owner';
 import {
+  cancelOwnerTableReservation,
   checkInOwnerTableReservation,
   checkOutOwnerTableReservation,
   deleteOwnerTableBlock,
@@ -88,9 +89,10 @@ export default function OwnerTableOperationsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : 'Erreur'),
   });
   const actionMut = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: 'in' | 'out' | 'no-show' }) => {
+    mutationFn: async ({ id, action }: { id: string; action: 'in' | 'out' | 'no-show' | 'cancel' }) => {
       if (action === 'in') return checkInOwnerTableReservation(id);
       if (action === 'out') return checkOutOwnerTableReservation(id);
+      if (action === 'cancel') return cancelOwnerTableReservation(id);
       return noShowOwnerTableReservation(id);
     },
     onSuccess: () => {
@@ -250,13 +252,27 @@ export default function OwnerTableOperationsPage() {
                     <td className="py-2">{r.guestFirstName} {r.guestLastName}</td>
                     <td className="py-2">{new Date(r.startAt).toLocaleString('fr-FR')}</td>
                     <td className="py-2">{r.partySize ?? '-'}</td>
-                    <td className="py-2 text-xs text-zinc-400">{r.orderType === 'with_menu' ? `Menu ${r.menuTotal ?? 0} TND` : 'Table seule'}</td>
+                    <td className="py-2 text-xs text-zinc-400">
+                      {r.orderType === 'with_menu' && (r.menuOrder?.length ?? 0) > 0 ? (
+                        <div className="space-y-0.5">
+                          {r.menuOrder!.map((l, i) => (
+                            <div key={i} className="text-zinc-300">{l.quantity} × {l.name}</div>
+                          ))}
+                          <div className="font-semibold text-amber-300">Menu {r.menuTotal ?? 0} TND</div>
+                        </div>
+                      ) : r.orderType === 'with_menu' ? (
+                        `Menu ${r.menuTotal ?? 0} TND`
+                      ) : (
+                        'Table seule'
+                      )}
+                    </td>
                     <td className="py-2">{r.status}</td>
                     <td className="py-2">
                       <div className="flex flex-wrap gap-2">
                         <button onClick={() => actionMut.mutate({ id: r._id, action: 'in' })} className="rounded-full border border-emerald-500/40 px-2 py-1 text-xs text-emerald-300">Check-in</button>
                         <button onClick={() => actionMut.mutate({ id: r._id, action: 'out' })} className="rounded-full border border-amber-500/40 px-2 py-1 text-xs text-amber-300">Check-out</button>
                         <button onClick={() => actionMut.mutate({ id: r._id, action: 'no-show' })} className="rounded-full border border-red-500/40 px-2 py-1 text-xs text-red-300">No-show</button>
+                        <button onClick={() => actionMut.mutate({ id: r._id, action: 'cancel' })} className="rounded-full border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:border-red-500/40 hover:text-red-300">Libérer</button>
                       </div>
                     </td>
                   </tr>

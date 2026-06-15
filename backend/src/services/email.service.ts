@@ -1061,6 +1061,72 @@ export function createReservationAcceptedTemplate(p: HotelEmailParams): { subjec
   return { subject, html, text };
 }
 
+export interface OwnerReservationEmailParams {
+  venueName: string;
+  reservationCode: string;
+  guestName: string;
+  guestPhone?: string;
+  guestEmail?: string;
+  dateLabel: string;
+  timeLabel: string;
+  partySize: number;
+  tableLabel?: string;
+  menuOrder?: { name: string; quantity: number; unitPrice: number }[];
+  total: number;
+  currency?: string;
+}
+
+/** Notify a café/restaurant owner of a new table reservation (with optional menu pre-order). */
+export function createOwnerReservationEmail(p: OwnerReservationEmailParams): { subject: string; html: string; text: string } {
+  const currency = p.currency ?? 'TND';
+  const subject = `Nouvelle réservation — ${p.venueName} · ${p.reservationCode}`;
+  const menu = (p.menuOrder ?? []).filter((l) => l && l.name && l.quantity > 0);
+  const menuRows = menu
+    .map(
+      (l) => `<tr>
+        <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#e5e5e5;font-size:14px;">${l.quantity} × ${l.name}</td>
+        <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);color:#fbbf24;font-size:14px;font-weight:700;text-align:right;">${(l.unitPrice * l.quantity).toLocaleString('fr-FR')} ${currency}</td>
+      </tr>`
+    )
+    .join('');
+  const menuBlock = menu.length
+    ? `<h3 style="color:#fff;font-size:15px;margin:22px 0 8px;">Commande (pré-commande menu)</h3>
+       <table width="100%" cellpadding="0" cellspacing="0">${menuRows}</table>`
+    : '';
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:7px 0;color:#a3a3a3;font-size:14px;">${label}</td><td style="padding:7px 0;color:#fff;font-size:14px;font-weight:600;text-align:right;">${value}</td></tr>`;
+  const html = `
+    <!DOCTYPE html>
+    <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
+        <tr><td style="text-align:center;padding-bottom:24px;"><h1 style="color:#fbbf24;margin:0;font-size:26px;">Ma Reservation</h1></td></tr>
+        <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
+          <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Nouvelle réservation</div>
+          <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">${p.venueName}</h2>
+          <p style="color:#a3a3a3;font-size:14px;margin:0 0 18px;">Référence : <span style="font-family:monospace;color:#fbbf24;">${p.reservationCode}</span></p>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${row('Client', p.guestName)}
+            ${p.guestPhone ? row('Téléphone', p.guestPhone) : ''}
+            ${p.guestEmail ? row('Email', p.guestEmail) : ''}
+            ${row('Date', p.dateLabel)}
+            ${row('Heure', p.timeLabel)}
+            ${row('Personnes', String(p.partySize))}
+            ${p.tableLabel ? row('Table', p.tableLabel) : ''}
+          </table>
+          ${menuBlock}
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.08);">
+            ${row('Total', `${p.total.toLocaleString('fr-FR')} ${currency}`)}
+          </table>
+        </td></tr>
+      </table>
+    </body></html>`;
+  const text = `Nouvelle réservation — ${p.venueName} (${p.reservationCode})
+Client : ${p.guestName}${p.guestPhone ? ` · ${p.guestPhone}` : ''}${p.guestEmail ? ` · ${p.guestEmail}` : ''}
+Date : ${p.dateLabel} ${p.timeLabel} · ${p.partySize} pers.${p.tableLabel ? ` · ${p.tableLabel}` : ''}
+${menu.length ? `Commande :\n${menu.map((l) => `- ${l.quantity} × ${l.name} : ${(l.unitPrice * l.quantity).toLocaleString('fr-FR')} ${currency}`).join('\n')}\n` : ''}Total : ${p.total.toLocaleString('fr-FR')} ${currency}`;
+  return { subject, html, text };
+}
+
 export function createReservationRejectedTemplate(p: HotelEmailParams & { reason?: string }): { subject: string; html: string; text: string } {
   const subject = `Demande refusée — ${p.hotelName} · ${p.reservationCode}`;
   const reasonBlock = p.reason ? `<p style="color:#a3a3a3;font-size:14px;background:#0a0a0a;border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.05);"><strong style="color:#fff;">Motif :</strong> ${p.reason}</p>` : '';
