@@ -133,16 +133,20 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
+    // Escape always closes — never trap the user, even mid-upload/-save.
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) onClose();
+      if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      // Belt-and-suspenders: clear any stuck pointer-events lock a nested
+      // overlay may have left on the body, so the page never freezes.
+      document.body.style.pointerEvents = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [busy, onClose]);
+  }, [onClose]);
 
   const photoCount = (form.gallery ?? []).length;
   // 360 count = built scenes (once loaded) or simple panoramas otherwise.
@@ -269,8 +273,8 @@ export function RoomEditorModal({ hotelId, room, onClose, onSave }: RoomEditorMo
           </div>
           <button
             type="button"
-            onClick={() => { if (!busy) onClose(); }}
-            disabled={busy}
+            onClick={onClose}
+            aria-label="Fermer"
             className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
           >
             <X className="size-4" />
