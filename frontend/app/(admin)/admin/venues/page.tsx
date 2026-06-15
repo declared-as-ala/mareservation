@@ -831,6 +831,9 @@ function CreateVenueModal({
   onCreated: (id: string, type: string) => void;
 }) {
   const [type, setType] = useState<string>(defaultType || 'HOTEL');
+  // When the list is already filtered to a category (e.g. /admin/venues?type=MAISON_DHOTE),
+  // lock the new establishment to that category instead of offering every type.
+  const lockedType = Boolean(defaultType);
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
@@ -906,15 +909,21 @@ function CreateVenueModal({
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-400">Catégorie *</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-200 focus:outline-none"
-            >
-              {typeOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+            {lockedType ? (
+              <div className="flex h-10 w-full items-center rounded-xl border border-zinc-700 bg-zinc-900/60 px-3 text-sm font-medium text-zinc-200">
+                {typeOptions.find((opt) => opt.value === type)?.label ?? VENUE_TYPE_LABELS[type] ?? type}
+              </div>
+            ) : (
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="h-10 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 text-sm text-zinc-200 focus:outline-none"
+              >
+                {typeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
