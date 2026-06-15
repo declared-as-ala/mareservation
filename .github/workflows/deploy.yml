@@ -9,6 +9,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Hard ceiling so a hung build can never run forever and burn minutes.
+    timeout-minutes: 30
 
     steps:
       - name: 📥 Checkout code
@@ -22,10 +24,41 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
-          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'EOF'
-          set -e
+          # -o ServerAliveInterval/CountMax keep the SSH channel alive during the
+          #   long, output-quiet `docker compose build` (the usual cause of the
+          #   step "hanging" then failing — the idle channel gets dropped).
+          # -o ConnectTimeout fails fast if the host is unreachable.
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            root@$VPS_HOST 'bash -s' << 'EOF'
+          set -euo pipefail
+
+          # On any error, surface diagnostics so the Actions log shows WHY it failed
+          # (instead of an opaque non-zero exit).
+          trap 'code=$?; echo "❌ Remote deploy failed (exit $code)"; echo "──── docker compose ps ────"; docker compose ps 2>/dev/null || true; echo "──── last 150 log lines ────"; docker compose logs --tail=150 2>/dev/null || true; echo "──── memory ────"; free -h || true; exit $code' ERR
+
+          export DEBIAN_FRONTEND=noninteractive
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+
           echo "📂 Navigating to app directory..."
           cd /app/mareservation || { echo "❌ Directory not found, cloning..."; mkdir -p /app/mareservation; git clone https://github.com/declared-as-ala/mareservation.git /app/mareservation; cd /app/mareservation; }
+
+          echo "🧠 Ensuring swap exists (prevents OOM-kill during the Next.js build)..."
+          if ! swapon --show 2>/dev/null | grep -q .; then
+            echo "   No swap found — creating a 2G swapfile..."
+            fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048
+            chmod 600 /swapfile
+            mkswap /swapfile >/dev/null
+            swapon /swapfile
+            echo "   ✅ Swap enabled"
+          else
+            echo "   ✅ Swap already present"
+          fi
+          free -h || true
 
           echo "📥 Fetching latest code (hard reset to origin/main — robust against force-pushed/rewritten history)..."
           # Heal a stale or locked refs/remotes/origin/main from a previous
@@ -72,14 +105,12 @@ jobs:
           cp -f .env backend/.env
           echo "   ✅ backend/.env synced"
 
-          echo "🏗️ Building Docker images..."
-          docker compose build
+          echo "🏗️ Building Docker images (plain progress keeps the SSH channel active)..."
+          docker compose build --progress=plain
 
-          echo "🔍 Checking what is listening on port 5001..."
-          ss -tulpn | grep 5001 || true
-
-          echo "🔫 Killing any process using port 5001..."
+          echo "🔫 Freeing ports 3000/5001 from any stale process..."
           fuser -k 5001/tcp 2>/dev/null || true
+          fuser -k 3000/tcp 2>/dev/null || true
 
           echo "🧹 Cleaning up conflicting containers..."
           CONTAINERS=$(docker ps -a -q --filter name=mareservation)
@@ -89,13 +120,32 @@ jobs:
           fi
 
           echo "🚀 Starting services..."
-          docker compose up -d
+          docker compose up -d --remove-orphans
 
-          echo "⏳ Waiting for services to be healthy..."
-          sleep 10
+          echo "⏳ Waiting for backend health (up to ~90s)..."
+          HEALTHY=0
+          for i in $(seq 1 18); do
+            sleep 5
+            if curl -fsS --max-time 5 "http://localhost:5001/api/v1/health" >/dev/null 2>&1; then
+              echo "   ✅ Backend healthy after $((i*5))s"
+              HEALTHY=1
+              break
+            fi
+            echo "   …still starting ($((i*5))s)"
+          done
 
           echo "📊 Docker services status:"
           docker compose ps
+
+          if [ "$HEALTHY" -ne 1 ]; then
+            echo "⚠️ Backend did not pass health check in time — dumping recent logs:"
+            docker compose logs --tail=150 || true
+            echo "❌ Marking deploy as failed so it does not silently ship a broken build."
+            exit 1
+          fi
+
+          echo "🧽 Pruning dangling images to reclaim disk..."
+          docker image prune -f >/dev/null 2>&1 || true
 
           echo "✅ Deployment complete!"
           EOF
