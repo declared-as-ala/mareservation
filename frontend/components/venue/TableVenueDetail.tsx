@@ -24,7 +24,6 @@ import { CinematicVenueHero } from '@/components/venue/CinematicVenueHero';
 import { VenueMenuSection } from '@/components/venue/VenueMenuSection';
 import { HotelAmenitiesGrid } from '@/components/hotel/HotelAmenities';
 import { VenueMap } from '@/components/venue/VenueMap';
-import { VenueGallery } from '@/components/venue/VenueGallery';
 import { SimilarVenues } from '@/components/venue/SimilarVenues';
 
 const ImmersiveTableReservation = dynamic(
@@ -142,13 +141,6 @@ export function TableVenueDetail({ category }: { category: TableCategory }) {
         isCompact={activeTab === 'reserver'}
         onBack={() => router.back()}
       />
-
-      {/* ── Gallery (directly under the cover, like hotels & maisons d'hôte) ── */}
-      {allImages.length > 1 && (
-        <div className="mx-auto max-w-5xl px-4 pt-6">
-          <VenueGallery images={allImages} venueName={venue.name} />
-        </div>
-      )}
 
       {/* ── Main content ── */}
       <div className="mx-auto max-w-5xl px-4 py-8 lg:py-10">
