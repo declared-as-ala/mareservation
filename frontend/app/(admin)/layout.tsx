@@ -45,6 +45,7 @@ import {
   ShieldAlert,
   Trophy,
   Martini,
+  Handshake,
 } from 'lucide-react';
 
 type NavItem = {
@@ -175,6 +176,7 @@ const tailNavGroups: NavGroup[] = [
     label: 'Conciergerie',
     items: [
       { href: '/admin/sos-conseil', label: 'SOS Conseil', icon: Sparkles },
+      { href: '/admin/partners', label: 'Partenaires', icon: Handshake },
       { href: '/admin/scanner', label: 'Scanner QR', icon: QrCode },
     ],
   },

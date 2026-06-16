@@ -17,6 +17,7 @@ import {
   Martini,
   Flower2,
   ChevronRight,
+  Store,
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -25,6 +26,7 @@ import { useCartStore } from '@/stores/cart';
 import { UserMenuDropdown } from '@/components/layout/UserMenuDropdown';
 import { CartDrawer } from '@/components/layout/CartDrawer';
 import { Sheet, SheetContent, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { PartnerApplicationModal } from '@/components/partners/PartnerApplicationModal';
 
 const primaryNav = [
   { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
@@ -87,6 +89,7 @@ export function HomeNavbar() {
   const [searchValue, setSearchValue] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [partnerOpen, setPartnerOpen] = useState(false);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const { user, isLoading: authLoading } = useAuth();
@@ -154,6 +157,14 @@ export function HomeNavbar() {
               <Sparkles className="size-4 shrink-0" strokeWidth={1.9} />
               SOS Conseil
             </Link>
+            <button
+              type="button"
+              onClick={() => setPartnerOpen(true)}
+              className="ml-1 hidden items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm font-bold whitespace-nowrap text-neutral-200 outline-none transition-all duration-200 hover:border-amber-300/40 hover:bg-amber-300/[0.08] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:flex"
+            >
+              <Store className="size-4 shrink-0" strokeWidth={1.9} />
+              Devenir partenaire
+            </button>
           </nav>
 
           {/* Right actions */}
@@ -292,6 +303,20 @@ export function HomeNavbar() {
               </Link>
             </SheetClose>
 
+            {/* Devenir partenaire */}
+            <button
+              type="button"
+              onClick={() => { setMobileOpen(false); setPartnerOpen(true); }}
+              className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-white/[0.1] bg-white/[0.03] px-4 py-3.5 text-left text-sm font-bold text-neutral-200 transition-all hover:border-amber-400/40 hover:text-amber-200"
+            >
+              <span className="flex size-9 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><Store className="size-5" /></span>
+              <span className="flex-1">
+                Devenir partenaire
+                <span className="block text-[11px] font-medium text-neutral-500">Référencez votre établissement</span>
+              </span>
+              <ChevronRight className="size-4 text-amber-300/60" />
+            </button>
+
             <DrawerSection title="Naviguer" items={primaryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
             <DrawerSection title="Catégories" items={categoryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
           </div>
@@ -307,6 +332,8 @@ export function HomeNavbar() {
 
       {/* Spacer for fixed header on non-home pages */}
       {!isHome && <div className="h-[68px] sm:h-[76px] lg:h-[84px]" />}
+
+      <PartnerApplicationModal open={partnerOpen} onOpenChange={setPartnerOpen} />
     </>
   );
 }

@@ -422,6 +422,77 @@ ${data.details ? `Message : ${data.details}` : ''}
   return { subject, html, text };
 }
 
+export function createPartnerApplicationAdminTemplate(data: {
+  establishmentName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  city: string;
+  message?: string;
+  dashboardUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `[Partenaire] ${data.establishmentName} • ${data.city}`;
+
+  const row = (label: string, value: string | undefined, accent = false) =>
+    value ? `<tr><td style="padding:8px 0;border-bottom:1px solid #262626;color:#a3a3a3;font-size:13px;white-space:nowrap;padding-right:16px;width:1%">${label}</td><td style="padding:8px 0;border-bottom:1px solid #262626;color:${accent ? '#fbbf24' : '#ffffff'};font-size:13px;font-weight:600">${value}</td></tr>` : '';
+
+  const html = `
+    <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Nouvelle demande de partenariat</title></head>
+    <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:32px 20px;">
+      <tr><td style="text-align:center;padding-bottom:24px;">
+        <div style="font-size:22px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+        <p style="color:#525252;font-size:12px;margin:4px 0 0">Demandes de partenariat</p>
+      </td></tr>
+      <tr><td style="background:#171717;border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,0.08);">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:999px;padding:6px 14px;margin-bottom:20px;">
+          <span style="color:#fbbf24;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Nouveau partenaire</span>
+        </div>
+        <h2 style="color:#ffffff;font-size:20px;font-weight:700;margin:0 0 20px">${data.establishmentName}</h2>
+        <p style="color:#a3a3a3;font-size:14px;margin:0 0 20px">Un établissement souhaite rejoindre la plateforme. Voici les détails :</p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #262626;">
+          ${row('🏬 Établissement', data.establishmentName, true)}
+          ${row('👤 Contact', data.contactName)}
+          ${row('📧 Email', data.email)}
+          ${row('📞 Téléphone', data.phone, true)}
+          ${row('📍 Ville', data.city)}
+        </table>
+
+        ${data.message ? `
+        <div style="margin-top:20px;background:#0a0a0a;border-radius:12px;padding:16px;border:1px solid #262626;">
+          <p style="color:#737373;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 8px">Message</p>
+          <p style="color:#d4d4d4;font-size:14px;line-height:1.6;margin:0">${data.message}</p>
+        </div>` : ''}
+
+        <div style="margin-top:24px;text-align:center;">
+          <p style="color:#737373;font-size:13px;margin:0 0 16px">Recontactez l'établissement et traitez la demande dans le tableau de bord.</p>
+          ${data.dashboardUrl ? `<a href="${data.dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;margin:0 8px 8px">Voir dans le dashboard</a>` : ''}
+          <a href="tel:${data.phone}" style="display:inline-block;background:transparent;color:#fbbf24;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:14px;border:1px solid rgba(251,191,36,0.4);margin:0 8px 8px">Appeler</a>
+        </div>
+      </td></tr>
+      <tr><td style="text-align:center;padding-top:24px;">
+        <p style="color:#404040;font-size:11px;margin:0">© ${new Date().getFullYear()} Look and Book · Panneau d'administration</p>
+      </td></tr>
+    </table></body></html>
+  `;
+
+  const text = `
+Nouvelle demande de partenariat — Look and Book
+
+Établissement : ${data.establishmentName}
+Contact : ${data.contactName}
+Email : ${data.email}
+Téléphone : ${data.phone}
+Ville : ${data.city}
+${data.message ? `Message : ${data.message}` : ''}
+${data.dashboardUrl ? `Dashboard : ${data.dashboardUrl}` : ''}
+  `.trim();
+
+  return { subject, html, text };
+}
+
 // Reservation confirmation template
 export function createReservationConfirmationTemplate(
   userName: string,
