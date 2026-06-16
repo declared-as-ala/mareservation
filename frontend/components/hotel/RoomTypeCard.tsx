@@ -7,6 +7,10 @@ const PanoramaEngine = dynamic(
   () => import('@/components/immersive/PanoramaEngine'),
   { ssr: false }
 );
+const PanoramaTourViewer = dynamic(
+  () => import('@/components/immersive/PanoramaTourViewer').then((m) => m.PanoramaTourViewer),
+  { ssr: false }
+);
 import {
   BedDouble,
   Users,
@@ -21,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { HotelRoom } from '@/lib/api/types';
+import type { VirtualScene, VirtualHotspot } from '@/lib/api/venues';
 import { ROOM_TYPE_LABELS } from '@/lib/api/rooms';
 import { RoomAmenityChips } from './HotelAmenities';
 
@@ -108,8 +113,15 @@ export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCa
   let panoramaImageUrl: string | null = null;
   let tourEmbedUrl: string | null = null;
   let totalTourSceneCount = 0;
+  // Multi-scene tour (scenes + scene-to-scene hotspots) for this room type.
+  let tourScenes: HotelRoom['tourScenes'] = [];
+  let tourHotspots: HotelRoom['tourHotspots'] = [];
   for (const r of group.rooms) {
     totalTourSceneCount += r.tourScenes?.length ?? 0;
+    if ((tourScenes?.length ?? 0) === 0 && r.tourScenes && r.tourScenes.length > 0) {
+      tourScenes = r.tourScenes;
+      tourHotspots = r.tourHotspots ?? [];
+    }
     if (!panoramaImageUrl && r.tourScenes && r.tourScenes.length > 0) {
       panoramaImageUrl = r.tourScenes[0].image;
     }
@@ -144,7 +156,17 @@ export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCa
     >
       {/* ── Room 360 area ── */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-black/30 sm:aspect-[16/10] lg:aspect-auto lg:min-h-[360px]">
-        {panoramaImageUrl ? (
+        {tourScenes && tourScenes.length > 0 ? (
+          // Multi-scene room tour: scene switching + clickable hotspots (arrows).
+          <div className="absolute inset-0">
+            <PanoramaTourViewer
+              scenes={tourScenes as unknown as VirtualScene[]}
+              hotspots={(tourHotspots ?? []) as unknown as VirtualHotspot[]}
+              title={`Visite 360° — ${typeLabel}`}
+              className="h-full min-h-0 rounded-none border-0"
+            />
+          </div>
+        ) : panoramaImageUrl ? (
           <div className="absolute inset-0">
             <PanoramaEngine
               imageUrl={panoramaImageUrl}
