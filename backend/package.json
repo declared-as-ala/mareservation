@@ -15,6 +15,7 @@
     "seed:demo-360": "tsx src/scripts/seed-demo-360.ts",
     "seed:fresh-catalog": "tsx src/scripts/seed-fresh-catalog.ts",
     "seed:menus": "tsx src/scripts/seed-default-menus.ts",
+    "migrate:sortie-types": "tsx src/scripts/migrate-sortie-types.ts",
     "fix-klapty-urls": "tsx src/scripts/fix-klapty-urls.ts"
   },
   "dependencies": {

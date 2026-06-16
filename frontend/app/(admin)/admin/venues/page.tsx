@@ -847,7 +847,6 @@ function CreateVenueModal({
     { value: 'MAISON_DHOTE', label: "Maison d'hôte" },
     { value: 'RESTAURANT', label: 'Restaurant' },
     { value: 'CAFE', label: 'Café' },
-    { value: 'CAFE_LOUNGE', label: 'Café & Lounge' },
     { value: 'COWORKING', label: 'Coworking' },
     { value: 'CINEMA', label: 'Cinéma' },
     { value: 'EVENT_SPACE', label: 'Salle d\'événements' },

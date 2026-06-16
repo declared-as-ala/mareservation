@@ -144,6 +144,9 @@ jobs:
             exit 1
           fi
 
+          echo "🎯 Migrating legacy CAFE_LOUNGE venues to precise nightlife types (idempotent)..."
+          docker compose exec -T backend npx tsx src/scripts/migrate-sortie-types.ts || echo "⚠️ Sortie-type migration skipped/failed (non-fatal)."
+
           echo "🍽️ Seeding default menus for restaurants/cafés without one (idempotent)..."
           docker compose exec -T backend npx tsx src/scripts/seed-default-menus.ts || echo "⚠️ Menu seed skipped/failed (non-fatal)."
 
