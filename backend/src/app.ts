@@ -39,17 +39,47 @@ import tagsRouter from './routes/tags';
 dotenv.config();
 
 const app = express();
-const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:5173';
-const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'https://mareservtaion-frontend.vercel.app',
-  CORS_ORIGIN,
-].filter(Boolean);
+
+// Extra origins can be supplied via env (comma/semicolon separated) so new
+// domains never require a code change: CORS_ORIGINS / CORS_ORIGIN / FRONTEND_URL.
+const ENV_ORIGINS = [
+  process.env.CORS_ORIGINS,
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL,
+]
+  .filter(Boolean)
+  .flatMap((v) => String(v).split(/[,;]/))
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const ALLOWED_ORIGINS = Array.from(
+  new Set(
+    [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      // Production frontends
+      'https://www.exploria360.com',
+      'https://exploria360.com',
+      'http://145.223.118.9:3000',
+      'http://145.223.118.9',
+      'https://mareservtaion-frontend.vercel.app',
+      ...ENV_ORIGINS,
+    ].filter(Boolean)
+  )
+);
+
+// Also allow any *.exploria360.com subdomain (e.g. admin/staging) over https.
+const ALLOWED_ORIGIN_REGEXES = [/^https:\/\/([a-z0-9-]+\.)*exploria360\.com$/i];
+
+function isAllowedOrigin(origin: string): boolean {
+  return ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGIN_REGEXES.some((re) => re.test(origin));
+}
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) cb(null, origin || ALLOWED_ORIGINS[0]);
+    // No Origin header (server-to-server, curl, same-origin) → allow.
+    if (!origin || isAllowedOrigin(origin)) cb(null, origin || ALLOWED_ORIGINS[0]);
     else cb(null, false);
   },
   credentials: true,
