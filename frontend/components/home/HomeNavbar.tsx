@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -45,39 +44,24 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '?') || pathname.startsWith(href + '/');
 }
 
-/* Reusable brand lockup (logo emblem + gold wordmark + slogan). */
+/* Brand lockup — elegant gold tagline only (logo/wordmark removed). */
 function Brand({ onClick, size = 'bar' }: { onClick?: () => void; size?: 'bar' | 'drawer' }) {
-  const logoCls =
+  const textCls =
     size === 'drawer'
-      ? 'h-12 w-auto'
-      : 'h-10 w-auto sm:h-11 lg:h-12';
-  const nameCls =
-    size === 'drawer'
-      ? 'text-[18px] tracking-[0.15em]'
-      : 'text-[14px] tracking-[0.13em] sm:text-[15px] lg:text-[17px] lg:tracking-[0.16em]';
-  const sloganCls =
-    size === 'drawer'
-      ? 'text-[8px] tracking-[0.45em]'
-      : 'text-[6.5px] tracking-[0.3em] sm:text-[7px] lg:text-[8px] lg:tracking-[0.4em]';
+      ? 'text-base sm:text-lg'
+      : 'text-[13px] leading-[1.15] sm:text-[15px] sm:leading-tight lg:text-[19px]';
   return (
     <Link
       href="/"
       onClick={onClick}
-      className="group flex shrink-0 items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 sm:gap-3"
-      aria-label="Look and Book — accueil"
+      className="group flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
+      aria-label="Explorez l'instant, Réservez l'expérience — accueil"
     >
-      <Image src="/logo.png" alt="" width={1024} height={1536} priority className={cn('object-contain transition-transform duration-300 group-hover:scale-[1.04]', logoCls)} style={{ width: 'auto' }} />
-      <span aria-hidden className="h-8 w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent sm:h-9 lg:h-10" />
-      <span className="flex flex-col items-stretch leading-none">
-        <span className={cn('bg-gradient-to-b from-amber-100 via-amber-300 to-amber-600 bg-clip-text font-serif font-bold uppercase text-transparent drop-shadow-[0_2px_10px_rgba(212,175,55,0.25)]', nameCls)}>
-          Look and Book
+      <span className={cn('max-w-[200px] font-serif font-semibold tracking-tight sm:max-w-none', textCls)}>
+        <span className="text-neutral-100 transition-colors group-hover:text-white">Explorez l&apos;instant,</span>{' '}
+        <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_1px_8px_rgba(212,175,55,0.25)]">
+          Réservez l&apos;expérience
         </span>
-        <span className="mt-1 flex items-center gap-1.5">
-          <span className="h-px flex-1 bg-gradient-to-r from-amber-400/0 to-amber-400/50" />
-          <span className="size-[3px] rotate-45 bg-amber-400/80 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-          <span className="h-px flex-1 bg-gradient-to-l from-amber-400/0 to-amber-400/50" />
-        </span>
-        <span className={cn('mt-1 text-center font-semibold uppercase text-amber-300/75', sloganCls)}>Book your moment</span>
       </span>
     </Link>
   );
