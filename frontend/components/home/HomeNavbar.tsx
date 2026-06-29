@@ -44,24 +44,34 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '?') || pathname.startsWith(href + '/');
 }
 
-/* Brand lockup — elegant gold tagline only (logo/wordmark removed). */
+/* Brand lockup — "EXPLORIA 360" wordmark + tagline (logo removed). */
 function Brand({ onClick, size = 'bar' }: { onClick?: () => void; size?: 'bar' | 'drawer' }) {
-  const textCls =
+  const nameCls =
     size === 'drawer'
-      ? 'text-base sm:text-lg'
-      : 'text-[13px] leading-[1.15] sm:text-[15px] sm:leading-tight lg:text-[19px]';
+      ? 'text-xl tracking-[0.2em]'
+      : 'text-[15px] tracking-[0.16em] sm:text-[17px] sm:tracking-[0.2em] lg:text-[21px] lg:tracking-[0.22em]';
+  const tagCls =
+    size === 'drawer'
+      ? 'text-[9px] tracking-[0.16em]'
+      : 'text-[7.5px] tracking-[0.12em] sm:text-[8.5px] sm:tracking-[0.14em] lg:text-[10px] lg:tracking-[0.16em]';
   return (
     <Link
       href="/"
       onClick={onClick}
-      className="group flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
-      aria-label="Explorez l'instant, Réservez l'expérience — accueil"
+      className="group flex shrink-0 flex-col justify-center leading-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
+      aria-label="Exploria 360 — accueil"
     >
-      <span className={cn('max-w-[200px] font-serif font-semibold tracking-tight sm:max-w-none', textCls)}>
-        <span className="text-neutral-100 transition-colors group-hover:text-white">Explorez l&apos;instant,</span>{' '}
-        <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-[0_1px_8px_rgba(212,175,55,0.25)]">
-          Réservez l&apos;expérience
-        </span>
+      <span
+        className={cn(
+          'bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 bg-clip-text font-serif font-black uppercase text-transparent drop-shadow-[0_1px_10px_rgba(212,175,55,0.28)] transition-transform duration-300 group-hover:scale-[1.02]',
+          nameCls
+        )}
+      >
+        Exploria&nbsp;<span className="text-amber-400">360</span>
+      </span>
+      <span className={cn('mt-1.5 font-medium uppercase text-neutral-400', tagCls)}>
+        Explorez l&apos;instant,{' '}
+        <span className="text-amber-300/85">Réservez l&apos;expérience</span>
       </span>
     </Link>
   );
