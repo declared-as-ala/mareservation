@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const isDev = process.env.NODE_ENV !== "production";
-const VPS_BACKEND_API_URL = 'http://145.223.118.9:5001';
+const VPS_BACKEND_API_URL = isDev ? 'http://localhost:3001' : 'http://backend:3001';
 
 const nextConfig: NextConfig = {
   async rewrites() {
