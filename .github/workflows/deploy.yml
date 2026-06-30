@@ -108,10 +108,6 @@ jobs:
           echo "🏗️ Building Docker images (plain progress keeps the SSH channel active)..."
           docker compose build --progress=plain
 
-          echo "🔫 Freeing ports 3000/5001 from any stale process..."
-          fuser -k 5001/tcp 2>/dev/null || true
-          fuser -k 3000/tcp 2>/dev/null || true
-
           echo "🧹 Cleaning up conflicting containers..."
           CONTAINERS=$(docker ps -a -q --filter name=mareservation)
           if [ -n "$CONTAINERS" ]; then
