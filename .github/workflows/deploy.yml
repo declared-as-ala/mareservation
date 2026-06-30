@@ -116,7 +116,7 @@ jobs:
           fi
 
           echo "🚀 Starting services..."
-          docker compose up -d --remove-orphans
+          docker compose up -d --force-recreate --remove-orphans
 
           echo "⏳ Waiting for backend health (up to ~90s)..."
           HEALTHY=0
