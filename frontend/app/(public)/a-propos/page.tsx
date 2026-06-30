@@ -2,10 +2,10 @@ import { MapPin, Users, Star, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 const stats = [
-  { icon: MapPin, value: '500+', label: 'Établissements partenaires' },
-  { icon: Users, value: '50 000+', label: 'Utilisateurs satisfaits' },
-  { icon: Star, value: '4.8/5', label: 'Note moyenne' },
-  { icon: TrendingUp, value: '200 000+', label: 'Réservations effectuées' },
+  { icon: MapPin, value: 'Tunisie', label: 'Disponible partout' },
+  { icon: Users, value: '100%', label: 'Immersif' },
+  { icon: Star, value: '360°', label: 'Immersion totale' },
+  { icon: TrendingUp, value: 'Direct', label: 'Choix de table' },
 ];
 
 const values = [

@@ -42,12 +42,7 @@ const social = [
   { Icon: Linkedin,  href: 'https://linkedin.com/company/mareservation', label: 'LinkedIn' },
 ];
 
-const stats = [
-  { value: '500+', label: 'Établissements' },
-  { value: '12k+', label: 'Réservations' },
-  { value: '4.9★', label: 'Note moyenne' },
-  { value: '360°', label: 'Immersion totale' },
-];
+// Stats removed to avoid showing fictional numbers during testing phase
 
 /* ─────────────────── Accordion (mobile) ─────────────────── */
 function MobileAccordion({
@@ -98,27 +93,19 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           ══════════════════════════════════════ */}
       {!hideNewsletter && (
         <div className="border-b border-white/[0.05] bg-[#0a0a0a]">
-          <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-12">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-
-              {/* Stats row */}
-              <div className="grid grid-cols-2 gap-x-10 gap-y-5 sm:flex sm:items-center sm:gap-12">
-                {stats.map(({ value, label }) => (
-                  <div key={label} className="text-center sm:text-left">
-                    <p className="font-serif text-2xl font-black text-amber-400">{value}</p>
-                    <p className="mt-0.5 text-[11px] uppercase tracking-widest text-zinc-600">{label}</p>
-                  </div>
-                ))}
+          <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-md">
+                <p className="text-sm font-bold text-white">
+                  Restez informé de nos offres
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Recevez les meilleures adresses et offres exclusives directement dans votre boîte.
+                </p>
               </div>
 
               {/* Newsletter */}
               <div className="w-full max-w-md">
-                <p className="mb-1 text-sm font-bold text-white">
-                  Restez informé de nos offres
-                </p>
-                <p className="mb-3 text-xs text-zinc-600">
-                  Recevez les meilleures adresses et offres exclusives directement dans votre boîte.
-                </p>
                 {subscribed ? (
                   <div className="flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3">
                     <span className="text-lg">✦</span>
