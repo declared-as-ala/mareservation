@@ -4,9 +4,9 @@ import { Globe2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 const stats = [
-  { value: '10+', label: 'Villes cibles' },
-  { value: '500+', label: 'Lieux visés' },
+  { value: '100%', label: 'Immersif' },
   { value: '360°', label: 'Immersion totale' },
+  { value: 'Direct', label: 'Réservation de table' },
 ];
 
 export function WorldPresenceSection() {

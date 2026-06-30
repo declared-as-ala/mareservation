@@ -401,7 +401,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
           {/* mini trust stats inline */}
           <div className="mt-3 flex items-center gap-6">
-            {[['500+', 'Lieux'], ['12k+', 'Réservations'], ['4.9★', 'Satisfaction']].map(([v, l], i) => (
+            {[['100%', 'Immersif'], ['360°', 'Immersion'], ['Direct', 'Choix de table']].map(([v, l], i) => (
               <div key={l} className="flex items-center gap-3">
                 {i > 0 && <span className="h-6 w-px bg-white/[0.08]" />}
                 <div>
