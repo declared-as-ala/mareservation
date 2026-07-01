@@ -572,6 +572,7 @@ export default function HotelDetailPage() {
   });
 
   const allImages = useMemo(() => (venue ? getAllImages(venue) : []), [venue]);
+  const isMaisonDhote = venue?.type === 'MAISON_DHOTE';
   const rooms = useMemo(
     () => rawRooms.filter((room) =>
       !!room?._id &&
@@ -676,24 +677,24 @@ export default function HotelDetailPage() {
   }, [roomTypeGroups, guests, selectedRoomType]);
 
   function handleBookDirect() {
-    if (!checkIn || !checkOut || !selectedRoomType) {
-      toast.error('Veuillez compléter les dates et choisir une chambre ou une suite.');
+    if (!checkIn || !checkOut || (!isMaisonDhote && !selectedRoomType)) {
+      toast.error(isMaisonDhote ? 'Veuillez compléter les dates.' : 'Veuillez compléter les dates et choisir une chambre ou une suite.');
       return;
     }
 
     const eligible = rooms
       .filter((r) =>
-        (r.roomType ?? 'STANDARD').toUpperCase() === selectedRoomType &&
+        (isMaisonDhote || (r.roomType ?? 'STANDARD').toUpperCase() === selectedRoomType) &&
         r.isReservable &&
         r.status !== 'reserved' &&
         r.status !== 'blocked' &&
-        (r.capacityAdults ?? r.capacity ?? 1) >= guests
+        (isMaisonDhote || (r.capacityAdults ?? r.capacity ?? 1) >= guests)
       )
       .sort((a, b) => a.pricePerNight - b.pricePerNight);
 
     if (eligible.length === 0) {
-      toast.error('Ce type de chambre est indisponible pour ces dates ou ce nombre de voyageurs.');
-      setActiveTab('rooms');
+      toast.error(isMaisonDhote ? 'La maison d\'hôte est indisponible pour ces dates ou ce nombre de voyageurs.' : 'Ce type de chambre est indisponible pour ces dates ou ce nombre de voyageurs.');
+      if (!isMaisonDhote) setActiveTab('rooms');
       return;
     }
 
@@ -759,12 +760,11 @@ export default function HotelDetailPage() {
           {/* ── Left: Main content (360 leads on mobile) ── */}
           <div className="order-1 space-y-8 lg:order-1 lg:col-span-2">
 
-            {/* ── Tab navigation ── */}
             <div className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/[0.07] px-4">
               {(
                 [
                   { id: 'visite', label: 'Visite 360°' },
-                  { id: 'rooms', label: `Chambres / Suites${hasRooms ? ` (${rooms.length})` : ''}` },
+                  ...(!isMaisonDhote ? [{ id: 'rooms', label: `Chambres / Suites${hasRooms ? ` (${rooms.length})` : ''}` }] : []),
                   { id: 'infos', label: 'Infos pratiques' },
                 ] as { id: string; label: string }[]
               ).map((tab) => (
@@ -1125,12 +1125,15 @@ export default function HotelDetailPage() {
                 <div className="flex items-center justify-between gap-3 border-t border-amber-400/20 bg-[#0D0D0D]/95 backdrop-blur-xl px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
                   <div className="min-w-0">
                     {minimumRoomPrice ? (
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-serif text-lg font-black text-amber-400">
-                          {minimumRoomPrice.toLocaleString('fr-TN')}
-                        </span>
-                        <span className="text-xs font-bold text-amber-300/80">DT</span>
-                        <span className="text-[10px] text-neutral-500">/nuit</span>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-300/80">À partir de</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-serif text-lg font-black text-amber-400">
+                            {minimumRoomPrice.toLocaleString('fr-TN')}
+                          </span>
+                          <span className="text-xs font-bold text-amber-300/80">DT</span>
+                          <span className="text-[10px] text-neutral-500">/nuit</span>
+                        </div>
                       </div>
                     ) : (
                       <span className="text-sm text-neutral-300">Réserver</span>
@@ -1183,6 +1186,7 @@ export default function HotelDetailPage() {
 
       {/* ── Reservation booking modal ── */}
       <BookingReservationModal
+        venueType={venue.type}
         open={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)}
         startingPrice={minimumRoomPrice}

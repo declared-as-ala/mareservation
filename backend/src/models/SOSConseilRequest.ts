@@ -41,7 +41,8 @@ const CATEGORY_ENUM = [
   'cinema',
   'event_space',
   'lounge',
-  'rooftop',
+  'piscine',
+  'spa',
 ] as const;
 
 const SOSConseilRequestSchema = new Schema<ISOSConseilRequest>(

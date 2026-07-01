@@ -129,7 +129,8 @@ const PLACE_CATEGORIES = [
   'cinema',
   'event_space',
   'lounge',
-  'rooftop',
+  'piscine',
+  'spa',
 ] as const;
 
 /** Public: submit a SOS Conseil request */

@@ -396,7 +396,7 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
           { label: 'Payé', value: params.paid },
           { label: 'À régler sur place', value: params.remaining },
         ],
-        note: 'Présentez votre QR ticket à la réception. Annulation gratuite jusqu’à 24 h avant l’arrivée.',
+        note: '',
       });
       const qrAttachment = createReservationQrAttachment(reservation.qrCodeImageUrl);
       sendEmail({

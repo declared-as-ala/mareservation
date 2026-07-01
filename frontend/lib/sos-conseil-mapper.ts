@@ -7,7 +7,8 @@ export type PreferredCategory =
   | 'cinema'
   | 'event_space'
   | 'lounge'
-  | 'rooftop';
+  | 'piscine'
+  | 'spa';
 
 export type ContactPref = 'whatsapp' | 'phone' | 'email';
 
@@ -64,7 +65,8 @@ const CATEGORY_VALUES: PreferredCategory[] = [
   'cinema',
   'event_space',
   'lounge',
-  'rooftop',
+  'piscine',
+  'spa',
 ];
 
 /** Try to match loosely from FR/AR/EN-ish tokens */
@@ -105,15 +107,16 @@ function coerceCategory(raw: string): PreferredCategory {
     espace: 'event_space',
     lounge: 'lounge',
     salon: 'lounge',
-    rooftop: 'rooftop',
-    terrasse: 'rooftop',
-    roof: 'rooftop',
+    spa: 'spa',
+    piscine: 'piscine',
+    pool: 'piscine',
   };
   for (const [key, cat] of Object.entries(h))
     if (x.includes(key) || raw.toLowerCase().includes(key.replace(/_/g, ' '))) return cat;
 
   const contains = (w: string) => raw.toLowerCase().includes(w);
-  if (contains('roof') || contains('terras')) return 'rooftop';
+  if (contains('spa') || contains('bien') || contains('détente')) return 'spa';
+  if (contains('piscine') || contains('pool') || contains('baignade')) return 'piscine';
   if (contains('lounge') || contains('salon')) return 'lounge';
   return 'restaurant';
 }

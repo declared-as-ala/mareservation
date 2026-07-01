@@ -59,7 +59,8 @@ const CATEGORIES = [
   { value: 'cinema', label: 'Cinéma' },
   { value: 'event_space', label: 'Espace événementiel' },
   { value: 'lounge', label: 'Lounge / salon' },
-  { value: 'rooftop', label: 'Rooftop / terrasse' },
+  { value: 'piscine', label: 'Piscine' },
+  { value: 'spa', label: 'Spa' },
 ];
 
 /** Clés utilisées aussi par les emails admin (email.service backend) */

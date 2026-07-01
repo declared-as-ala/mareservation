@@ -1177,7 +1177,6 @@ function PaymentStep({
   const options: Array<{ key: PaymentOption; title: string; desc: string; icon: React.ComponentType<{ className?: string }>; payNow: number; remaining: number }> = [
     { key: 'online', title: 'Payer en ligne maintenant', desc: 'Carte bancaire sécurisée. Confirmation immédiate.', icon: CreditCard, payNow: total, remaining: 0 },
     { key: 'deposit', title: 'Acompte 30%', desc: 'Versez un acompte maintenant, soldez à l\'hôtel.', icon: Wallet, payNow: deposit, remaining: total - deposit },
-    { key: 'pay_at_hotel', title: 'Payer à l\'hôtel', desc: 'Aucun paiement maintenant. Confirmation soumise à l\'hôtel.', icon: Hotel, payNow: 0, remaining: total },
   ];
 
   return (

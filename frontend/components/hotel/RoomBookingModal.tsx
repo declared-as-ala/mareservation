@@ -372,6 +372,10 @@ export function RoomBookingModal({
 
   const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 0;
   const typeLabel = ROOM_TYPE_LABELS[room.roomType?.toUpperCase?.()] ?? room.roomType ?? 'Chambre';
+  const lowercaseLabel = typeLabel.toLowerCase();
+  const displayLabel = (lowercaseLabel.startsWith('chambre') || lowercaseLabel.startsWith('suite'))
+    ? lowercaseLabel
+    : `chambre ${lowercaseLabel}`;
   const coverImg = room.coverImage ?? room.gallery?.[0];
   const canContinue = !!(checkIn && checkOut && nights > 0);
 
@@ -696,8 +700,8 @@ export function RoomBookingModal({
 
                     {/* Type-mode allocation note */}
                     <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3 text-[11px] leading-relaxed text-amber-200/85">
-                      <strong className="font-bold">Une chambre {typeLabel.toLowerCase()} disponible vous sera attribuée à votre arrivée.</strong>
-                      {' '}Vous pouvez préciser vos préférences (étage, vue, lit) dans une note à l&apos;hôtel.
+                      <strong className="font-bold">Une {displayLabel} disponible vous sera attribuée à votre arrivée.</strong>
+                      {' '}Vous pouvez préciser vos préférences (étage, vue, lit) dans une note à l'hôtel.
                     </div>
 
                     {!user && (

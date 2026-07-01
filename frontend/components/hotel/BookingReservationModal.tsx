@@ -16,6 +16,7 @@ import { getRoomNights, ROOM_TYPE_LABELS, toDateInputValue, parseDateInput } fro
 import type { RoomTypeGroup } from '@/components/hotel/RoomTypeCard';
 
 interface BookingReservationModalProps {
+  venueType: string;
   open: boolean;
   onClose: () => void;
   startingPrice?: number;
@@ -32,6 +33,7 @@ interface BookingReservationModalProps {
 }
 
 export function BookingReservationModal({
+  venueType,
   open,
   onClose,
   startingPrice,
@@ -53,12 +55,14 @@ export function BookingReservationModal({
 
   const nights = checkIn && checkOut ? getRoomNights(checkIn, checkOut) : 0;
 
+  const isMaisonDhote = venueType === 'MAISON_DHOTE';
+
   function handleBook() {
     if (!checkIn || !checkOut) {
       toast.error("Veuillez sélectionner vos dates d'arrivée et de départ.");
       return;
     }
-    if (!selectedRoomType) {
+    if (!isMaisonDhote && !selectedRoomType) {
       toast.error('Veuillez choisir un type de chambre ou de suite.');
       return;
     }
@@ -182,31 +186,33 @@ export function BookingReservationModal({
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-600">
-                  Chambre / Suite
-                </label>
-                <select
-                  value={selectedRoomType}
-                  onChange={(e) => onRoomTypeChange(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-white/[0.08] bg-[#101010] px-3 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
-                >
-                  <option value="">Choisir un type</option>
-                  {groups.map((group) => {
-                    const label = ROOM_TYPE_LABELS[group.roomType] ?? group.roomType;
-                    const capacity = Math.max(
-                      ...group.rooms.map((room) => room.capacityAdults ?? room.capacity ?? 1)
-                    );
-                    const unavailable = group.availableCount === 0 || capacity < guests;
-                    return (
-                      <option key={group.roomType} value={group.roomType} disabled={unavailable}>
-                        {label} &middot; {group.minPrice.toLocaleString('fr-TN')} DT
-                        {unavailable ? ' &middot; indisponible' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
+              {!isMaisonDhote && (
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.15em] text-neutral-600">
+                    Chambre / Suite
+                  </label>
+                  <select
+                    value={selectedRoomType}
+                    onChange={(e) => onRoomTypeChange(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-white/[0.08] bg-[#101010] px-3 text-sm text-neutral-200 transition-all focus:border-amber-400/40 focus:outline-none focus:ring-1 focus:ring-amber-400/20"
+                  >
+                    <option value="">Choisir un type</option>
+                    {groups.map((group) => {
+                      const label = ROOM_TYPE_LABELS[group.roomType] ?? group.roomType;
+                      const capacity = Math.max(
+                        ...group.rooms.map((room) => room.capacityAdults ?? room.capacity ?? 1)
+                      );
+                      const unavailable = group.availableCount === 0 || capacity < guests;
+                      return (
+                        <option key={group.roomType} value={group.roomType} disabled={unavailable}>
+                          {label} &middot; {group.minPrice.toLocaleString('fr-TN')} DT
+                          {unavailable ? ' &middot; indisponible' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
 
               {nights > 0 && (
                 <div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500">
