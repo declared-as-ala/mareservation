@@ -30,7 +30,7 @@ export function SignupCardsSection() {
               Inscription Établissements
             </h3>
             <p className="mt-3 max-w-xs text-sm text-amber-100/60">
-              Attirez plus de clients grâce à MaTable.
+              Attirez plus de clients grâce à Exploria360.
             </p>
             <div className="mt-6 flex w-full max-w-xs flex-col gap-3">
               <Link

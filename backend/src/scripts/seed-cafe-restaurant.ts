@@ -281,17 +281,17 @@ async function seedCafeRestaurant() {
   await connectDatabase();
 
   // ── Owner ──────────────────────────────────────────────────────────────
-  let owner = await User.findOne({ email: 'owner.dining@matable.tn' });
+  let owner = await User.findOne({ email: 'owner.dining@exploria360.tn' });
   if (!owner) {
     owner = await User.create({
-      fullName: 'Owner Dining MaTable',
-      email: 'owner.dining@matable.tn',
+      fullName: 'Owner Dining Exploria360',
+      email: 'owner.dining@exploria360.tn',
       passwordHash: await bcrypt.hash('password123', 10),
       role: 'ESTABLISHMENT_OWNER',
       isActive: true,
       emailVerified: true,
     });
-    console.log('👤 Created dining owner: owner.dining@matable.tn / password123');
+    console.log('👤 Created dining owner: owner.dining@exploria360.tn / password123');
   }
 
   // ── Remove existing café / restaurant venues + all related data ────────

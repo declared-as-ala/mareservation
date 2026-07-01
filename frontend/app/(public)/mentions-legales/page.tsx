@@ -8,8 +8,8 @@ export default function MentionsLegalesPage() {
           <CardTitle>Mentions légales</CardTitle>
         </CardHeader>
         <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-          <p>Ma Reservation — Plateforme de réservation. Tunis, Tunisie.</p>
-          <p>Contact : contact@mareservation.tn</p>
+          <p>Exploria360 — Plateforme de réservation. Tunis, Tunisie.</p>
+          <p>Contact : contact@exploria360.com</p>
         </CardContent>
       </Card>
     </div>

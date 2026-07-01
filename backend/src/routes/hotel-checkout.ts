@@ -419,7 +419,7 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
             new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
           await sendWhatsApp({
             to: clientPhone,
-            body: `✅ Ma Reservation — Votre réservation *${params.reservationCode}* est confirmée !\n🏨 ${params.hotelName}\n📅 ${fmtShort(reservation.startAt)} → ${fmtShort(reservation.endAt)}\nConsultez votre billet : ${ticketUrl}`,
+            body: `✅ Exploria360 — Votre réservation *${params.reservationCode}* est confirmée !\n🏨 ${params.hotelName}\n📅 ${fmtShort(reservation.startAt)} → ${fmtShort(reservation.endAt)}\nConsultez votre billet : ${ticketUrl}`,
           });
         } catch (err) {
           logger.error('client confirmation WhatsApp failed', err);
@@ -501,11 +501,11 @@ router.get('/calendar/:id.ics', async (req, res) => {
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Ma Reservation//Hotel Booking//FR',
+      'PRODID:-//Exploria360//Hotel Booking//FR',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'BEGIN:VEVENT',
-      `UID:${reservation._id}@mareservation`,
+      `UID:${reservation._id}@exploria360`,
       `DTSTAMP:${fmtICS(new Date())}`,
       `DTSTART:${fmtICS(reservation.startAt)}`,
       `DTEND:${fmtICS(reservation.endAt)}`,

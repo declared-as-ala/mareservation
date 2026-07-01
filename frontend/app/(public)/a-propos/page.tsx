@@ -42,14 +42,14 @@ export default function AProposPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-transparent pointer-events-none" />
         <div className="relative mx-auto max-w-3xl px-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-xs font-semibold text-amber-300 mb-6">
-            À propos de MaTable
+            À propos de Exploria360
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
             Nous réinventons l&apos;art de{' '}
             <span className="text-amber-400">réserver</span>
           </h1>
           <p className="text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-            MaTable est la plateforme de référence pour découvrir et réserver les meilleurs établissements
+            Exploria360 est la plateforme de référence pour découvrir et réserver les meilleurs établissements
             en Tunisie. Notre mission : connecter les amoureux de bonne cuisine et de belles expériences
             avec les lieux qui les méritent.
           </p>
@@ -82,7 +82,7 @@ export default function AProposPage() {
               <h2 className="text-3xl font-bold mb-5">Notre histoire</h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed text-sm">
                 <p>
-                  MaTable est né d&apos;un constat simple : trouver et réserver une table dans un bon
+                  Exploria360 est né d&apos;un constat simple : trouver et réserver une table dans un bon
                   restaurant était encore trop compliqué. Des appels téléphoniques sans réponse,
                   des disponibilités floues, des surprises le jour J.
                 </p>
@@ -92,7 +92,7 @@ export default function AProposPage() {
                   en temps réel et une expérience de réservation fluide et moderne.
                 </p>
                 <p>
-                  Aujourd&apos;hui, MaTable est présent dans les principales villes tunisiennes et
+                  Aujourd&apos;hui, Exploria360 est présent dans les principales villes tunisiennes et
                   continue de s&apos;étendre pour offrir à chacun la meilleure expérience possible.
                 </p>
               </div>
@@ -161,7 +161,7 @@ export default function AProposPage() {
       <section className="py-20 px-6 bg-black text-center">
         <div className="mx-auto max-w-xl">
           <h2 className="text-3xl font-bold text-white mb-4">
-            Rejoignez l&apos;aventure MaTable
+            Rejoignez l&apos;aventure Exploria360
           </h2>
           <p className="text-neutral-400 mb-8 text-sm">
             Que vous soyez un utilisateur ou un établissement, nous avons une place pour vous.

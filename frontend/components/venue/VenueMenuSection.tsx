@@ -18,7 +18,7 @@ const CATEGORY_ORDER: MenuCategory[] = ['entree', 'plat', 'dessert', 'boisson', 
 
 /**
  * Premium tabbed menu display for café / restaurant detail pages.
- * Generated with Magic MCP, adapted to the Ma Reservation design system.
+ * Generated with Magic MCP, adapted to the Exploria360 design system.
  */
 export function VenueMenuSection({ items }: { items: MenuItem[] }) {
   const available = items.filter((i) => i.isAvailable !== false);

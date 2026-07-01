@@ -92,10 +92,10 @@ app.use(cookieParser());
 
 app.get('/', (req, res) => {
   res.status(200).json({
-    name: 'Ma Reservation API',
+    name: 'Exploria360 API',
     version: '1.0',
     health: '/api/v1/health',
-    message: 'Ma Reservation API is running.',
+    message: 'Exploria360 API is running.',
   });
 });
 

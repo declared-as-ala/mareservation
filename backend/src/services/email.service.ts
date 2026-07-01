@@ -91,7 +91,7 @@ export async function sendEmail({ to, subject, html, text, attachments }: EmailO
   if (smtpTransporter) {
     try {
       await smtpTransporter.sendMail({
-        from: `Look and Book <${env.EMAIL_FROM}>`,
+        from: `Exploria360 <${env.EMAIL_FROM}>`,
         to,
         subject,
         html,
@@ -119,7 +119,7 @@ export async function sendEmail({ to, subject, html, text, attachments }: EmailO
 
   try {
     await resend.emails.send({
-      from: `Look and Book <${env.EMAIL_FROM}>`,
+      from: `Exploria360 <${env.EMAIL_FROM}>`,
       to,
       subject,
       html,
@@ -144,7 +144,7 @@ export function createPasswordResetTemplate(
   resetUrl: string,
   expiresIn: string = '1 heure'
 ): { subject: string; html: string; text: string } {
-  const subject = 'Réinitialisation de votre mot de passe - Look and Book';
+  const subject = 'Réinitialisation de votre mot de passe - Exploria360';
   
   const html = `
     <!DOCTYPE html>
@@ -158,7 +158,7 @@ export function createPasswordResetTemplate(
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
           </td>
         </tr>
         <tr>
@@ -187,7 +187,7 @@ export function createPasswordResetTemplate(
         <tr>
           <td style="text-align: center; padding-top: 30px;">
             <p style="color: #525252; font-size: 12px; margin: 0;">
-              © ${new Date().getFullYear()} Look and Book. Tous droits réservés.
+              © ${new Date().getFullYear()} Exploria360. Tous droits réservés.
             </p>
           </td>
         </tr>
@@ -206,7 +206,7 @@ ${resetUrl}
 
 Ce lien expirera dans ${expiresIn}. Si vous n'avez pas demandé de réinitialisation, vous pouvez ignorer cet email en toute sécurité.
 
-© ${new Date().getFullYear()} Look and Book. Tous droits réservés.
+© ${new Date().getFullYear()} Exploria360. Tous droits réservés.
   `;
 
   return { subject, html, text };
@@ -218,7 +218,7 @@ export function createEmailVerificationTemplate(
   verificationUrl: string,
   expiresIn: string = '24 heures'
 ): { subject: string; html: string; text: string } {
-  const subject = 'Vérifiez votre adresse email - Look and Book';
+  const subject = 'Vérifiez votre adresse email - Exploria360';
   
   const html = `
     <!DOCTYPE html>
@@ -232,7 +232,7 @@ export function createEmailVerificationTemplate(
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
           </td>
         </tr>
         <tr>
@@ -242,7 +242,7 @@ export function createEmailVerificationTemplate(
               Bonjour ${userName},
             </p>
             <p style="color: #a3a3a3; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
-              Merci de vous être inscrit sur Look and Book ! Pour activer votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :
+              Merci de vous être inscrit sur Exploria360 ! Pour activer votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :
             </p>
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
@@ -261,7 +261,7 @@ export function createEmailVerificationTemplate(
         <tr>
           <td style="text-align: center; padding-top: 30px;">
             <p style="color: #525252; font-size: 12px; margin: 0;">
-              © ${new Date().getFullYear()} Look and Book. Tous droits réservés.
+              © ${new Date().getFullYear()} Exploria360. Tous droits réservés.
             </p>
           </td>
         </tr>
@@ -273,14 +273,14 @@ export function createEmailVerificationTemplate(
   const text = `
 Bonjour ${userName},
 
-Merci de vous être inscrit sur Look and Book !
+Merci de vous être inscrit sur Exploria360 !
 
 Pour vérifier votre adresse email, cliquez sur le lien suivant :
 ${verificationUrl}
 
 Ce lien expirera dans ${expiresIn}. Si vous n'avez pas créé de compte, vous pouvez ignorer cet email.
 
-© ${new Date().getFullYear()} Look and Book. Tous droits réservés.
+© ${new Date().getFullYear()} Exploria360. Tous droits réservés.
   `;
 
   return { subject, html, text };
@@ -353,7 +353,7 @@ export function createSOSConseilAdminTemplate(data: {
     <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:32px 20px;">
       <tr><td style="text-align:center;padding-bottom:24px;">
-        <div style="font-size:22px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
         <p style="color:#525252;font-size:12px;margin:4px 0 0">Service Conciergerie</p>
       </td></tr>
       <tr><td style="background:#171717;border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,0.08);">
@@ -394,13 +394,13 @@ export function createSOSConseilAdminTemplate(data: {
         </div>
       </td></tr>
       <tr><td style="text-align:center;padding-top:24px;">
-        <p style="color:#404040;font-size:11px;margin:0">© ${new Date().getFullYear()} Look and Book · Panneau d'administration</p>
+        <p style="color:#404040;font-size:11px;margin:0">© ${new Date().getFullYear()} Exploria360 · Panneau d'administration</p>
       </td></tr>
     </table></body></html>
   `;
 
   const text = `
-Nouvelle demande SOS Conseil — Look and Book
+Nouvelle demande SOS Conseil — Exploria360
 
 Client : ${data.fullName}
 Téléphone : ${data.phone}
@@ -442,7 +442,7 @@ export function createPartnerApplicationAdminTemplate(data: {
     <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:32px 20px;">
       <tr><td style="text-align:center;padding-bottom:24px;">
-        <div style="font-size:22px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
         <p style="color:#525252;font-size:12px;margin:4px 0 0">Demandes de partenariat</p>
       </td></tr>
       <tr><td style="background:#171717;border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,0.08);">
@@ -473,13 +473,13 @@ export function createPartnerApplicationAdminTemplate(data: {
         </div>
       </td></tr>
       <tr><td style="text-align:center;padding-top:24px;">
-        <p style="color:#404040;font-size:11px;margin:0">© ${new Date().getFullYear()} Look and Book · Panneau d'administration</p>
+        <p style="color:#404040;font-size:11px;margin:0">© ${new Date().getFullYear()} Exploria360 · Panneau d'administration</p>
       </td></tr>
     </table></body></html>
   `;
 
   const text = `
-Nouvelle demande de partenariat — Look and Book
+Nouvelle demande de partenariat — Exploria360
 
 Établissement : ${data.establishmentName}
 Contact : ${data.contactName}
@@ -526,7 +526,7 @@ export function createReservationConfirmationTemplate(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Réservation confirmée — Look and Book</title>
+  <title>Réservation confirmée — Exploria360</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A0A0A;">
@@ -608,7 +608,7 @@ export function createReservationConfirmationTemplate(
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 <tr>
                   <td align="center">
-                    <a href="https://mareservation.tn/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Voir ma réservation</a>
+                    <a href="https://exploria360.com/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Voir ma réservation</a>
                   </td>
                 </tr>
               </table>
@@ -630,7 +630,7 @@ export function createReservationConfirmationTemplate(
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
           <tr>
             <td align="center" style="padding:28px 16px;">
-              <p style="margin:0 0 4px;font-size:12px;color:#374151;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Look and Book</span> · Plateforme de réservation premium en Tunisie</p>
+              <p style="margin:0 0 4px;font-size:12px;color:#374151;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Exploria360</span> · Plateforme de réservation premium en Tunisie</p>
               <p style="margin:0;font-size:11px;color:#1f2937;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </td>
           </tr>
@@ -655,9 +655,9 @@ Couverts : ${partySize}${tableLabel ? `\nTable : ${tableLabel}` : tableNumber ? 
 
 Présentez ce code en caisse à votre arrivée.
 
-Voir ma réservation : https://mareservation.tn/reservations
+Voir ma réservation : https://exploria360.com/reservations
 
-© ${new Date().getFullYear()} Look and Book. Tous droits réservés.
+© ${new Date().getFullYear()} Exploria360. Tous droits réservés.
   `;
 
   return { subject, html, text };
@@ -684,7 +684,7 @@ export function createReservationCancellationTemplate(
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
+            <div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div>
           </td>
         </tr>
         <tr>
@@ -739,7 +739,7 @@ export function createReservationReminderTemplate(
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
-          <div style="margin:0 0 20px 0;"><div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></div>
+          <div style="margin:0 0 20px 0;"><div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></div>
           <h2 style="color:#fff;margin:0 0 16px 0;">Rappel de votre reservation</h2>
           <p style="color:#a3a3a3;line-height:1.6;">Bonjour ${userName}, votre reservation approche.</p>
           <p style="color:#fff;line-height:1.8;">
@@ -767,7 +767,7 @@ export function createReservationReviewRequestTemplate(
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
-          <div style="margin:0 0 20px 0;"><div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></div>
+          <div style="margin:0 0 20px 0;"><div style="font-size:25px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></div>
           <h2 style="color:#fff;margin:0 0 16px 0;">Votre avis nous interesse</h2>
           <p style="color:#a3a3a3;line-height:1.6;">Bonjour ${userName}, merci pour votre passage chez ${venueName}.</p>
           <p style="color:#a3a3a3;line-height:1.6;">Si vous avez quelques minutes, laissez un avis sur votre reservation ${reservationCode} pour aider les prochains clients.</p>
@@ -810,7 +810,7 @@ export function createHotelClientConfirmationTemplate(p: HotelEmailParams): { su
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Réservation confirmée</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonjour ${p.guestName},</h2>
@@ -850,7 +850,7 @@ export function createHotelOwnerNewReservationTemplate(p: HotelEmailParams & { o
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Nouvelle réservation</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonjour ${p.ownerName},</h2>
@@ -892,7 +892,7 @@ function emailShell(opts: {
     .join('');
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-      <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+      <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
       <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
         <div style="display:inline-block;background:${opts.badgeColor}1f;border:1px solid ${opts.badgeColor}4d;color:${opts.badgeColor};padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">${opts.badge}</div>
         <h2 style="color:#fff;margin:16px 0 12px 0;font-size:22px;">${opts.heading}</h2>
@@ -900,7 +900,7 @@ function emailShell(opts: {
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.05);">${rowsHtml}</table>
         ${opts.footer ? `<p style="color:#6b7280;font-size:12px;line-height:1.6;margin:22px 0 0 0;">${opts.footer}</p>` : ''}
       </td></tr>
-      <tr><td style="text-align:center;padding-top:24px;"><p style="color:#525252;font-size:12px;margin:0;">© ${new Date().getFullYear()} Look and Book</p></td></tr>
+      <tr><td style="text-align:center;padding-top:24px;"><p style="color:#525252;font-size:12px;margin:0;">© ${new Date().getFullYear()} Exploria360</p></td></tr>
     </table></body></html>`;
 }
 
@@ -1010,7 +1010,7 @@ export function createOwnerNewReservationTemplate(p: {
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                 <tr>
                   <td align="center">
-                    <a href="https://mareservation.tn/admin/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Gérer les réservations</a>
+                    <a href="https://exploria360.com/admin/reservations" style="display:inline-block;background:linear-gradient(135deg,#D4AF37,#fbbf24,#f59e0b);color:#000000;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:0.02em;">Gérer les réservations</a>
                   </td>
                 </tr>
               </table>
@@ -1032,7 +1032,7 @@ export function createOwnerNewReservationTemplate(p: {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
           <tr>
             <td align="center" style="padding:24px 16px;">
-              <p style="margin:0;font-size:11px;color:#1f2937;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Look and Book</span> · Panneau d'administration propriétaire</p>
+              <p style="margin:0;font-size:11px;color:#1f2937;">© ${new Date().getFullYear()} <span style="color:#D4AF37;">Exploria360</span> · Panneau d'administration propriétaire</p>
             </td>
           </tr>
         </table>
@@ -1054,10 +1054,10 @@ Date : ${p.date}
 Heure : ${p.time}
 Couverts : ${p.partySize}
 
-Gérer les réservations : https://mareservation.tn/admin/reservations
+Gérer les réservations : https://exploria360.com/admin/reservations
 
 Reçu le ${timestamp}
-© ${new Date().getFullYear()} Look and Book.`;
+© ${new Date().getFullYear()} Exploria360.`;
   return { subject, html, text };
 }
 
@@ -1119,7 +1119,7 @@ export function createReservationAcceptedTemplate(p: HotelEmailParams): { subjec
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Acceptée</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonne nouvelle ${p.guestName} !</h2>
@@ -1170,7 +1170,7 @@ export function createOwnerReservationEmail(p: OwnerReservationEmailParams): { s
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Nouvelle réservation</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">${p.venueName}</h2>
@@ -1205,13 +1205,13 @@ export function createReservationRejectedTemplate(p: HotelEmailParams & { reason
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Demande refusée</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonjour ${p.guestName},</h2>
           <p style="color:#a3a3a3;font-size:15px;line-height:1.6;margin:0 0 18px 0;">L'hôtel <strong style="color:#fff;">${p.hotelName}</strong> n'a malheureusement pas pu honorer votre demande pour la chambre <strong style="color:#fff;">${p.roomName}</strong>, du ${p.checkIn} au ${p.checkOut}. Aucun paiement n'a été prélevé.</p>
           ${reasonBlock}
-          <p style="color:#a3a3a3;font-size:14px;line-height:1.6;margin-top:18px;">Vous pouvez explorer d'autres établissements similaires sur Look and Book. Référence : <span style="font-family:monospace;color:#fbbf24;">${p.reservationCode}</span>.</p>
+          <p style="color:#a3a3a3;font-size:14px;line-height:1.6;margin-top:18px;">Vous pouvez explorer d'autres établissements similaires sur Exploria360. Référence : <span style="font-family:monospace;color:#fbbf24;">${p.reservationCode}</span>.</p>
         </td></tr>
       </table>
     </body></html>`;
@@ -1232,7 +1232,7 @@ export function createCheckinReminderTemplate(p: {
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Rappel de séjour</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">À demain, ${p.guestName} !</h2>
@@ -1265,7 +1265,7 @@ export function createReviewRequestTemplate(p: {
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           <div style="display:inline-block;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Votre avis</div>
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonjour ${p.guestName},</h2>
@@ -1290,13 +1290,13 @@ export function createHotelApprovalTemplate(p: { ownerName: string; hotelName: s
     ? `<div style="display:inline-block;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Approuvé</div>`
     : `<div style="display:inline-block;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Refusé</div>`;
   const body = p.approved
-    ? `<p style="color:#a3a3a3;font-size:15px;line-height:1.6;">Votre établissement <strong style="color:#fff;">${p.hotelName}</strong> est désormais visible sur Look and Book. Les clients peuvent commencer à réserver immédiatement.</p>`
+    ? `<p style="color:#a3a3a3;font-size:15px;line-height:1.6;">Votre établissement <strong style="color:#fff;">${p.hotelName}</strong> est désormais visible sur Exploria360. Les clients peuvent commencer à réserver immédiatement.</p>`
     : `<p style="color:#a3a3a3;font-size:15px;line-height:1.6;">Votre demande pour <strong style="color:#fff;">${p.hotelName}</strong> n'a pas été approuvée.</p>${p.reason ? `<p style="color:#a3a3a3;font-size:14px;background:#0a0a0a;border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.05);"><strong style="color:#fff;">Motif :</strong> ${p.reason}</p>` : ''}`;
   const html = `
     <!DOCTYPE html>
     <html><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0a0a0a;">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:40px 20px;">
-        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">LOOK AND BOOK</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
+        <tr><td style="text-align:center;padding-bottom:24px;"><div style="font-size:23px;font-weight:800;letter-spacing:0.14em;color:#fbbf24;text-transform:uppercase;">EXPLORIA360</div><div style="margin-top:5px;font-size:9px;font-weight:700;letter-spacing:0.36em;color:#9ca3af;text-transform:uppercase;">Book your moment</div></td></tr>
         <tr><td style="background:#171717;border-radius:16px;padding:36px;border:1px solid rgba(255,255,255,0.08);">
           ${banner}
           <h2 style="color:#fff;margin:16px 0 8px 0;font-size:22px;">Bonjour ${p.ownerName},</h2>

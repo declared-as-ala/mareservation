@@ -8,7 +8,7 @@ export default function CGVPage() {
           <CardTitle>Conditions générales de vente</CardTitle>
         </CardHeader>
         <CardContent className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-          <p>Les présentes conditions régissent l&apos;utilisation de la plateforme Ma Reservation et les réservations effectuées via celle-ci.</p>
+          <p>Les présentes conditions régissent l&apos;utilisation de la plateforme Exploria360 et les réservations effectuées via celle-ci.</p>
         </CardContent>
       </Card>
     </div>

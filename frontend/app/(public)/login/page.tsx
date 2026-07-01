@@ -161,7 +161,7 @@ function LoginForm() {
               Connexion
             </CardTitle>
             <CardDescription className="text-center text-sm text-neutral-400 leading-relaxed">
-              Accédez à votre espace personnel Ma Reservation
+              Accédez à votre espace personnel Exploria360
             </CardDescription>
           </CardHeader>
 

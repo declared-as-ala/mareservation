@@ -49,7 +49,7 @@ const features = [
 const faqs = [
   {
     q: 'Est-ce gratuit pour les utilisateurs ?',
-    a: 'Oui, MaTable est entièrement gratuit pour les clients. Aucun frais de réservation n\'est appliqué.',
+    a: 'Oui, Exploria360 est entièrement gratuit pour les clients. Aucun frais de réservation n\'est appliqué.',
   },
   {
     q: 'Puis-je annuler ma réservation ?',
@@ -134,7 +134,7 @@ export default function CommentCaMarchePage() {
       {/* Features */}
       <section className="py-16 px-6 bg-muted/30">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-2xl font-bold text-center mb-10">Pourquoi choisir MaTable ?</h2>
+          <h2 className="text-2xl font-bold text-center mb-10">Pourquoi choisir Exploria360 ?</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {features.map((f) => {
               const Icon = f.icon;

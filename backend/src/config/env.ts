@@ -55,7 +55,7 @@ export function getEnv(): Env {
 
   const raw = {
     ...cleanEnv,
-    MONGODB_URI: cleanEnv.MONGODB_URI || cleanEnv.MONGO_URI || (cleanEnv.NODE_ENV === 'production' ? undefined : 'mongodb://localhost:27017/mareservation'),
+    MONGODB_URI: cleanEnv.MONGODB_URI || cleanEnv.MONGO_URI || (cleanEnv.NODE_ENV === 'production' ? undefined : 'mongodb://localhost:27017/exploria360'),
     // In development, provide safe defaults so the app still starts
     JWT_SECRET: cleanEnv.JWT_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-jwt-secret-must-be-at-least-32-chars-long-for-validation'),
     REFRESH_SECRET: cleanEnv.REFRESH_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-refresh-secret-must-be-at-least-32-chars-long-for-validation'),

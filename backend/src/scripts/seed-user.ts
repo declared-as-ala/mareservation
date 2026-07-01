@@ -24,10 +24,10 @@ async function seedUser() {
   );
 
   await User.findOneAndUpdate(
-    { email: 'owner.cafe@matable.tn' },
+    { email: 'owner.cafe@exploria360.tn' },
     {
-      fullName: 'Owner Cafe MaTable',
-      email: 'owner.cafe@matable.tn',
+      fullName: 'Owner Cafe Exploria360',
+      email: 'owner.cafe@exploria360.tn',
       passwordHash: hash,
       role: 'ESTABLISHMENT_OWNER',
       isActive: true,

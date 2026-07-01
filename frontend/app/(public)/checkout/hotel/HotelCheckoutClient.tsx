@@ -1244,7 +1244,7 @@ function PaymentStep({
       </div>
 
       <Notice icon={Lock} tone="success">
-        Paiement chiffré SSL · Aucune donnée bancaire n'est stockée par Ma Reservation.
+        Paiement chiffré SSL · Aucune donnée bancaire n'est stockée par Exploria360.
       </Notice>
 
       <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5 space-y-3">
@@ -1258,7 +1258,7 @@ function PaymentStep({
         <Checkbox
           checked={acceptedPlatformTerms}
           onChange={onAcceptPlatform}
-          label="J'accepte les conditions générales de Ma Reservation"
+          label="J'accepte les conditions générales de Exploria360"
           description="Voir les CGV et la politique de confidentialité."
         />
       </div>

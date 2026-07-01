@@ -20,7 +20,7 @@ async function notifyOwnerPayout(ownerId: string, subject: string, message: stri
     const html = `
       <!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#0a0a0a;padding:20px;">
       <div style="max-width:600px;margin:auto;background:#171717;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;">
-        <h2 style="color:#fbbf24;margin:0 0 12px 0;">Ma Reservation</h2>
+        <h2 style="color:#fbbf24;margin:0 0 12px 0;">Exploria360</h2>
         <p style="color:#fff;margin:0 0 10px 0;">Bonjour ${ownerName},</p>
         <p style="color:#a3a3a3;margin:0;line-height:1.6;">${message}</p>
       </div></body></html>`;

@@ -21,7 +21,7 @@ export interface IAppSettings extends Document {
 
 const AppSettingsSchema = new Schema<IAppSettings>(
   {
-    siteName: { type: String, default: 'Ma Reservation' },
+    siteName: { type: String, default: 'Exploria360' },
     logoUrlLight: { type: String },
     logoUrlDark: { type: String },
     supportPhone: { type: String },

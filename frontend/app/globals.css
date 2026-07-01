@@ -110,7 +110,7 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* ─── MaTable Luxury White + Gold Design Tokens ─── */
+  /* ─── Exploria360 Luxury White + Gold Design Tokens ─── */
   /* Gold accent — elegant, minimal use */
   --color-gold: #D4AF37;
   --color-gold-light: #E8C84A;
@@ -120,19 +120,19 @@
   --color-gold-glow: 0 4px 20px rgba(212, 175, 55, 0.15);
 
   /* Deprecated blue aliases → gold (for backward compat) */
-  --color-matable-primary: #D4AF37;
-  --color-matable-primary-light: #E8C84A;
-  --color-matable-secondary: #F5E6B8;
-  --color-matable-cta: #D4AF37;
-  --color-matable-cta-hover: #B8962E;
+  --color-exploria360-primary: #D4AF37;
+  --color-exploria360-primary-light: #E8C84A;
+  --color-exploria360-secondary: #F5E6B8;
+  --color-exploria360-cta: #D4AF37;
+  --color-exploria360-cta-hover: #B8962E;
 
   /* Luxury white surfaces */
-  --color-matable-bg: #FFFFFF;
-  --color-matable-bg-light: #F9F9F9;
-  --color-matable-surface: #FFFFFF;
-  --color-matable-surface-hover: #FAFAFA;
-  --color-matable-text: #111111;
-  --color-matable-text-muted: #666666;
+  --color-exploria360-bg: #FFFFFF;
+  --color-exploria360-bg-light: #F9F9F9;
+  --color-exploria360-surface: #FFFFFF;
+  --color-exploria360-surface-hover: #FAFAFA;
+  --color-exploria360-text: #111111;
+  --color-exploria360-text-muted: #666666;
 
   /* Spacing system (8px scale) */
   --space-xs: 4px;

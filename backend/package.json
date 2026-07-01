@@ -1,7 +1,7 @@
 {
-  "name": "matable-backend",
+  "name": "exploria360-backend",
   "version": "1.0.0",
-  "description": "MaTable backend API",
+  "description": "Exploria360 backend API",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {

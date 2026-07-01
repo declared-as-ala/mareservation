@@ -50,7 +50,7 @@ function EmailVerifiedContent() {
               </div>
               <h1 className="text-2xl font-bold text-white mb-2">Email vérifié !</h1>
               <p className="text-zinc-400 text-sm leading-relaxed mb-8">
-                Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant profiter de toutes les fonctionnalités de Ma Reservation.
+                Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant profiter de toutes les fonctionnalités de Exploria360.
               </p>
               <div className="flex flex-col gap-3">
                 <Link

@@ -87,7 +87,7 @@ router.post('/chat', sosConseilChatLimiter, async (req: Request, res: Response) 
       process.env.OPENROUTER_SITE_URL ||
       process.env.FRONTEND_URL ||
       'http://localhost:3000';
-    const appTitle = process.env.OPENROUTER_APP_TITLE || 'MaTable SOS Conseil';
+    const appTitle = process.env.OPENROUTER_APP_TITLE || 'Exploria360 SOS Conseil';
 
     const result = await runSOSConseilChat({
       messages: sanitized,

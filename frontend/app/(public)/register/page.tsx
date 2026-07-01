@@ -161,7 +161,7 @@ export default function RegisterPage() {
               Inscription
             </CardTitle>
             <CardDescription className="text-center text-sm text-neutral-400 leading-relaxed">
-              Créez votre compte Ma Reservation
+              Créez votre compte Exploria360
             </CardDescription>
           </CardHeader>
 

@@ -5,9 +5,9 @@
  */
 
 // This script runs in MongoDB directly via mongosh
-// Accessed as: mongodb://admin:changeme@mongodb:27017/mareservation?authSource=admin
+// Accessed as: mongodb://admin:changeme@mongodb:27017/exploria360?authSource=admin
 
-db = db.getSiblingDB('mareservation');
+db = db.getSiblingDB('exploria360');
 
 // Create indexes
 print('Creating indexes...');
@@ -51,9 +51,9 @@ print(`✓ Seeded ${tags.length} tags`);
 
 // Seed admin user
 print('Seeding admin user...');
-db.users.deleteMany({ email: 'admin@mareservation.tn' });
+db.users.deleteMany({ email: 'admin@exploria360.com' });
 db.users.insertOne({
-  email: 'admin@mareservation.tn',
+  email: 'admin@exploria360.com',
   firstName: 'Admin',
   lastName: 'User',
   fullName: 'Admin User',
@@ -66,7 +66,7 @@ db.users.insertOne({
   updatedAt: new Date(),
   isDeleted: false,
 });
-print('✓ Seeded admin user (email: admin@mareservation.tn, password: admin123)');
+print('✓ Seeded admin user (email: admin@exploria360.com, password: admin123)');
 
 // Seed default settings
 print('Seeding app settings...');
@@ -74,11 +74,11 @@ db.appsettings.deleteMany({});
 db.appsettings.insertOne({
   key: 'PLATFORM_CONFIG',
   value: {
-    platformName: 'Ma Reservation',
+    platformName: 'Exploria360',
     platformVersion: '1.0.0',
     maxImageUploadSizeMB: 50,
     maxVideoUploadSizeMB: 500,
-    supportEmail: 'support@mareservation.tn',
+    supportEmail: 'support@exploria360.com',
   },
   createdAt: new Date(),
   updatedAt: new Date(),

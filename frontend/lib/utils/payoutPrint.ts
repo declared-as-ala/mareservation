@@ -143,7 +143,7 @@ export function printPayout(payout: Payout, ownerName?: string): void {
   </table>
 
   <div class="footer">
-    Ma Réservation · Plateforme de réservation premium · Ce document est généré automatiquement.
+    Exploria360 · Plateforme de réservation premium · Ce document est généré automatiquement.
   </div>
 
   <script>

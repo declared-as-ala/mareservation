@@ -1,4 +1,4 @@
-# MaTable / Ma Reservation — Backend (`backend/`)
+# Exploria360 / Exploria360 — Backend (`backend/`)
 
 This document helps AI assistants understand **what this API serves**, **the product goal**, and **how the Express + MongoDB server is organized**.
 
@@ -6,7 +6,7 @@ This document helps AI assistants understand **what this API serves**, **the pro
 
 ## What is this application?
 
-**Ma Reservation** (API name surfaced as *Ma Reservation API*) powers a **French** booking and discovery product:
+**Exploria360** (API name surfaced as *Exploria360 API*) powers a **French** booking and discovery product:
 
 - Operators manage **venues**, **events**, **tables/rooms**, **categories/tags**, **banner slides**, and **immersive virtual tours**.
 - End users **search**, **view venues/events**, and create **reservations** (tables, rooms, seats) with conflict checks.

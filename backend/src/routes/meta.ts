@@ -13,7 +13,7 @@ router.get('/homepage-config', async (_req, res) => {
       BannerSlide.find({ isActive: true }).sort({ sortOrder: 1 }).lean(),
     ]);
     const config = {
-      siteName: settings?.siteName ?? 'Ma Reservation',
+      siteName: settings?.siteName ?? 'Exploria360',
       logoUrlLight: settings?.logoUrlLight,
       logoUrlDark: settings?.logoUrlDark,
       supportPhone: settings?.supportPhone,

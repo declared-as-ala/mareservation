@@ -318,7 +318,7 @@ export function HomeNavbar() {
           {/* Footer */}
           <div className="border-t border-white/[0.06] px-4 py-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))]">
             <p className="text-center text-[11px] text-neutral-600">
-              <span className="font-serif font-bold text-amber-300/80">Look and Book</span> — Book your moment
+              <span className="font-serif font-bold text-amber-300/80">Exploria360</span> — Book your moment
             </p>
           </div>
         </SheetContent>

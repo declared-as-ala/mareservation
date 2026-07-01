@@ -144,7 +144,7 @@ export default function AdminSettingsPage() {
               <Label htmlFor="siteName" className="text-zinc-300">Nom du site</Label>
               <Input 
                 id="siteName" 
-                placeholder="MaTable" 
+                placeholder="Exploria360" 
                 {...field('siteName')} 
                 className="border-zinc-700 bg-zinc-800/50 text-zinc-100 placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500/20"
               />
@@ -265,7 +265,7 @@ export default function AdminSettingsPage() {
               <Input 
                 id="supportEmail" 
                 type="email" 
-                placeholder="support@matable.tn" 
+                placeholder="support@exploria360.tn" 
                 {...field('supportEmail')} 
                 className="border-zinc-700 bg-zinc-800/50 text-zinc-100 placeholder:text-zinc-500 focus:border-amber-500 focus:ring-amber-500/20"
               />

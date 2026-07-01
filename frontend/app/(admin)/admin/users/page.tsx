@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
               onClick={() => setRoleFilter(roleFilter === role ? 'all' : role)}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition-all duration-200 cursor-pointer ${
                 roleFilter === role
-                  ? 'bg-matable-primary/10 text-matable-primary border-matable-primary/30 shadow-sm shadow-matable-primary/10'
+                  ? 'bg-exploria360-primary/10 text-exploria360-primary border-exploria360-primary/30 shadow-sm shadow-exploria360-primary/10'
                   : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
               }`}
             >
@@ -166,7 +166,7 @@ export default function AdminUsersPage() {
             onClick={() => setRoleFilter('all')}
             className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition-all duration-200 cursor-pointer ${
               roleFilter === 'all'
-                ? 'bg-matable-primary/10 text-matable-primary border-matable-primary/30 shadow-sm shadow-matable-primary/10'
+                ? 'bg-exploria360-primary/10 text-exploria360-primary border-exploria360-primary/30 shadow-sm shadow-exploria360-primary/10'
                 : 'bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
             }`}
           >
@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
         <CardHeader className="pb-4 border-b border-zinc-800">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <CardTitle className="flex items-center gap-2 text-base text-zinc-100">
-              <Users className="size-4 text-matable-primary" />
+              <Users className="size-4 text-exploria360-primary" />
               Liste des utilisateurs
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -191,11 +191,11 @@ export default function AdminUsersPage() {
                   placeholder="Rechercher un utilisateur..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 h-9 text-sm w-[220px] border-zinc-700 bg-zinc-800/50 text-zinc-100 placeholder:text-zinc-500 focus:border-matable-primary focus:ring-matable-primary/20 transition-all duration-200"
+                  className="pl-9 h-9 text-sm w-[220px] border-zinc-700 bg-zinc-800/50 text-zinc-100 placeholder:text-zinc-500 focus:border-exploria360-primary focus:ring-exploria360-primary/20 transition-all duration-200"
                 />
               </div>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="h-9 text-sm w-[150px] border-zinc-700 bg-zinc-800/50 text-zinc-100 focus:border-matable-primary focus:ring-matable-primary/20 transition-all duration-200">
+                <SelectTrigger className="h-9 text-sm w-[150px] border-zinc-700 bg-zinc-800/50 text-zinc-100 focus:border-exploria360-primary focus:ring-exploria360-primary/20 transition-all duration-200">
                   <SelectValue placeholder="Tous les rôles" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -248,7 +248,7 @@ export default function AdminUsersPage() {
                 filtered.map((u) => (
                   <TableRow 
                     key={u._id} 
-                    className="border-zinc-800 hover:bg-matable-primary/5 transition-all duration-200 cursor-pointer group"
+                    className="border-zinc-800 hover:bg-exploria360-primary/5 transition-all duration-200 cursor-pointer group"
                     title={`Voir les détails de ${getDisplayName(u)}`}
                   >
                     <TableCell className="pl-4">
@@ -256,7 +256,7 @@ export default function AdminUsersPage() {
                         <div className="size-9 rounded-full bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center text-xs font-bold text-amber-400 shrink-0 group-hover:scale-105 transition-transform duration-200">
                           {getInitials(u)}
                         </div>
-                        <span className="font-medium text-sm text-zinc-100 group-hover:text-matable-cta transition-colors duration-200">{getDisplayName(u)}</span>
+                        <span className="font-medium text-sm text-zinc-100 group-hover:text-exploria360-cta transition-colors duration-200">{getDisplayName(u)}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-zinc-400">{u.email}</TableCell>
@@ -271,7 +271,7 @@ export default function AdminUsersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-8 text-zinc-400 hover:text-matable-primary hover:bg-matable-primary/10 transition-all duration-200 cursor-pointer"
+                          className="size-8 text-zinc-400 hover:text-exploria360-primary hover:bg-exploria360-primary/10 transition-all duration-200 cursor-pointer"
                           onClick={() => {
                             setEditTarget(u);
                             setEditRole(u.role ?? 'USER');
@@ -312,7 +312,7 @@ export default function AdminUsersPage() {
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-zinc-800/60 border border-zinc-700/50">
-              <div className="size-10 rounded-full bg-gradient-to-br from-matable-primary/20 to-matable-primary/40 border border-matable-primary/30 flex items-center justify-center text-sm font-bold text-matable-primary">
+              <div className="size-10 rounded-full bg-gradient-to-br from-exploria360-primary/20 to-exploria360-primary/40 border border-exploria360-primary/30 flex items-center justify-center text-sm font-bold text-exploria360-primary">
                 {editTarget ? getInitials(editTarget) : ''}
               </div>
               <div>
@@ -323,7 +323,7 @@ export default function AdminUsersPage() {
             <div className="space-y-1.5">
               <Label className="text-zinc-300">Rôle</Label>
               <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger className="border-zinc-700 bg-zinc-800/50 text-zinc-100 focus:border-matable-primary focus:ring-matable-primary/20">
+                <SelectTrigger className="border-zinc-700 bg-zinc-800/50 text-zinc-100 focus:border-exploria360-primary focus:ring-exploria360-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -341,7 +341,7 @@ export default function AdminUsersPage() {
             <Button
               onClick={() => editTarget && updateMut.mutate({ id: editTarget._id, role: editRole })}
               disabled={updateMut.isPending}
-              className="bg-matable-primary text-white hover:bg-matable-primary-light cursor-pointer"
+              className="bg-exploria360-primary text-white hover:bg-exploria360-primary-light cursor-pointer"
             >
               {updateMut.isPending ? 'Enregistrement...' : 'Mettre à jour'}
             </Button>

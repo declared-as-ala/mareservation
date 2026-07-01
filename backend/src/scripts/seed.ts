@@ -76,8 +76,8 @@ async function seed() {
   const hash = await bcrypt.hash(PASSWORD, 10);
 
   await User.create({
-    fullName: 'Admin Ma Reservation',
-    email: 'admin@mareservation.tn',
+    fullName: 'Admin Exploria360',
+    email: 'admin@exploria360.com',
     passwordHash: hash,
     role: 'ADMIN',
   });
@@ -505,7 +505,7 @@ async function seed() {
 
   console.log('\n✅ Seed completed.');
   console.log('\n📝 Credentials (password: ' + PASSWORD + ')');
-  console.log('  Admin:   admin@mareservation.tn');
+  console.log('  Admin:   admin@exploria360.com');
   console.log('  Customer (with reservations): client1@example.com');
   console.log('  Customer (pending + cancelled): client2@example.com');
   console.log('  Customers: client3@example.com, client4@example.com, client5@example.com');

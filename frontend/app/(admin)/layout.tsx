@@ -422,7 +422,7 @@ function SidebarContent({
         <div className="flex-1 min-w-0">
           <Image
             src="/logo.png"
-            alt="Ma Table"
+            alt="Exploria360"
             width={400}
             height={110}
             className="h-16 w-auto object-contain"
@@ -532,7 +532,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
-          <Image src="/logo.png" alt="Ma Table" width={400} height={110} className="h-16 w-auto object-contain" />
+          <Image src="/logo.png" alt="Exploria360" width={400} height={110} className="h-16 w-auto object-contain" />
           <p className="text-sm text-zinc-500">Vérification des droits...</p>
         </div>
       </div>

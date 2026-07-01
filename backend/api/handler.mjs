@@ -13198,7 +13198,7 @@ import { Router as Router3 } from "express";
 import mongoose4, { Schema as Schema3 } from "mongoose";
 var AppSettingsSchema = new Schema3(
   {
-    siteName: { type: String, default: "Ma Reservation" },
+    siteName: { type: String, default: "Exploria360" },
     logoUrlLight: { type: String },
     logoUrlDark: { type: String },
     supportPhone: { type: String },
@@ -13275,7 +13275,7 @@ router3.get("/homepage-config", async (_req, res) => {
       BannerSlide.find({ isActive: true }).sort({ sortOrder: 1 }).lean()
     ]);
     const config = {
-      siteName: settings?.siteName ?? "Ma Reservation",
+      siteName: settings?.siteName ?? "Exploria360",
       logoUrlLight: settings?.logoUrlLight,
       logoUrlDark: settings?.logoUrlDark,
       supportPhone: settings?.supportPhone,
@@ -14222,7 +14222,7 @@ var envSchema = z.object({
 function getEnv() {
   const raw = {
     ...process.env,
-    MONGODB_URI: process.env.MONGODB_URI || process.env.MONGO_URI || (process.env.NODE_ENV === "production" ? void 0 : "mongodb://localhost:27017/mareservation"),
+    MONGODB_URI: process.env.MONGODB_URI || process.env.MONGO_URI || (process.env.NODE_ENV === "production" ? void 0 : "mongodb://localhost:27017/exploria360"),
     // In development, provide safe defaults so the app still starts
     JWT_SECRET: process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? void 0 : "dev-jwt-secret-must-be-at-least-32-chars-long-for-validation"),
     REFRESH_SECRET: process.env.REFRESH_SECRET || (process.env.NODE_ENV === "production" ? void 0 : "dev-refresh-secret-must-be-at-least-32-chars-long-for-validation")
@@ -19154,7 +19154,7 @@ async function sendEmail({ to, subject, html, text }) {
   if (smtpTransporter) {
     try {
       await smtpTransporter.sendMail({
-        from: `Ma Reservation <${env2.EMAIL_FROM}>`,
+        from: `Exploria360 <${env2.EMAIL_FROM}>`,
         to,
         subject,
         html,
@@ -19176,7 +19176,7 @@ async function sendEmail({ to, subject, html, text }) {
   }
   try {
     await resend.emails.send({
-      from: `Ma Reservation <${env2.EMAIL_FROM}>`,
+      from: `Exploria360 <${env2.EMAIL_FROM}>`,
       to,
       subject,
       html,
@@ -19190,7 +19190,7 @@ async function sendEmail({ to, subject, html, text }) {
   }
 }
 function createPasswordResetTemplate(userName, resetUrl, expiresIn = "1 heure") {
-  const subject = "R\xE9initialisation de votre mot de passe - Ma Reservation";
+  const subject = "R\xE9initialisation de votre mot de passe - Exploria360";
   const html = `
     <!DOCTYPE html>
     <html>
@@ -19203,7 +19203,7 @@ function createPasswordResetTemplate(userName, resetUrl, expiresIn = "1 heure") 
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Ma Reservation</h1>
+            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Exploria360</h1>
           </td>
         </tr>
         <tr>
@@ -19232,7 +19232,7 @@ function createPasswordResetTemplate(userName, resetUrl, expiresIn = "1 heure") 
         <tr>
           <td style="text-align: center; padding-top: 30px;">
             <p style="color: #525252; font-size: 12px; margin: 0;">
-              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
             </p>
           </td>
         </tr>
@@ -19250,12 +19250,12 @@ ${resetUrl}
 
 Ce lien expirera dans ${expiresIn}. Si vous n'avez pas demand\xE9 de r\xE9initialisation, vous pouvez ignorer cet email en toute s\xE9curit\xE9.
 
-\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
   `;
   return { subject, html, text };
 }
 function createEmailVerificationTemplate(userName, verificationUrl, expiresIn = "24 heures") {
-  const subject = "V\xE9rifiez votre adresse email - Ma Reservation";
+  const subject = "V\xE9rifiez votre adresse email - Exploria360";
   const html = `
     <!DOCTYPE html>
     <html>
@@ -19268,7 +19268,7 @@ function createEmailVerificationTemplate(userName, verificationUrl, expiresIn = 
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Ma Reservation</h1>
+            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Exploria360</h1>
           </td>
         </tr>
         <tr>
@@ -19278,7 +19278,7 @@ function createEmailVerificationTemplate(userName, verificationUrl, expiresIn = 
               Bonjour ${userName},
             </p>
             <p style="color: #a3a3a3; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
-              Merci de vous \xEAtre inscrit sur Ma Reservation ! Pour activer votre compte, veuillez v\xE9rifier votre adresse email en cliquant sur le bouton ci-dessous :
+              Merci de vous \xEAtre inscrit sur Exploria360 ! Pour activer votre compte, veuillez v\xE9rifier votre adresse email en cliquant sur le bouton ci-dessous :
             </p>
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
@@ -19297,7 +19297,7 @@ function createEmailVerificationTemplate(userName, verificationUrl, expiresIn = 
         <tr>
           <td style="text-align: center; padding-top: 30px;">
             <p style="color: #525252; font-size: 12px; margin: 0;">
-              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
             </p>
           </td>
         </tr>
@@ -19308,14 +19308,14 @@ function createEmailVerificationTemplate(userName, verificationUrl, expiresIn = 
   const text = `
 Bonjour ${userName},
 
-Merci de vous \xEAtre inscrit sur Ma Reservation !
+Merci de vous \xEAtre inscrit sur Exploria360 !
 
 Pour v\xE9rifier votre adresse email, cliquez sur le lien suivant :
 ${verificationUrl}
 
 Ce lien expirera dans ${expiresIn}. Si vous n'avez pas cr\xE9\xE9 de compte, vous pouvez ignorer cet email.
 
-\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
   `;
   return { subject, html, text };
 }
@@ -19361,7 +19361,7 @@ function createSOSConseilAdminTemplate(data) {
     <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;padding:32px 20px;">
       <tr><td style="text-align:center;padding-bottom:24px;">
-        <h1 style="color:#fbbf24;font-size:24px;font-weight:700;margin:0;letter-spacing:-0.5px">Ma Reservation</h1>
+        <h1 style="color:#fbbf24;font-size:24px;font-weight:700;margin:0;letter-spacing:-0.5px">Exploria360</h1>
         <p style="color:#525252;font-size:12px;margin:4px 0 0">Service Conciergerie</p>
       </td></tr>
       <tr><td style="background:#171717;border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,0.08);">
@@ -19399,12 +19399,12 @@ function createSOSConseilAdminTemplate(data) {
         </div>
       </td></tr>
       <tr><td style="text-align:center;padding-top:24px;">
-        <p style="color:#404040;font-size:11px;margin:0">\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation \xB7 Panneau d'administration</p>
+        <p style="color:#404040;font-size:11px;margin:0">\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360 \xB7 Panneau d'administration</p>
       </td></tr>
     </table></body></html>
   `;
   const text = `
-Nouvelle demande SOS Conseil \u2014 Ma Reservation
+Nouvelle demande SOS Conseil \u2014 Exploria360
 
 Client : ${data.fullName}
 T\xE9l\xE9phone : ${data.phone}
@@ -19435,7 +19435,7 @@ function createReservationConfirmationTemplate(userName, reservationCode, venueN
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <tr>
           <td style="text-align: center; padding-bottom: 30px;">
-            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Ma Reservation</h1>
+            <h1 style="color: #fbbf24; font-size: 28px; font-weight: 600; margin: 0;">Exploria360</h1>
           </td>
         </tr>
         <tr>
@@ -19487,7 +19487,7 @@ function createReservationConfirmationTemplate(userName, reservationCode, venueN
         <tr>
           <td style="text-align: center; padding-top: 30px;">
             <p style="color: #525252; font-size: 12px; margin: 0;">
-              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
             </p>
           </td>
         </tr>
@@ -19508,7 +19508,7 @@ Nombre de personnes : ${partySize}
 
 Pr\xE9sentez ce code ou votre QR code \xE0 l'entr\xE9e pour acc\xE9der \xE0 votre r\xE9servation.
 
-\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Ma Reservation. Tous droits r\xE9serv\xE9s.
+\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Exploria360. Tous droits r\xE9serv\xE9s.
   `;
   return { subject, html, text };
 }
@@ -23364,7 +23364,7 @@ app.use(cookieParser());
 app.use("/uploads", express.static(UPLOAD_DIR));
 app.get("/", (req, res) => {
   res.status(200).json({
-    name: "Ma Reservation API",
+    name: "Exploria360 API",
     version: "1.0",
     health: "/api/v1/health",
     message: "Use /api/v1/* endpoints. Health check at GET /api/v1/health"

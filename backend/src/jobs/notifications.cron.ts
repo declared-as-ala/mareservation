@@ -83,7 +83,7 @@ async function runCheckinReminders(): Promise<void> {
         if (phone) {
           await sendWhatsApp({
             to: phone,
-            body: `🏨 Ma Reservation — Rappel : votre arrivée à l'hôtel est demain !\n📅 ${checkInShort} → ${checkOutShort}\n🔑 Réf : *${reservationCode}*\nTicket : ${ticketUrl}`,
+            body: `🏨 Exploria360 — Rappel : votre arrivée à l'hôtel est demain !\n📅 ${checkInShort} → ${checkOutShort}\n🔑 Réf : *${reservationCode}*\nTicket : ${ticketUrl}`,
           });
         }
 
@@ -147,7 +147,7 @@ async function runReviewRequests(): Promise<void> {
         if (phone) {
           await sendWhatsApp({
             to: phone,
-            body: `⭐ Ma Reservation — Comment s'est passé votre séjour ?\nVotre avis sur *${reservationCode}* aide d'autres voyageurs.\nLaissez-le ici : ${reviewUrl}`,
+            body: `⭐ Exploria360 — Comment s'est passé votre séjour ?\nVotre avis sur *${reservationCode}* aide d'autres voyageurs.\nLaissez-le ici : ${reviewUrl}`,
           });
         }
 

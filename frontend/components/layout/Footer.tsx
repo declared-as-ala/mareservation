@@ -36,10 +36,10 @@ const legal = [
 ];
 
 const social = [
-  { Icon: Facebook,  href: 'https://facebook.com/mareservation',  label: 'Facebook' },
-  { Icon: Instagram, href: 'https://instagram.com/mareservation', label: 'Instagram' },
-  { Icon: Twitter,   href: 'https://twitter.com/mareservation',   label: 'Twitter / X' },
-  { Icon: Linkedin,  href: 'https://linkedin.com/company/mareservation', label: 'LinkedIn' },
+  { Icon: Facebook,  href: 'https://facebook.com/exploria360',  label: 'Facebook' },
+  { Icon: Instagram, href: 'https://instagram.com/exploria360', label: 'Instagram' },
+  { Icon: Twitter,   href: 'https://twitter.com/exploria360',   label: 'Twitter / X' },
+  { Icon: Linkedin,  href: 'https://linkedin.com/company/exploria360', label: 'LinkedIn' },
 ];
 
 // Stats removed to avoid showing fictional numbers during testing phase
@@ -243,11 +243,11 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
             <ul className="space-y-3 mb-7">
               <li>
                 <a
-                  href="mailto:contact@mareservation.com"
+                  href="mailto:contact@exploria360.com"
                   className="group flex items-start gap-3 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
                 >
                   <Mail className="size-4 shrink-0 mt-0.5 text-zinc-700 group-hover:text-amber-400 transition-colors" />
-                  <span className="break-all">contact@mareservation.com</span>
+                  <span className="break-all">contact@exploria360.com</span>
                 </a>
               </li>
               <li>
@@ -293,7 +293,7 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           {/* Brand */}
           <div className="mb-6 text-center">
             <Link href="/" className="inline-block mb-4">
-              <Image src="/logo.png" alt="Ma Réservation" width={140} height={40} className="h-12 w-auto object-contain mx-auto" priority />
+              <Image src="/logo.png" alt="Exploria360" width={140} height={40} className="h-12 w-auto object-contain mx-auto" priority />
             </Link>
             <p className="text-sm leading-relaxed text-zinc-500 mb-5 max-w-xs mx-auto">
               Réservez vos tables, chambres et places en quelques clics — une expérience premium pour vos moments d&apos;exception.
@@ -337,8 +337,8 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           <MobileAccordion title="Contact">
             <ul className="space-y-3 pt-1">
               <li>
-                <a href="mailto:contact@mareservation.com" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
-                  <Mail className="size-4 text-zinc-700 shrink-0" /> contact@mareservation.com
+                <a href="mailto:contact@exploria360.com" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
+                  <Mail className="size-4 text-zinc-700 shrink-0" /> contact@exploria360.com
                 </a>
               </li>
               <li>
@@ -376,7 +376,7 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             {/* Copyright */}
             <p className="text-center text-xs text-zinc-700 sm:text-left order-2 sm:order-1">
-              © {year} Ma Réservation. Tous droits réservés.
+              © {year} Exploria360. Tous droits réservés.
             </p>
 
             {/* Legal quick links — desktop only */}

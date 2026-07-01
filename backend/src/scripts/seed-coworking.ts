@@ -33,17 +33,17 @@ async function seedCoworking() {
   await connectDatabase();
 
   // ── Owner ──────────────────────────────────────────────────────────────
-  let owner = await User.findOne({ email: 'owner.coworking@matable.tn' });
+  let owner = await User.findOne({ email: 'owner.coworking@exploria360.tn' });
   if (!owner) {
     owner = await User.create({
-      fullName: 'Owner Coworking MaTable',
-      email: 'owner.coworking@matable.tn',
+      fullName: 'Owner Coworking Exploria360',
+      email: 'owner.coworking@exploria360.tn',
       passwordHash: await bcrypt.hash('password123', 10),
       role: 'ESTABLISHMENT_OWNER',
       isActive: true,
       emailVerified: true,
     });
-    console.log('👤 Created coworking owner: owner.coworking@matable.tn / password123');
+    console.log('👤 Created coworking owner: owner.coworking@exploria360.tn / password123');
   } else {
     console.log('👤 Coworking owner already exists');
   }

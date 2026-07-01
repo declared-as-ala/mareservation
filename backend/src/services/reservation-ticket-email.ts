@@ -224,7 +224,7 @@ export function createReservationTicketEmail(
           </tr>
           <tr>
             <td style="padding:20px 12px 0;text-align:center;">
-              <p style="margin:0;color:#78716c;font-size:11px;line-height:1.6;">© ${new Date().getFullYear()} Look and Book · Conservez cet email jusqu'à votre arrivée.</p>
+              <p style="margin:0;color:#78716c;font-size:11px;line-height:1.6;">© ${new Date().getFullYear()} Exploria360 · Conservez cet email jusqu'à votre arrivée.</p>
             </td>
           </tr>
         </table>

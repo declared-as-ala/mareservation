@@ -20,10 +20,10 @@ export function HomeFooter() {
                 href="/"
                 className="inline-block font-serif text-3xl font-bold tracking-wide text-amber-200"
               >
-                MaTable
+                Exploria360
               </Link>
               <div className="text-xs font-medium tracking-[0.18em] text-amber-300/70">
-                MA RÉSERVATION
+                EXPLORIA360
               </div>
             </div>
             <p className="text-[13px] leading-relaxed text-amber-100/55">
@@ -143,7 +143,7 @@ export function HomeFooter() {
 
         <div className="mt-14 border-t border-amber-500/15 pt-8">
           <p className="text-center text-xs text-amber-100/40">
-            © {new Date().getFullYear()} MaTable. Tous droits réservés.
+            © {new Date().getFullYear()} Exploria360. Tous droits réservés.
           </p>
         </div>
       </AppContainer>

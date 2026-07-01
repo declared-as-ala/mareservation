@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
-const EMAIL = 'admin@mareservation.tn';
+const EMAIL = 'admin@exploria360.com';
 const NEW_PASSWORD = 'password123';
 
 async function updatePassword() {
@@ -23,7 +23,7 @@ async function updatePassword() {
       console.log(`⚠️ User with email ${EMAIL} not found. Creating new admin user...`);
       user = new User({
         email: EMAIL,
-        fullName: 'Admin Ma Reservation',
+        fullName: 'Admin Exploria360',
         role: 'ADMIN',
         passwordHash: hash
       });

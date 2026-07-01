@@ -194,7 +194,7 @@ function computeMissingFields(data: SOSChatParsedResponse['extractedData'], curr
 }
 
 function buildSystemPrompt(currentFormSnapshot: Record<string, unknown>): string {
-  return `Tu es Assistant SOS Conseil pour MaTable (Ma Reservation), concierge pour restaurants, cafés, hôtels, salons, rooftops et lieux événementiels en Tunisie.
+  return `Tu es Assistant SOS Conseil pour Exploria360 (Exploria360), concierge pour restaurants, cafés, hôtels, salons, rooftops et lieux événementiels en Tunisie.
 
 COMPORTEMENT:
 - Questions courtes, utiles, une ou deux maximum par tour.
@@ -259,7 +259,7 @@ export async function runSOSConseilChat(opts: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
         'HTTP-Referer': opts.siteUrl,
-        'X-OpenRouter-Title': opts.appTitle || 'MaTable SOS Conseil',
+        'X-OpenRouter-Title': opts.appTitle || 'Exploria360 SOS Conseil',
       },
       body: JSON.stringify({
         model: opts.model?.trim() || 'openrouter/free',

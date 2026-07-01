@@ -131,7 +131,7 @@ function EventTicketView({ reservation }: { reservation: Reservation }) {
   const subtotal = reservation.priceBreakdown?.subtotal;
   const serviceFee = reservation.priceBreakdown?.serviceFee;
   const total = reservation.priceBreakdown?.total ?? reservation.totalPrice;
-  const shareTitle = `Ticket MaTable - ${eventName}`;
+  const shareTitle = `Ticket Exploria360 - ${eventName}`;
   const shareText = `${eventName} | ${formatDate(start)} | ${formatTimeRange(start, end)} | Ref: ${code}`;
   const table = reservation.tableId as { tableNumber?: number; name?: string; locationLabel?: string } | undefined;
   const tableName = table ? (table.name || `Table ${table.tableNumber ?? ''}`) : null;
@@ -200,7 +200,7 @@ function EventTicketView({ reservation }: { reservation: Reservation }) {
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<title>Ma Reservation – ${eventName}</title>
+<title>Exploria360 – ${eventName}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:16px}
@@ -235,7 +235,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;bac
 <body>
 <div class="ticket">
   <div class="ticket-top">
-    <div class="brand">&#9670; Ma Reservation</div>
+    <div class="brand">&#9670; Exploria360</div>
     <div class="ticket-badge">&#10003; Ticket confirmé</div>
     <h1>${eventName}</h1>
     <p class="sub">${ticketLabel} &middot; ${quantity} billet${quantity > 1 ? 's' : ''}</p>
@@ -274,7 +274,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;bac
     </div>
   </div>
   <div class="ticket-footer">
-    <strong>Ma Reservation</strong> &mdash; Réservation de tables, salles et événements &nbsp;|&nbsp; ma-reservation.tn
+    <strong>Exploria360</strong> &mdash; Réservation de tables, salles et événements &nbsp;|&nbsp; exploria360.com
   </div>
 </div>
 <script>window.onload=function(){window.print();setTimeout(()=>window.close(),800)}<\/script>
@@ -354,7 +354,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;bac
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.88))] print:bg-black/35" />
                 <div className="absolute left-5 right-5 top-5 flex flex-wrap items-center justify-between gap-2">
                   <span className="rounded-full border border-white/20 bg-black/45 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
-                    MaTable Ticket
+                    Exploria360 Ticket
                   </span>
                   <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-black text-black">
                     {paymentLabel(reservation.paymentStatus, reservation.paymentMethod)}
@@ -451,7 +451,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1a1a1a;bac
                 <div className="my-6 border-t border-dashed border-white/15 print:border-zinc-300" />
 
                 <dl className="space-y-4 text-sm">
-                  <TicketDef label="Client" value={[reservation.customerFirstName, reservation.customerLastName].filter(Boolean).join(' ') || 'Client MaTable'} />
+                  <TicketDef label="Client" value={[reservation.customerFirstName, reservation.customerLastName].filter(Boolean).join(' ') || 'Client Exploria360'} />
                   <TicketDef label="Date" value={formatDate(start)} />
                   <TicketDef label="Heure" value={formatTimeRange(start, end)} />
                   {tableName && <TicketDef label="Table" value={tableName} />}
@@ -610,7 +610,7 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
-  <title>Billet MaTable – ${code}</title>
+  <title>Billet Exploria360 – ${code}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#fff;font-family:'Segoe UI',system-ui,sans-serif;color:#111;padding:24px}
@@ -658,7 +658,7 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
         <div class="info-item"><div class="info-label">📋 Référence</div><div class="info-value" style="font-family:monospace;color:#d97706">${code}</div></div>
       </div>
     </div>
-    <div class="footer">Présentez cette référence à l'arrivée &nbsp;•&nbsp; <strong>MaTable</strong></div>
+    <div class="footer">Présentez cette référence à l'arrivée &nbsp;•&nbsp; <strong>Exploria360</strong></div>
   </div>
   <script>window.onload=function(){window.print();setTimeout(()=>window.close(),1000)}<\/script>
 </body>
@@ -776,7 +776,7 @@ function GenericReservationView({ reservation }: { reservation: Reservation }) {
 
           {/* Footer strip */}
           <div className="bg-zinc-900 px-8 py-3 text-center text-xs text-zinc-500">
-            Présentez cette référence à l&apos;arrivée &nbsp;•&nbsp; <span className="font-semibold text-zinc-300">MaTable</span>
+            Présentez cette référence à l&apos;arrivée &nbsp;•&nbsp; <span className="font-semibold text-zinc-300">Exploria360</span>
           </div>
         </div>
 

@@ -126,7 +126,7 @@ export function PartnerApplicationModal({ open, onOpenChange }: PartnerApplicati
             </span>
             <div>
               <h2 className="text-base font-bold text-white">Devenir partenaire</h2>
-              <p className="text-[11px] text-neutral-500">Référencez votre établissement sur Look and Book</p>
+              <p className="text-[11px] text-neutral-500">Référencez votre établissement sur Exploria360</p>
             </div>
           </div>
           <button

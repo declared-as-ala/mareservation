@@ -1,6 +1,6 @@
-# Ma Reservation — Backend API
+# Exploria360 — Backend API
 
-API backend pour **Ma Reservation** (réservations tables, chambres, sièges, visites 360°).
+API backend pour **Exploria360** (réservations tables, chambres, sièges, visites 360°).
 
 ## Variables d'environnement
 
