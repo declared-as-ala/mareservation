@@ -125,14 +125,14 @@ function Lightbox({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onNavigate(Math.max(0, index - 1)); }}
-            className="absolute left-4 top-1/2 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
+            className="absolute left-4 top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
             aria-label="Précédent"
           >
             <ChevronLeft className="size-6" />
           </button>
 
           <div
-            className="relative mx-auto aspect-video w-full max-w-5xl px-20"
+            className="relative mx-auto aspect-video w-full max-w-5xl px-4 sm:px-20"
             onClick={(e) => e.stopPropagation()}
           >
             <Image
@@ -147,7 +147,7 @@ function Lightbox({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onNavigate(Math.min(images.length - 1, index + 1)); }}
-            className="absolute right-4 top-1/2 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
+            className="absolute right-4 top-1/2 z-10 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
             aria-label="Suivant"
           >
             <ChevronRight className="size-6" />
@@ -156,7 +156,7 @@ function Lightbox({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
+            className="absolute right-4 top-4 z-10 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:bg-white/20"
             aria-label="Fermer"
           >
             <X className="size-5" />
