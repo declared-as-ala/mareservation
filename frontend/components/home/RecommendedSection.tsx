@@ -8,6 +8,7 @@ import { fetchVenues } from '@/lib/api/venues';
 import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles,
   Wine, Clapperboard, Laptop, ChevronLeft, ChevronRight, Star,
+  Music2, Home, Flower2,
 } from 'lucide-react';
 import { getVenueHref } from '@/lib/venueHref';
 
@@ -48,13 +49,29 @@ const MOCK_VENUES = [
 function getCategoryInfo(type: string, name: string) {
   const t = String(type).toUpperCase();
   const n = name.toLowerCase();
-  if (n.includes('beach') || n.includes('bar')) return { label: 'Beach Bar', Icon: Wine };
+  
+  if (n.includes('beach') || t === 'BEACH_CLUB') return { label: 'Beach Club', Icon: Wine };
+  if (n.includes('rooftop') || t === 'ROOFTOP') return { label: 'Rooftop', Icon: Wine };
+  if (n.includes('club') || t === 'CLUB') return { label: 'Club', Icon: Music2 };
+  if (n.includes('bar') || t === 'BAR') return { label: 'Bar', Icon: Wine };
+  if (n.includes('lounge') || t === 'LOUNGE') return { label: 'Lounge', Icon: Wine };
+  if (t === 'HOTEL') return { label: 'Hôtel', Icon: BedDouble };
+  if (t === 'MAISON_DHOTE') return { label: "Maison d'hôte", Icon: Home };
   if (t === 'RESTAURANT') return { label: 'Restaurant', Icon: Utensils };
   if (t === 'CAFE' || t === 'CAFE_LOUNGE') return { label: 'Café', Icon: Coffee };
-  if (t === 'HOTEL') return { label: 'Hôtel', Icon: BedDouble };
   if (t === 'COWORKING') return { label: 'Coworking', Icon: Laptop };
   if (t === 'CINEMA') return { label: 'Cinéma', Icon: Clapperboard };
-  return { label: 'Lieu', Icon: Sparkles };
+  if (n.includes('spa') || n.includes('bien') || t === 'SPA') return { label: 'Bien-être', Icon: Flower2 };
+  
+  return {
+    label: type
+      ? type
+          .split('_')
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ')
+      : 'Lieu',
+    Icon: Sparkles,
+  };
 }
 
 const DESKTOP_PAGE_SIZE = 3;

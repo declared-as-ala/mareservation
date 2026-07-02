@@ -11,6 +11,7 @@ import {
   MapPin, Utensils, Coffee, BedDouble, Sparkles, Wine, Clapperboard, Laptop,
   ArrowRight, Globe, ShieldCheck, Armchair,
   UtensilsCrossed, Martini, PartyPopper, Briefcase, Flower2, Play,
+  Music2, Home,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────
@@ -42,14 +43,30 @@ type CardVenue = Venue & { hasVirtualTour?: boolean; rating?: number; reviews?: 
 function getCategoryInfo(type?: string, name = '') {
   const t = String(type).toUpperCase();
   const n = name.toLowerCase();
-  if (n.includes('beach') || n.includes('bar')) return { label: 'Beach Bar', Icon: Wine };
+  
+  if (n.includes('beach') || t === 'BEACH_CLUB') return { label: 'Beach Club', Icon: Wine };
+  if (n.includes('rooftop') || t === 'ROOFTOP') return { label: 'Rooftop', Icon: Wine };
+  if (n.includes('club') || t === 'CLUB') return { label: 'Club', Icon: Music2 };
+  if (n.includes('bar') || t === 'BAR') return { label: 'Bar', Icon: Wine };
+  if (n.includes('lounge') || t === 'LOUNGE') return { label: 'Lounge', Icon: Wine };
+  if (t === 'HOTEL') return { label: 'Hôtel', Icon: BedDouble };
+  if (t === 'MAISON_DHOTE') return { label: "Maison d'hôte", Icon: Home };
   if (t === 'RESTAURANT') return { label: 'Restaurant', Icon: Utensils };
   if (t === 'CAFE' || t === 'CAFE_LOUNGE') return { label: 'Café', Icon: Coffee };
-  if (t === 'HOTEL') return { label: 'Hôtel', Icon: BedDouble };
   if (t === 'COWORKING') return { label: 'Coworking', Icon: Laptop };
   if (t === 'CINEMA') return { label: 'Cinéma', Icon: Clapperboard };
   if (t === 'EVENT_SPACE') return { label: 'Événementiel', Icon: PartyPopper };
-  return { label: 'Lieu', Icon: Sparkles };
+  if (n.includes('spa') || n.includes('bien') || t === 'SPA') return { label: 'Bien-être', Icon: Flower2 };
+  
+  return {
+    label: type
+      ? type
+          .split('_')
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ')
+      : 'Lieu',
+    Icon: Sparkles,
+  };
 }
 
 function getHomeVenueHref(venue: CardVenue): string {
@@ -72,7 +89,7 @@ const CATEGORIES = [
 /* ─── Immersive feature highlights ─── */
 const FEATURES = [
   { Icon: Globe, label: 'Visite virtuelle 360°' },
-  { Icon: Armchair, label: 'Votre table dans la vue' },
+  { Icon: Armchair, label: 'Votre espace dans la vue' },
   { Icon: ShieldCheck, label: 'Réservation sécurisée' },
 ];
 
@@ -282,7 +299,7 @@ function MobileImmersiveCTA() {
             </span>
           </h2>
           <p className="mt-1 text-[10.5px] leading-snug text-white/55">
-            Explorez en immersion, choisissez votre table — réservez en quelques secondes.
+            Explorez en immersion, réservez tout simplement.
           </p>
 
           {/* Primary CTA — large, always visible */}
@@ -306,7 +323,7 @@ function MobileImmersiveCTA() {
             </span>
             <span className="inline-flex items-center gap-1">
               <Armchair className="size-2.5 text-amber-400" strokeWidth={2} />
-              Table choisie
+              Espace choisi
             </span>
             <span className="inline-flex items-center gap-1">
               <ShieldCheck className="size-2.5 text-amber-400" strokeWidth={2} />
@@ -363,7 +380,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
           <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-white/60 lg:text-[15px]">
             Explorez cafés, restaurants, hôtels et événements en visite virtuelle immersive.
-            Choisissez votre table directement dans la vue — puis réservez en quelques secondes.
+            Réservez tout simplement.
           </p>
 
           {/* Modern CTA group */}
@@ -401,7 +418,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 
           {/* mini trust stats inline */}
           <div className="mt-3 flex items-center gap-6">
-            {[['100%', 'Immersif'], ['360°', 'Immersion'], ['Direct', 'Choix de table']].map(([v, l], i) => (
+            {[['100%', 'Immersif'], ['360°', 'Immersion'], ['Direct', 'Choix de l\'espace']].map(([v, l], i) => (
               <div key={l} className="flex items-center gap-3">
                 {i > 0 && <span className="h-6 w-px bg-white/[0.08]" />}
                 <div>

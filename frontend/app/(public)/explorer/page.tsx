@@ -500,15 +500,29 @@ function ExplorerContent() {
 function getTypeMeta(venue: any): { label: string; Icon: React.ComponentType<{ className?: string }> } {
   const t = String(venue.type || '').toUpperCase();
   const n = String(venue.name || '').toLowerCase();
-  if (n.includes('beach')) return { label: 'Beach Club', Icon: Waves };
-  if (n.includes('rooftop') || n.includes('bar')) return { label: 'Bar', Icon: Wine };
+  
+  if (n.includes('beach') || t === 'BEACH_CLUB') return { label: 'Beach Club', Icon: Waves };
+  if (n.includes('rooftop') || t === 'ROOFTOP') return { label: 'Rooftop', Icon: Wine };
+  if (n.includes('club') || t === 'CLUB') return { label: 'Club', Icon: Music2 };
+  if (n.includes('bar') || t === 'BAR') return { label: 'Bar', Icon: Wine };
+  if (n.includes('lounge') || t === 'LOUNGE') return { label: 'Lounge', Icon: Wine };
   if (t === 'HOTEL') return { label: 'Hôtel', Icon: Hotel };
+  if (t === 'MAISON_DHOTE') return { label: "Maison d'hôte", Icon: Home };
   if (t === 'RESTAURANT') return { label: 'Restaurant', Icon: Utensils };
   if (t === 'CAFE' || t === 'CAFE_LOUNGE') return { label: 'Café', Icon: Coffee };
   if (t === 'COWORKING') return { label: 'Coworking', Icon: BriefcaseBusiness };
   if (t === 'EVENT_SPACE') return { label: 'Événements', Icon: PartyPopper };
-  if (n.includes('spa') || n.includes('bien')) return { label: 'Bien-être', Icon: Flower2 };
-  return { label: 'Lieu', Icon: MapPin };
+  if (n.includes('spa') || n.includes('bien') || t === 'SPA') return { label: 'Bien-être', Icon: Flower2 };
+  
+  return {
+    label: venue.type
+      ? venue.type
+          .split('_')
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ')
+      : 'Lieu',
+    Icon: MapPin,
+  };
 }
 
 /* ─────────────────────────────────────────────

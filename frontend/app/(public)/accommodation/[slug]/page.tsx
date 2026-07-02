@@ -1080,8 +1080,8 @@ export default function HotelDetailPage() {
                 <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] bg-gradient-to-r from-amber-400/[0.08] to-transparent px-5 py-4">
                   {minimumRoomPrice ? (
                     <div className="min-w-0">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/85">À partir de</span>
                       <div className="mt-0.5 flex items-baseline gap-1.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 mr-1">À partir de</span>
                         <span className="font-serif text-2xl font-black text-amber-400">
                           {minimumRoomPrice.toLocaleString('fr-TN')}
                         </span>
@@ -1126,8 +1126,8 @@ export default function HotelDetailPage() {
                   <div className="min-w-0">
                     {minimumRoomPrice ? (
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-semibold uppercase tracking-wider text-amber-300/80">À partir de</span>
                         <div className="flex items-baseline gap-1">
+                          <span className="text-[10px] font-bold text-neutral-400 mr-1">À partir de</span>
                           <span className="font-serif text-lg font-black text-amber-400">
                             {minimumRoomPrice.toLocaleString('fr-TN')}
                           </span>

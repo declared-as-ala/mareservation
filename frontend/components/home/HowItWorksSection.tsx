@@ -15,7 +15,7 @@ const steps = [
   {
     number: '02',
     title: 'Choisissez votre espace',
-    text: "Table, VIP, terrasse — sélectionnez l'emplacement qui vous convient.",
+    text: "Chambre, place, VIP, terrasse — sélectionnez l'emplacement qui vous convient.",
     image: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=1200&q=80&auto=format&fit=crop',
     icon: Calendar,
   },

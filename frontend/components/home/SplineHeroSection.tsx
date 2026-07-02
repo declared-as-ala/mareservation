@@ -16,7 +16,7 @@ const features = [
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
-    label: 'Choisissez votre table dans la vue',
+    label: 'Choisissez votre espace dans la vue',
   },
   {
     Icon: ShieldCheck,
@@ -72,7 +72,7 @@ export function SplineHeroSection() {
 
           {/* Compact sub-copy */}
           <p className="max-w-[80%] text-[12px] leading-snug text-white/55">
-            Choisissez votre table dans la vue — réservez en quelques secondes.
+            Réservez tout simplement.
           </p>
 
           {/* CTAs — primary full-width, secondary as inline link */}
@@ -144,8 +144,7 @@ export function SplineHeroSection() {
               {/* Sub-copy */}
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/55">
                 Explorez cafés, restaurants, hôtels et événements en visite virtuelle.
-                Choisissez votre table directement dans la vue —
-                puis réservez en quelques secondes.
+                Réservez tout simplement.
               </p>
 
               {/* CTA buttons */}

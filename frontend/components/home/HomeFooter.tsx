@@ -27,7 +27,7 @@ export function HomeFooter() {
               </div>
             </div>
             <p className="text-[13px] leading-relaxed text-amber-100/55">
-              Réservez votre table, votre expérience et votre moment d&apos;exception —
+              Réservez votre espace, votre expérience et votre moment d&apos;exception —
               partout où l&apos;ambiance compte.
             </p>
             <div className="flex items-center justify-center gap-3 sm:justify-start">

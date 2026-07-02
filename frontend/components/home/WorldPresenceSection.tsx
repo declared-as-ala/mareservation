@@ -6,7 +6,7 @@ import { Reveal } from './Reveal';
 const stats = [
   { value: '100%', label: 'Immersif' },
   { value: '360°', label: 'Immersion totale' },
-  { value: 'Direct', label: 'Réservation de table' },
+  { value: 'Direct', label: 'Réservation directe' },
 ];
 
 export function WorldPresenceSection() {
