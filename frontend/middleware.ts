@@ -93,10 +93,40 @@ const PUBLIC_PATTERNS = [
   /^\/logo/,
 ];
 
+// ── Maintenance mode ────────────────────────────────────────────
+// Enabled by DEFAULT so the live site shows the "en préparation" page after
+// deploy. Set MAINTENANCE_MODE=off (or false/0/no) in the env to disable it
+// once the site is ready. Admin / auth / owner areas stay reachable so the
+// team can keep building behind the maintenance screen.
+function isMaintenanceOn(): boolean {
+  const v = (process.env.MAINTENANCE_MODE ?? '').trim().toLowerCase();
+  if (['off', 'false', '0', 'no', 'disabled'].includes(v)) return false;
+  return true;
+}
+
+const MAINTENANCE_EXEMPT = [
+  /^\/maintenance($|\/)/,
+  /^\/admin($|\/)/,
+  /^\/owner($|\/)/,
+  /^\/login($|\/)/,
+  /^\/register($|\/)/,
+  /^\/unauthorized($|\/)/,
+  /^\/_next\//,
+  /^\/api\//,
+];
+
 // ── Middleware ──────────────────────────────────────────────────
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Maintenance gate — rewrite every public page to /maintenance.
+  if (isMaintenanceOn() && !MAINTENANCE_EXEMPT.some((p) => p.test(pathname))) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/maintenance';
+    return NextResponse.rewrite(url);
+  }
+
   const edgeCookieAuthEnabled = canUseEdgeCookieAuth(request);
 
   // Skip middleware for public/static assets
@@ -211,15 +241,9 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run middleware on these routes:
-  matcher: [
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/owner/:path*',
-    '/mes-reservations/:path*',
-    '/profile',
-    '/profile/:path*',
-    '/login',
-    '/',
-  ],
+  // Run on every route EXCEPT Next internals, API routes and static files
+  // (anything with a dot). Broad coverage is required so maintenance mode can
+  // gate all public pages; the auth logic below still only acts on its own
+  // patterns.
+  matcher: ['/((?!_next/|api/|.*\\..*).*)'],
 };
