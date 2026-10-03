@@ -15,8 +15,6 @@ frontend/.next/
 **/tsconfig.tsbuildinfo
 
 # Environment variables
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -29,7 +27,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -47,7 +44,7 @@ backend/dist/
 backend/.env
 
 # Frontend
-.env.local
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
