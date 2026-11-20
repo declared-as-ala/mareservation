@@ -1,12 +1,19 @@
 import { z } from 'zod';
 
+const PLACEHOLDER_SECRET = /your-super-secret|change-in-production|changeme|change-me|dev-jwt-secret|replace-me|example|secret-key/i;
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3001').transform(Number),
   MONGODB_URI: z.string().min(1).optional().or(z.literal('')),
   MONGO_URI: z.string().optional(), // alias
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters — generate with: openssl rand -base64 64'),
-  REFRESH_SECRET: z.string().min(32, 'REFRESH_SECRET must be at least 32 characters — generate with: openssl rand -base64 64'),
+  // Required in EVERY environment (no built-in fallback). Placeholders from templates are rejected.
+  JWT_SECRET: z
+    .string({ error: 'JWT_SECRET is required — generate with: openssl rand -base64 64' })
+    .min(32, 'JWT_SECRET must be at least 32 characters — generate with: openssl rand -base64 64')
+    .refine((v) => !PLACEHOLDER_SECRET.test(v), 'JWT_SECRET looks like a placeholder — set a random value'),
+  // Legacy/unused (refresh tokens are random values stored in the DB). Kept optional for old .env files.
+  REFRESH_SECRET: z.string().optional(),
   ACCESS_TOKEN_EXPIRY: z.string().default('15m'),
   CORS_ORIGIN: z.string().optional(),
   FRONTEND_URL: z.string().url().optional().or(z.literal('')),
@@ -56,9 +63,6 @@ export function getEnv(): Env {
   const raw = {
     ...cleanEnv,
     MONGODB_URI: cleanEnv.MONGODB_URI || cleanEnv.MONGO_URI || (cleanEnv.NODE_ENV === 'production' ? undefined : 'mongodb://localhost:27017/exploria360'),
-    // In development, provide safe defaults so the app still starts
-    JWT_SECRET: cleanEnv.JWT_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-jwt-secret-must-be-at-least-32-chars-long-for-validation'),
-    REFRESH_SECRET: cleanEnv.REFRESH_SECRET || (cleanEnv.NODE_ENV === 'production' ? undefined : 'dev-refresh-secret-must-be-at-least-32-chars-long-for-validation'),
   };
   const result = envSchema.safeParse(raw);
   if (!result.success) {

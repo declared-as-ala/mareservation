@@ -6,7 +6,6 @@ import { Footer } from './Footer';
 
 export function ConditionalShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isHome = pathname === '/';
 
   // The owner dashboard provides its own shell (sidebar + topbar) via
   // app/(public)/owner/layout.tsx — render it without the public navbar/footer.
@@ -18,7 +17,8 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <HomeNavbar />
       <main className="flex-1">{children}</main>
-      <Footer hideNewsletter={isHome} />
+      {/* The newsletter form was a non-functional placeholder (no backend) — never shown. */}
+      <Footer hideNewsletter />
     </div>
   );
 }

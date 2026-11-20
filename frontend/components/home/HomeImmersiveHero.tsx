@@ -14,35 +14,14 @@ import {
   Music2, Home,
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────
-   Fallback venue data (used only when the API returns < 2 items)
-   ───────────────────────────────────────────────────────────── */
-const MOCK_VENUES = [
-  { _id: 'mock-1', name: 'Dar El Marsa', city: 'La Marsa, Tunis', type: 'RESTAURANT',
-    coverImage: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=900&auto=format&fit=crop',
-    slug: 'dar-el-marsa', hasVirtualTour: true, rating: 4.9, reviews: 284 },
-  { _id: 'mock-2', name: 'Azura Palace Hotel', city: 'Hammamet', type: 'HOTEL',
-    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=900&auto=format&fit=crop',
-    slug: 'azura-palace-hotel', hasVirtualTour: true, rating: 4.8, reviews: 192 },
-  { _id: 'mock-3', name: 'Sunset Beach Bar', city: 'Sousse', type: 'CAFE',
-    coverImage: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=900&auto=format&fit=crop',
-    slug: 'sunset-beach-bar', hasVirtualTour: true, rating: 4.7, reviews: 156 },
-  { _id: 'mock-4', name: 'Le Chalet Carthage', city: 'Carthage, Tunis', type: 'RESTAURANT',
-    coverImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=900&auto=format&fit=crop',
-    slug: 'le-chalet-carthage', hasVirtualTour: true, rating: 4.8, reviews: 218 },
-  { _id: 'mock-5', name: 'Sidi Bou Rooftop', city: 'Sidi Bou Saïd', type: 'CAFE',
-    coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=900&auto=format&fit=crop',
-    slug: 'sidi-bou-rooftop', hasVirtualTour: false, rating: 4.6, reviews: 134 },
-  { _id: 'mock-6', name: 'Le Zéphyr Tunis', city: 'Tunis Centre', type: 'RESTAURANT',
-    coverImage: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=900&auto=format&fit=crop',
-    slug: 'le-zephyr-tunis', hasVirtualTour: true, rating: 4.9, reviews: 307 },
-] as unknown as Venue[];
+/* Only real venues from the API are ever shown (no placeholder/fallback data). */
 
 type CardVenue = Venue & { hasVirtualTour?: boolean; rating?: number; reviews?: number };
 
 function getCategoryInfo(type?: string, name = '') {
   const t = String(type).toUpperCase();
   const n = name.toLowerCase();
+  if (n.includes('démo')) return { label: 'Démonstration', Icon: Home };
   
   if (n.includes('beach') || t === 'BEACH_CLUB') return { label: 'Beach Club', Icon: Wine };
   if (n.includes('rooftop') || t === 'ROOFTOP') return { label: 'Rooftop', Icon: Wine };
@@ -78,19 +57,16 @@ function getHomeVenueHref(venue: CardVenue): string {
 
 /* ─── Category quick-access tiles ─── */
 const CATEGORIES = [
-  { title: 'Hébergement', subtitle: "Hôtels • Maisons d'hôtes", href: '/hotels', Icon: BedDouble },
-  { title: 'Restauration', subtitle: 'Restaurants • Cafés', href: '/restauration', Icon: UtensilsCrossed },
-  { title: 'Sorties', subtitle: 'Bars • Rooftops • Clubs', href: '/sorties', Icon: Martini },
-  { title: 'Événements', subtitle: 'Concerts • Festivals • Sport', href: '/evenements', Icon: PartyPopper },
-  { title: 'Business', subtitle: 'Réunions • Coworking', href: '/coworking', Icon: Briefcase },
-  { title: 'Bien-être', subtitle: 'Spas • Piscines', href: '/bien-etre', Icon: Flower2 },
+  { title: "Maisons d'hôtes", subtitle: 'Visites 360°', href: '/accommodations', Icon: BedDouble },
+  { title: 'Visite 360°', subtitle: 'Maison de démonstration', href: '/accommodations', Icon: Globe },
+  { title: 'Propriétaires', subtitle: 'Présentez votre maison', href: '/contact', Icon: Briefcase },
 ];
 
 /* ─── Immersive feature highlights ─── */
 const FEATURES = [
   { Icon: Globe, label: 'Visite virtuelle 360°' },
   { Icon: Armchair, label: 'Votre espace dans la vue' },
-  { Icon: ShieldCheck, label: 'Réservation sécurisée' },
+  { Icon: ShieldCheck, label: 'Visite sans inscription' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -103,11 +79,7 @@ export function HomeImmersiveHero() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const venues: CardVenue[] = (
-    realVenues.length >= 2
-      ? realVenues.slice(0, 9)
-      : [...realVenues, ...MOCK_VENUES.filter((m) => !realVenues.some((r) => r.name === m.name))].slice(0, 6)
-  ) as CardVenue[];
+  const venues: CardVenue[] = realVenues.slice(0, 9) as CardVenue[];
 
   return (
     <>
@@ -234,7 +206,7 @@ function MobileScreen({ venues }: { venues: CardVenue[] }) {
       <div className="relative z-10 mt-1.5 shrink-0">
         <SectionHead
           eyebrow="Accès rapide"
-          title={<>Explorer par <span className="text-amber-400">catégorie</span> <Spark /></>}
+          title={<>Accès <span className="text-amber-400">rapide</span> <Spark /></>}
         />
         <div className="mt-1.5 grid grid-cols-3 gap-1.5">
           {CATEGORIES.map(({ title, subtitle, href, Icon }) => (
@@ -299,15 +271,15 @@ function MobileImmersiveCTA() {
             </span>
           </h2>
           <p className="mt-1 text-[10.5px] leading-snug text-white/55">
-            Explorez en immersion, réservez tout simplement.
+            Explorez en immersion avant de réserver.
           </p>
 
           {/* Primary CTA — large, always visible */}
           <Link
-            href="/explorer"
+            href="/accommodations"
             className="group relative mt-2.5 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-[15px] font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.45)] transition-all active:scale-[0.98]"
           >
-            <span className="relative z-10">Réserver maintenant</span>
+            <span className="relative z-10">Découvrir la visite 360°</span>
             <ArrowRight className="relative z-10 size-4 transition-transform group-active:translate-x-1" />
             <span
               aria-hidden
@@ -379,17 +351,17 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
           </h1>
 
           <p className="mt-4 max-w-xl text-[14px] leading-relaxed text-white/60 lg:text-[15px]">
-            Explorez cafés, restaurants, hôtels et événements en visite virtuelle immersive.
-            Réservez tout simplement.
+            Explorez les maisons d&apos;hôtes de Tunisie en visite virtuelle immersive.
+            Visitez avant de réserver.
           </p>
 
           {/* Modern CTA group */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
-              href="/explorer"
+              href="/accommodations"
               className="group relative inline-flex h-[50px] items-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-7 text-[15px] font-black text-black shadow-[0_12px_32px_rgba(245,158,11,0.40)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(245,158,11,0.55)]"
             >
-              <span className="relative z-10">Réserver maintenant</span>
+              <span className="relative z-10">Découvrir la visite 360°</span>
               <ArrowRight className="relative z-10 size-[18px] transition-transform group-hover:translate-x-1" />
               <span aria-hidden className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             </Link>
@@ -441,10 +413,10 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
         <div className="mx-auto w-full max-w-7xl px-8 py-3 lg:px-10 lg:py-3.5">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400/85">
-              Accès rapide · Catégories
+              Accès rapide
             </p>
             <Link
-              href="/explorer"
+              href="/accommodations"
               className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/55 transition-colors hover:text-amber-300"
             >
               Tout explorer <ArrowRight className="size-3" />
@@ -464,7 +436,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
                   <span className="block truncate text-[12px] font-bold leading-tight text-white group-hover:text-amber-200">
                     {title}
                   </span>
-                  <span className="block truncate text-[10px] leading-tight text-zinc-500">
+                  <span className="block truncate text-[10px] leading-tight text-zinc-400">
                     {subtitle}
                   </span>
                 </span>
@@ -480,7 +452,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
 /* ═══════════════════════════════════════════════════════════════
    Shared pieces
    ═══════════════════════════════════════════════════════════════ */
-/* (Booking search removed — home now uses a single "Réserver maintenant" CTA on
+/* (Booking search removed — home now uses a single "Découvrir la visite 360°" CTA on
    both mobile and desktop, routing into the immersive /explorer experience.) */
 
 /* ─── Mobile venue card (compact landscape) ─── */
@@ -729,7 +701,7 @@ function SectionHead({
     <div>
       {eyebrow && <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-400">{eyebrow}</p>}
       <h2 className="flex items-center gap-1.5 text-[17px] font-bold leading-tight text-white">{title}</h2>
-      {sub && <p className="mt-0.5 text-[10px] leading-tight text-zinc-500">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[10px] leading-tight text-zinc-400">{sub}</p>}
     </div>
   );
 }

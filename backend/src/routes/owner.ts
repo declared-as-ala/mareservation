@@ -753,7 +753,7 @@ function sanitizeOwnerRoomInput(body: unknown) {
 async function assertHotelOwnedByCaller(venueId: string, req: AuthRequest) {
   if (!mongoose.Types.ObjectId.isValid(venueId)) return null;
   const venue = await Venue.findById(venueId).select('_id type ownerId').lean();
-  if (!venue || (venue as any).type !== 'HOTEL') return null;
+  if (!venue || !['HOTEL', 'MAISON_DHOTE'].includes((venue as any).type)) return null;
   if (req.userRole === 'ADMIN') return venue;
   if (String((venue as any).ownerId) !== String(req.userId)) return null;
   return venue;

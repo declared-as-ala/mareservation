@@ -14,15 +14,15 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Choisissez votre espace',
-    text: "Chambre, place, VIP, terrasse — sélectionnez l'emplacement qui vous convient.",
+    title: 'Vérifiez les détails',
+    text: "Chambres, équipements et disponibilités sont indiqués lorsqu'ils sont renseignés par la maison.",
     image: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=1200&q=80&auto=format&fit=crop',
     icon: Calendar,
   },
   {
     number: '03',
-    title: 'Réservez et payez',
-    text: 'Paiement sécurisé en ligne, confirmation instantanée.',
+    title: 'Réservez bientôt',
+    text: 'Les réservations ne sont pas encore ouvertes. Elles arriveront avec les premières maisons partenaires.',
     image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=1200&q=80&auto=format&fit=crop',
     icon: CreditCard,
   },
@@ -102,7 +102,7 @@ export function HowItWorksSection() {
         {/* CTA */}
         <div className="relative z-20 mt-10 text-center md:mt-14">
           <Link
-            href="/explorer"
+            href="/accommodations"
             className="group relative z-20 inline-flex min-h-12 touch-manipulation items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-8 text-sm font-semibold text-black shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-amber-500/40 active:translate-y-0"
           >
             Commencer l&apos;exploration

@@ -27,7 +27,7 @@ export function validatePasswordStrength(password: string): { valid: boolean; er
   const result = passwordSchema.safeParse(password);
   
   if (!result.success) {
-    const errors = result.error.errors.map((err) => err.message);
+    const errors = result.error.issues.map((issue) => issue.message);
     return { valid: false, errors };
   }
   

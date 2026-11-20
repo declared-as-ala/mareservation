@@ -10,6 +10,7 @@ import {
   createReservationTicketEmail,
   RESERVATION_QR_CONTENT_ID,
 } from '../services/reservation-ticket-email';
+import { requirePublicEventInBody } from '../config/publicCatalog';
 
 const router = Router();
 const EVENT_SERVICE_FEE_TND = 1.5;
@@ -20,7 +21,7 @@ function makeCode(prefix: string) {
 }
 
 // POST /api/v1/event-checkout/orders
-router.post('/orders', authenticate, async (req: AuthRequest, res) => {
+router.post('/orders', authenticate, requirePublicEventInBody, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'Non authentifie.' });
