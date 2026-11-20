@@ -1,3 +1,4 @@
+import './config/loadEnv';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -31,6 +32,8 @@ import payoutsRouter from './routes/payouts';
 import pricingRouter from './routes/pricing';
 import reviewsRouter from './routes/reviews';
 import scenesRouter from './routes/scenes';
+import bookingsRouter from './routes/bookings';
+import adminBookingsRouter from './routes/admin-bookings';
 import partnerApplicationsRouter from './routes/partner-applications';
 import sosConseilRouter from './routes/sos-conseil';
 import supportRouter from './routes/support';
@@ -39,6 +42,11 @@ import tagsRouter from './routes/tags';
 dotenv.config();
 
 const app = express();
+
+// Behind nginx the real client IP arrives in X-Forwarded-For; without this every
+// visitor shares the proxy's IP and the rate limiters would throttle everyone together.
+const IS_PROD = process.env.NODE_ENV === 'production';
+if (IS_PROD) app.set('trust proxy', 1);
 
 // Extra origins can be supplied via env (comma/semicolon separated) so new
 // domains never require a code change: CORS_ORIGINS / CORS_ORIGIN / FRONTEND_URL.
@@ -55,14 +63,11 @@ const ENV_ORIGINS = [
 const ALLOWED_ORIGINS = Array.from(
   new Set(
     [
-      'http://localhost:5173',
-      'http://localhost:3000',
+      // Local development origins are never allowed in production.
+      ...(IS_PROD ? [] : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3010']),
       // Production frontends
       'https://www.exploria360.com',
       'https://exploria360.com',
-      'http://145.223.118.9:3000',
-      'http://145.223.118.9',
-      'https://mareservtaion-frontend.vercel.app',
       ...ENV_ORIGINS,
     ].filter(Boolean)
   )
@@ -139,6 +144,8 @@ app.use('/api/v1/payouts', payoutsRouter);
 app.use('/api/v1/pricing', pricingRouter);
 app.use('/api/v1/reviews', reviewsRouter);
 app.use('/api/v1/scenes', scenesRouter);
+app.use('/api/v1/bookings', bookingsRouter);
+app.use('/api/v1/admin-bookings', adminBookingsRouter);
 app.use('/api/v1/partner-applications', partnerApplicationsRouter);
 app.use('/api/v1/sos-conseil', sosConseilRouter);
 app.use('/api/v1/support', supportRouter);

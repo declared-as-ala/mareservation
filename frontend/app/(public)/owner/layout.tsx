@@ -27,6 +27,7 @@ function buildOwnerNav(types: Set<string>): NavGroup[] {
   if (hasHotel) {
     ops.push({ label: 'Chambres', href: '/owner/rooms', icon: BedDouble });
     ops.push({ label: 'Disponibilités', href: '/owner/availability', icon: CalendarRange });
+    ops.push({ label: 'Calendrier', href: '/owner/calendrier', icon: CalendarRange });
   }
   if (hasCoworking) {
     ops.push({ label: 'Espaces & 360°', href: '/owner/coworking-operations', icon: BriefcaseBusiness });

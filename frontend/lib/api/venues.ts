@@ -14,6 +14,10 @@ export interface VenuesQuery {
   priceMin?: number;
   priceMax?: number;
   q?: string;
+  /** Real availability search (YYYY-MM-DD). Validated again server-side. */
+  checkIn?: string;
+  checkOut?: string;
+  guests?: number;
 }
 
 export async function fetchVenues(query: VenuesQuery = {}): Promise<Venue[]> {
@@ -29,6 +33,11 @@ export async function fetchVenues(query: VenuesQuery = {}): Promise<Venue[]> {
   if (query.priceMin != null) params.set('priceMin', String(query.priceMin));
   if (query.priceMax != null) params.set('priceMax', String(query.priceMax));
   if (query.q?.trim()) params.set('q', query.q.trim());
+  if (query.checkIn && query.checkOut) {
+    params.set('checkIn', query.checkIn);
+    params.set('checkOut', query.checkOut);
+    if (query.guests != null) params.set('guests', String(query.guests));
+  }
   const qs = params.toString();
   const data = await apiGetRaw<Venue[]>(`/venues${qs ? `?${qs}` : ''}`);
   return Array.isArray(data) ? data : [];

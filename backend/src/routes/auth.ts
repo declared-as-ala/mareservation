@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getEnv } from '../config/env';
 
 const router = Router();
 
@@ -17,8 +18,8 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const REFRESH_SECRET = process.env.REFRESH_SECRET || process.env.JWT_SECRET || JWT_SECRET;
+// Single source of truth for the signing secret (validated, no hardcoded fallback).
+const jwtSecret = () => getEnv().JWT_SECRET;
 // Access token is the primary auth channel (sent as a Bearer header that
 // survives cross-port deployments where httpOnly cookies are fragile). Keep
 // it long-lived by default so admins/owners are never bounced mid-edit;
@@ -109,7 +110,7 @@ router.post(['/register', '/signup'], async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
     const refreshTokenValue = crypto.randomBytes(40).toString('hex');
@@ -158,7 +159,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
     const refreshTokenValue = crypto.randomBytes(40).toString('hex');
@@ -220,7 +221,7 @@ router.post('/refresh', async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
 

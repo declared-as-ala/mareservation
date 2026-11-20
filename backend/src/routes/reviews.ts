@@ -7,8 +7,11 @@ import { authenticate, requireAdmin, requireEstablishmentOwner, AuthRequest } fr
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import { logAudit } from '../utils/audit.util';
 import { logger } from '../config/logger';
+import { guardPublicVenueParam } from '../config/publicCatalog';
 
 const router = Router();
+// Public review listing is hidden for non-public venue types.
+router.param('venueId', guardPublicVenueParam);
 
 // GET /api/v1/reviews/venue/:venueId — public approved reviews + aggregate
 router.get('/venue/:venueId', async (req, res) => {

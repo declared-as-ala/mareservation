@@ -22,6 +22,10 @@ import {
 import { sendWhatsApp } from '../services/whatsapp.service';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import { logger } from '../config/logger';
+import { requirePublicVenueInBody } from '../config/publicCatalog';
+import { withBookingLock } from '../utils/bookingLock';
+import { roomConflict } from '../services/bookingEngine';
+import type { ClientSession } from 'mongoose';
 
 const router = Router();
 
@@ -47,44 +51,10 @@ function nightsBetween(checkIn: Date, checkOut: Date) {
   return Math.max(1, Math.round(ms / (24 * 60 * 60 * 1000)));
 }
 
-async function roomConflict(roomId: string, venueId: string, start: Date, end: Date, excludeHoldId?: string) {
-  const reservation = await Reservation.findOne({
-    roomId,
-    status: { $in: ['pending', 'confirmed', 'checked_in', 'PENDING', 'CONFIRMED'] },
-    startAt: { $lt: end },
-    endAt: { $gt: start },
-  }).lean();
-  if (reservation) return { reason: 'reserved' as const };
-
-  const holdFilter: Record<string, unknown> = {
-    status: 'active',
-    expiresAt: { $gt: new Date() },
-    startsAt: { $lt: end },
-    endsAt: { $gt: start },
-    reservableUnitId: roomId,
-  };
-  if (excludeHoldId) holdFilter._id = { $ne: excludeHoldId };
-  const hold = await ReservationHold.findOne(holdFilter).lean();
-  if (hold) return { reason: 'held' as const };
-
-  const block = await RoomBlock.findOne({
-    isActive: true,
-    startsAt: { $lt: end },
-    endsAt: { $gt: start },
-    $or: [
-      { scope: 'room', roomId },
-      { scope: 'venue', venueId },
-    ],
-  }).lean();
-  if (block) return { reason: 'blocked' as const };
-
-  return null;
-}
-
 /* ------------------------------------------------------------------ */
 /* POST /hotel-checkout/hold — create a 15-min hold on a room          */
 /* ------------------------------------------------------------------ */
-router.post('/hold', authenticate, checkoutLimiter, async (req: AuthRequest, res) => {
+router.post('/hold', authenticate, checkoutLimiter, requirePublicVenueInBody, async (req: AuthRequest, res) => {
   try {
     const { venueId, roomId, checkIn, checkOut, adults = 2, children = 0, rooms: roomsCount = 1 } = req.body ?? {};
 
@@ -94,11 +64,19 @@ router.post('/hold', authenticate, checkoutLimiter, async (req: AuthRequest, res
     if (!mongoose.Types.ObjectId.isValid(venueId) || !mongoose.Types.ObjectId.isValid(roomId)) {
       return sendError(res, { message: 'Identifiants invalides.', statusCode: 400 });
     }
+    const adultsN = Number(adults);
+    const childrenN = Number(children ?? 0);
+    if (!Number.isInteger(adultsN) || adultsN < 1 || adultsN > 20 || !Number.isInteger(childrenN) || childrenN < 0 || childrenN > 20) {
+      return sendError(res, { message: 'Nombre de voyageurs invalide.', statusCode: 400 });
+    }
 
     const start = new Date(checkIn);
     const end = new Date(checkOut);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
       return sendError(res, { message: "Dates invalides. La date d'arrivée doit précéder la date de départ.", statusCode: 400 });
+    }
+    if (nightsBetween(start, end) > 30) {
+      return sendError(res, { message: 'Séjour limité à 30 nuits.', statusCode: 400 });
     }
     // Compare date-only in UTC so day-based bookings are validated reliably
     const now = new Date();
@@ -111,7 +89,7 @@ router.post('/hold', authenticate, checkoutLimiter, async (req: AuthRequest, res
     const room = await Room.findOne({ _id: roomId, venueId, isActive: true, isReservable: true }).lean();
     if (!room) return sendError(res, { message: 'Chambre non trouvée ou non réservable.', statusCode: 404 });
 
-    const totalGuests = Number(adults) + Number(children || 0);
+    const totalGuests = adultsN + childrenN;
     const capacity = room.capacityAdults ?? room.capacity ?? 2;
     if (totalGuests > capacity) {
       return sendError(res, {
@@ -120,30 +98,42 @@ router.post('/hold', authenticate, checkoutLimiter, async (req: AuthRequest, res
       });
     }
 
-    const conflict = await roomConflict(roomId, venueId, start, end);
-    if (conflict) {
-      const messages = {
-        reserved: 'Cette chambre n\'est plus disponible pour ces dates.',
-        held: 'Une autre réservation est en cours pour ces dates. Réessayez dans quelques minutes.',
-        blocked: 'Cette chambre n\'est pas disponible pour ces dates (maintenance ou événement privé).',
-      } as const;
-      return sendError(res, { message: messages[conflict.reason], statusCode: 409 });
-    }
-
     const expiresAt = new Date(Date.now() + HOLD_TTL_MINUTES * 60 * 1000);
     const dateKey = start.toISOString().slice(0, 10);
 
-    const hold = await ReservationHold.create({
-      venueId,
-      reservableUnitId: roomId,
-      userId: req.userId,
-      dateKey,
-      startsAt: start,
-      endsAt: end,
-      peopleCount: totalGuests,
-      status: 'active',
-      expiresAt,
+    // Availability check + hold creation are ONE atomic critical section per room
+    // (prevents two guests from holding the same room at the same time).
+    const outcome = await withBookingLock(`venue:${venueId}`, async (session) => {
+      const conflict = await roomConflict(roomId, venueId, start, end, undefined, session);
+      if (conflict) return { conflictReason: conflict.reason } as const;
+      const [created] = await ReservationHold.create(
+        [
+          {
+            venueId,
+            reservableUnitId: roomId,
+            userId: req.userId,
+            dateKey,
+            startsAt: start,
+            endsAt: end,
+            peopleCount: totalGuests,
+            status: 'active',
+            expiresAt,
+          },
+        ],
+        { session }
+      );
+      return { hold: created } as const;
     });
+
+    if (outcome.conflictReason) {
+      const messages = {
+        reserved: "Cette chambre n'est plus disponible pour ces dates.",
+        held: 'Une autre réservation est en cours pour ces dates. Réessayez dans quelques minutes.',
+        blocked: "Cette chambre n'est pas disponible pour ces dates (maintenance ou événement privé).",
+      } as const;
+      return sendError(res, { message: messages[outcome.conflictReason], statusCode: 409 });
+    }
+    const hold = outcome.hold!;
 
     return sendSuccess(res, {
       data: {
@@ -226,11 +216,11 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     const room = await Room.findById(roomId).lean();
     const venue = await Venue.findById(hold.venueId).lean();
     if (!room || !venue) return sendError(res, { message: 'Chambre ou hôtel introuvable.', statusCode: 404 });
-
-    // Re-check conflict, excluding the current hold
-    const conflict = await roomConflict(String(roomId), String(hold.venueId), hold.startsAt, hold.endsAt, String(hold._id));
-    if (conflict) {
-      return sendError(res, { message: 'Cette chambre n\'est plus disponible.', statusCode: 409 });
+    if ((venue as { isDemo?: boolean }).isDemo) {
+      return sendError(res, {
+        message: "Cette maison d'hôtes est présentée à titre de démonstration. Les réservations ne sont pas encore ouvertes.",
+        statusCode: 403,
+      });
     }
 
     const nights = nightsBetween(hold.startsAt, hold.endsAt);
@@ -258,7 +248,7 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     const paymentStatus = paymentOption === 'online' ? 'paid' : paymentOption === 'deposit' ? 'pending' : 'unpaid';
     const cancellationDeadline = new Date(hold.startsAt.getTime() - 24 * 60 * 60 * 1000);
 
-    const reservationCode = `MR-${new Date().getFullYear()}-${generateConfirmationCode(6)}`;
+    const reservationCode = `EX-${new Date().getFullYear()}-${generateConfirmationCode(6)}`;
     const confirmationCode = generateConfirmationCode(8);
 
     // Get user info for fallbacks
@@ -266,7 +256,18 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     const [fallbackFirst, ...fallbackRest] = (dbUser?.fullName ?? '').split(' ');
     const fallbackLast = fallbackRest.join(' ') || fallbackFirst || '';
 
-    const reservation = await Reservation.create({
+    // Atomic: re-check availability, claim the hold exactly once, create the reservation.
+    // A double-click / retry can therefore never create two reservations from one hold.
+    const created = await withBookingLock(`venue:${String(hold.venueId)}`, async (session) => {
+      const conflict = await roomConflict(String(roomId), String(hold.venueId), hold.startsAt, hold.endsAt, String(hold._id), session);
+      if (conflict) return { error: 'conflict' as const };
+      const claimed = await ReservationHold.findOneAndUpdate(
+        { _id: hold._id, status: 'active', expiresAt: { $gt: new Date() } },
+        { $set: { status: 'converted' } },
+        { session }
+      );
+      if (!claimed) return { error: 'gone' as const };
+      const [doc] = await Reservation.create([{
       reservationCode,
       confirmationCode,
       userId: req.userId,
@@ -324,7 +325,15 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
       checkInStatus: 'not_checked_in',
       source: 'web',
       holdId: hold._id,
+    }], { session });
+      return { reservation: doc };
     });
+    if ('error' in created) {
+      return created.error === 'conflict'
+        ? sendError(res, { message: "Cette chambre n'est plus disponible.", statusCode: 409 })
+        : sendError(res, { message: 'Votre réservation temporaire a expiré ou a déjà été utilisée.', statusCode: 410 });
+    }
+    const reservation = created.reservation;
 
     // Build QR payload — verification URL with confirmation code
     const qrPayload = `${FRONTEND_URL}/reservation/${reservation._id}/verify?code=${reservation.confirmationCode}`;
@@ -336,10 +345,6 @@ router.post('/confirm', authenticate, checkoutLimiter, async (req: AuthRequest, 
     } catch (err) {
       logger.warn('QR generation failed; reservation still created');
     }
-
-    // Convert hold
-    hold.status = 'converted';
-    await hold.save();
 
     // ── Fire-and-forget notifications ─────────────────────────────────
     const paymentLabelMap: Record<string, string> = {

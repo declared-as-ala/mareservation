@@ -18,6 +18,9 @@ import {
   createReservationCancellationTemplate,
 } from '../services/email.service';
 import { sendWhatsApp } from '../services/whatsapp.service';
+import { withBookingLock } from '../utils/bookingLock';
+import { publishAvailabilityEvent } from '../services/availabilityEvents';
+import { DEFAULT_TZ, bookingSummary, buildManagementCalendar, inventoryConflict, parseDay, pushStatus, todayInZone, toDay, addDays } from '../services/bookingEngine';
 
 const router = Router();
 router.use(authenticate, requireEstablishmentOwner, requireAnyServiceDomains('HOTEL'));
@@ -121,6 +124,10 @@ router.post('/venues/:venueId/blocks', authenticate, requireEstablishmentOwner, 
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
       return sendError(res, { message: 'Plage de dates invalide.', statusCode: 400 });
     }
+    const VALID_REASONS = ['maintenance', 'private_event', 'owner_hold', 'cleaning', 'renovation', 'staff_use', 'offline_booking', 'emergency', 'other'];
+    if (!VALID_REASONS.includes(String(reason))) {
+      return sendError(res, { message: 'Motif de blocage invalide.', statusCode: 400 });
+    }
     if (scope === 'room') {
       if (!roomId || !mongoose.Types.ObjectId.isValid(roomId)) {
         return sendError(res, { message: 'roomId requis pour un blocage chambre.', statusCode: 400 });
@@ -129,35 +136,57 @@ router.post('/venues/:venueId/blocks', authenticate, requireEstablishmentOwner, 
       if (!room) return sendError(res, { message: 'Chambre introuvable dans cet hôtel.', statusCode: 404 });
     }
 
-    // Refuse if active reservations conflict
-    const reservationFilter: Record<string, unknown> = {
-      venueId: venue._id,
-      status: { $in: ACTIVE_RES_STATUSES },
-      ...hasOverlap(start, end),
-    };
-    if (scope === 'room') reservationFilter.roomId = roomId;
-    const conflicting = await Reservation.findOne(reservationFilter).lean();
-    if (conflicting) {
+    // Conflict check + insert run under the venue lock, so a block can never race a booking request.
+    const outcome = await withBookingLock(`venue:${String(venue._id)}`, async (session) => {
+      const reservationFilter: Record<string, unknown> = {
+        venueId: venue._id,
+        status: { $in: ACTIVE_RES_STATUSES }, // confirmed AND pending requests
+        startAt: { $lt: end },
+        endAt: { $gt: start },
+      };
+      if (scope === 'room') reservationFilter.roomId = roomId;
+      const conflicting = await Reservation.findOne(reservationFilter).session(session ?? null).lean();
+      if (conflicting) return { conflict: true as const };
+
+      const holdFilter: Record<string, unknown> = {
+        venueId: venue._id,
+        status: 'active',
+        expiresAt: { $gt: new Date() },
+        startsAt: { $lt: end },
+        endsAt: { $gt: start },
+      };
+      if (scope === 'room') holdFilter.reservableUnitId = roomId;
+      if (await ReservationHold.findOne(holdFilter).session(session ?? null).lean()) return { conflict: true as const };
+
+      const [created] = await RoomBlock.create(
+        [
+          {
+            venueId: venue._id,
+            roomId: scope === 'room' ? roomId : undefined,
+            scope,
+            startsAt: start,
+            endsAt: end,
+            reason: reason as RoomBlockReason,
+            note,
+            visibleToClient: !!visibleToClient,
+            autoReopen: !!autoReopen,
+            createdBy: req.userId,
+            createdByRole: req.userRole === 'ADMIN' ? 'ADMIN' : 'OWNER',
+            isActive: true,
+          },
+        ],
+        { session }
+      );
+      return { block: created };
+    });
+    if ('conflict' in outcome) {
       return sendError(res, {
-        message: 'Des réservations confirmées existent sur cette plage. Annulez-les d\'abord ou réduisez la plage.',
+        message: "Des réservations ou demandes en attente existent sur cette plage. Annulez-les d'abord ou réduisez la plage.",
         statusCode: 409,
       });
     }
-
-    const block = await RoomBlock.create({
-      venueId: venue._id,
-      roomId: scope === 'room' ? roomId : undefined,
-      scope,
-      startsAt: start,
-      endsAt: end,
-      reason: reason as RoomBlockReason,
-      note,
-      visibleToClient: !!visibleToClient,
-      autoReopen: !!autoReopen,
-      createdBy: req.userId,
-      createdByRole: req.userRole === 'ADMIN' ? 'ADMIN' : 'OWNER',
-      isActive: true,
-    });
+    const block = outcome.block;
+    publishAvailabilityEvent({ venueId: String(venue._id), type: 'reservation_cancelled', at: new Date().toISOString() });
 
     await logAudit(req, {
       userId: req.userId as any,
@@ -195,7 +224,21 @@ router.patch('/blocks/:id', authenticate, requireEstablishmentOwner, async (req:
     if (block.startsAt >= block.endsAt) {
       return sendError(res, { message: 'Plage de dates invalide.', statusCode: 400 });
     }
-    await block.save();
+    // Widening a block (or re-activating it) must not swallow an existing booking or request.
+    const widened =
+      block.isActive &&
+      (before.isActive === false || block.startsAt < new Date(before.startsAt) || block.endsAt > new Date(before.endsAt));
+    const saved = await withBookingLock(`venue:${String(block.venueId)}`, async (session) => {
+      if (widened && (await inventoryConflict(block.venueId, block.scope as 'room' | 'venue', block.roomId, block.startsAt, block.endsAt, session))) {
+        return false;
+      }
+      await block.save({ session: session ?? undefined });
+      return true;
+    });
+    if (!saved) {
+      return sendError(res, { message: "Des réservations ou demandes en attente existent sur cette plage.", statusCode: 409 });
+    }
+    publishAvailabilityEvent({ venueId: String(block.venueId), type: 'reservation_cancelled', at: new Date().toISOString() });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'ROOM_BLOCK_UPDATED',
@@ -218,6 +261,7 @@ router.delete('/blocks/:id', authenticate, requireEstablishmentOwner, async (req
   if (!venue) return sendError(res, { message: 'Accès refusé.', statusCode: 403 });
   block.isActive = false;
   await block.save();
+  publishAvailabilityEvent({ venueId: String(block.venueId), type: 'reservation_cancelled', at: new Date().toISOString() });
   await logAudit(req, {
     userId: req.userId as any,
     action: 'ROOM_BLOCK_DELETED',
@@ -299,7 +343,7 @@ router.post('/venues/:venueId/reservations/manual', authenticate, requireEstabli
     const total = Number.isFinite(Number(price)) ? Number(price) : room.pricePerNight * nights;
     const amountPaid = Math.max(0, Math.min(total, Number(depositAmount) || 0));
 
-    const reservationCode = `MR-${new Date().getFullYear()}-${generateConfirmationCode(6)}`;
+    const reservationCode = `EX-${new Date().getFullYear()}-${generateConfirmationCode(6)}`;
     const confirmationCode = generateConfirmationCode(8);
 
     // Find or create a placeholder user for offline guests (uses owner as fallback userId)
@@ -376,8 +420,10 @@ router.post('/reservations/:id/accept', authenticate, requireEstablishmentOwner,
     if (status !== 'pending') {
       return sendError(res, { message: `Réservation déjà ${status}. Action impossible.`, statusCode: 409 });
     }
-    reservation.status = 'confirmed';
+    pushStatus(reservation, 'confirmed', { userId: req.userId, role: req.userRole }, 'Confirmée par la maison');
+    (reservation as any).expiresAt = undefined;
     await reservation.save();
+    publishAvailabilityEvent({ venueId: String(reservation.venueId), type: 'reservation_created', at: new Date().toISOString(), reservationId: String(reservation._id) });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'RESERVATION_ACCEPTED',
@@ -418,11 +464,13 @@ router.post('/reservations/:id/reject', authenticate, requireEstablishmentOwner,
     if (status !== 'pending') {
       return sendError(res, { message: `Réservation déjà ${status}. Action impossible.`, statusCode: 409 });
     }
-    reservation.status = 'cancelled';
-    reservation.paymentStatus = 'refunded';
+    pushStatus(reservation, 'rejected', { userId: req.userId, role: req.userRole }, typeof req.body?.reason === 'string' ? req.body.reason : undefined);
+    (reservation as any).expiresAt = undefined;
+    if (String(reservation.paymentStatus) === 'paid') reservation.paymentStatus = 'refunded';
     const note = typeof req.body?.reason === 'string' ? `Refusée par l'hôtel — ${req.body.reason}` : 'Refusée par l\'hôtel';
     reservation.notes = reservation.notes ? `${reservation.notes}\n${note}` : note;
     await reservation.save();
+    publishAvailabilityEvent({ venueId: String(reservation.venueId), type: 'reservation_cancelled', at: new Date().toISOString(), reservationId: String(reservation._id) });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'RESERVATION_REJECTED',
@@ -597,10 +645,12 @@ router.post('/reservations/:id/cancel', authenticate, requireEstablishmentOwner,
     if (['cancelled', 'completed', 'no_show'].includes(status)) {
       return sendError(res, { message: `Réservation déjà ${status}.`, statusCode: 409 });
     }
-    reservation.status = 'cancelled';
+    pushStatus(reservation, 'cancelled', { userId: req.userId, role: req.userRole }, typeof req.body?.reason === 'string' ? req.body.reason : undefined);
+    (reservation as any).expiresAt = undefined;
     const note = typeof req.body?.reason === 'string' ? `Annulée par l'hôtel — ${req.body.reason}` : 'Annulée par l\'hôtel';
     reservation.notes = reservation.notes ? `${reservation.notes}\n${note}` : note;
     await reservation.save();
+    publishAvailabilityEvent({ venueId: String(reservation.venueId), type: 'reservation_cancelled', at: new Date().toISOString(), reservationId: String(reservation._id) });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'RESERVATION_CANCELLED',
@@ -946,6 +996,54 @@ router.get('/venues/:venueId/dashboard', authenticate, requireEstablishmentOwner
   } catch (err) {
     logger.error('owner-hotel/dashboard failed', err);
     return sendError(res, { message: 'Erreur de chargement du tableau de bord.', statusCode: 500 });
+  }
+});
+
+
+/* ─── CALENDAR & SUMMARY (owner: own properties only · admin: any) ───────────── */
+
+function rangeFromQuery(req: AuthRequest, tz: string) {
+  const today = todayInZone(tz);
+  const from = typeof req.query.from === 'string' ? req.query.from : today.slice(0, 8) + '01';
+  const start = parseDay(from);
+  const to = typeof req.query.to === 'string' ? req.query.to : start ? toDay(addDays(start, 41)) : today;
+  return { from, to };
+}
+
+// GET /owner-hotel/venues/:venueId/calendar?from=&to=
+router.get('/venues/:venueId/calendar', authenticate, requireEstablishmentOwner, async (req: AuthRequest, res) => {
+  try {
+    const venue: any = await assertVenueOwnedBy(req.params.venueId, req);
+    if (!venue) return sendError(res, { message: 'Hôtel introuvable ou non autorisé.', statusCode: 404 });
+    const tz = venue.timezone || DEFAULT_TZ;
+    const { from, to } = rangeFromQuery(req, tz);
+    try {
+      const data = await buildManagementCalendar(String(venue._id), from, to, tz);
+      return sendSuccess(res, { data: { venue: { id: String(venue._id), name: venue.name, isDemo: !!venue.isDemo }, ...data } });
+    } catch {
+      return sendError(res, { message: 'Plage de dates invalide (190 jours maximum).', statusCode: 400 });
+    }
+  } catch (err) {
+    logger.error('owner-hotel/calendar failed', err);
+    return sendError(res, { message: 'Échec du chargement du calendrier.', statusCode: 500 });
+  }
+});
+
+// GET /owner-hotel/venues/:venueId/summary?from=&to=
+router.get('/venues/:venueId/summary', authenticate, requireEstablishmentOwner, async (req: AuthRequest, res) => {
+  try {
+    const venue: any = await assertVenueOwnedBy(req.params.venueId, req);
+    if (!venue) return sendError(res, { message: 'Hôtel introuvable ou non autorisé.', statusCode: 404 });
+    const data = await bookingSummary({
+      venueIds: [venue._id],
+      from: typeof req.query.from === 'string' ? req.query.from : undefined,
+      to: typeof req.query.to === 'string' ? req.query.to : undefined,
+      tz: venue.timezone || DEFAULT_TZ,
+    });
+    return sendSuccess(res, { data });
+  } catch (err) {
+    logger.error('owner-hotel/summary failed', err);
+    return sendError(res, { message: 'Échec du chargement des statistiques.', statusCode: 500 });
   }
 });
 
