@@ -11,36 +11,25 @@ import {
 
 /* ─────────────────── Data ─────────────────── */
 const explore = [
-  { label: 'Explorer en 360°', href: '/explorer' },
-  { label: 'Cafés & Salons',   href: '/cafes' },
-  { label: 'Restaurants',      href: '/restaurants' },
-  { label: 'Hôtels & Resorts', href: '/hotels' },
-  { label: 'Cinéma',           href: '/cinema' },
-  { label: 'Événements',       href: '/evenements' },
-  { label: 'Coworking',        href: '/coworking' },
+  { label: "Maisons d'hôtes", href: '/accommodations' },
+  { label: 'Expérience 360°', href: '/#experience-360' },
 ];
 
 const company = [
   { label: 'À propos',          href: '/a-propos' },
   { label: 'Comment ça marche', href: '/comment-ca-marche' },
-  { label: 'Devenir partenaire',href: '/owner' },
-  { label: 'SOS Conseil',       href: '/sos-conseil' },
-  { label: 'Contact',           href: '/contact' },
+  { label: 'Contact propriétaires', href: '/contact' },
   { label: 'FAQ',               href: '/faq' },
 ];
 
 const legal = [
   { label: 'Mentions légales',          href: '/mentions-legales' },
   { label: 'Conditions générales',      href: '/cgv' },
-  { label: 'Politique de confidentialité', href: '/politique-de-confidentialite' },
+  { label: 'Politique de confidentialité', href: '/confidentialite' },
 ];
 
-const social = [
-  { Icon: Facebook,  href: 'https://facebook.com/exploria360',  label: 'Facebook' },
-  { Icon: Instagram, href: 'https://instagram.com/exploria360', label: 'Instagram' },
-  { Icon: Twitter,   href: 'https://twitter.com/exploria360',   label: 'Twitter / X' },
-  { Icon: Linkedin,  href: 'https://linkedin.com/company/exploria360', label: 'LinkedIn' },
-];
+// No social links until real, verified accounts exist.
+const social: { Icon: typeof Facebook; href: string; label: string }[] = [];
 
 // Stats removed to avoid showing fictional numbers during testing phase
 
@@ -153,8 +142,8 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           <div className="md:col-span-4">
             <Link href="/" className="inline-block mb-5 transition-opacity hover:opacity-80">
               <Image
-                src="/logo.png"
-                alt="Before you go"
+                src="/logo.svg"
+                alt="Exploria360"
                 width={180}
                 height={50}
                 className="h-14 w-auto object-contain"
@@ -184,11 +173,11 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
 
             {/* Trust badges */}
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2 text-[12px] text-zinc-700">
+              <div className="flex items-center gap-2 text-[12px] text-zinc-400">
                 <Shield className="size-3.5 text-amber-400/50" />
                 Paiement 100% sécurisé
               </div>
-              <div className="flex items-center gap-2 text-[12px] text-zinc-700">
+              <div className="flex items-center gap-2 text-[12px] text-zinc-400">
                 <Globe className="size-3.5 text-amber-400/50" />
                 Disponible partout en Tunisie
               </div>
@@ -242,24 +231,6 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
             </h4>
             <ul className="space-y-3 mb-7">
               <li>
-                <a
-                  href="mailto:contact@exploria360.com"
-                  className="group flex items-start gap-3 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
-                >
-                  <Mail className="size-4 shrink-0 mt-0.5 text-zinc-700 group-hover:text-amber-400 transition-colors" />
-                  <span className="break-all">contact@exploria360.com</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  href="tel:+21612345678"
-                  className="group flex items-center gap-3 text-[13px] text-zinc-500 transition-colors hover:text-amber-400"
-                >
-                  <Phone className="size-4 shrink-0 text-zinc-700 group-hover:text-amber-400 transition-colors" />
-                  +216 12 345 678
-                </a>
-              </li>
-              <li>
                 <div className="flex items-center gap-3 text-[13px] text-zinc-500">
                   <MapPin className="size-4 shrink-0 text-zinc-700" />
                   Tunis, Tunisie
@@ -269,7 +240,7 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
 
             {/* Legal links */}
             <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
-              <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700">
+              <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
                 Légal
               </h4>
               <ul className="space-y-1.5">
@@ -293,10 +264,10 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           {/* Brand */}
           <div className="mb-6 text-center">
             <Link href="/" className="inline-block mb-4">
-              <Image src="/logo.png" alt="Exploria360" width={140} height={40} className="h-12 w-auto object-contain mx-auto" priority />
+              <Image src="/logo.svg" alt="Exploria360" width={140} height={40} className="h-12 w-auto object-contain mx-auto" priority />
             </Link>
-            <p className="text-sm leading-relaxed text-zinc-500 mb-5 max-w-xs mx-auto">
-              Réservez vos tables, chambres et places en quelques clics — une expérience premium pour vos moments d&apos;exception.
+            <p className="text-sm leading-relaxed text-zinc-400 mb-5 max-w-xs mx-auto">
+              Visitez les maisons d&apos;hôtes de Tunisie en 360° avant de réserver.
             </p>
             {/* Social */}
             <div className="flex items-center justify-center gap-3 mb-6">
@@ -337,16 +308,6 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
           <MobileAccordion title="Contact">
             <ul className="space-y-3 pt-1">
               <li>
-                <a href="mailto:contact@exploria360.com" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
-                  <Mail className="size-4 text-zinc-700 shrink-0" /> contact@exploria360.com
-                </a>
-              </li>
-              <li>
-                <a href="tel:+21612345678" className="flex items-center gap-3 text-sm text-zinc-500 hover:text-amber-400">
-                  <Phone className="size-4 text-zinc-700 shrink-0" /> +216 12 345 678
-                </a>
-              </li>
-              <li>
                 <div className="flex items-center gap-3 text-sm text-zinc-500">
                   <MapPin className="size-4 text-zinc-700 shrink-0" /> Tunis, Tunisie
                 </div>
@@ -375,21 +336,21 @@ export function Footer({ hideNewsletter }: { hideNewsletter?: boolean }) {
         <div className="mx-auto max-w-7xl px-5 py-5 sm:px-8 lg:px-12">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             {/* Copyright */}
-            <p className="text-center text-xs text-zinc-700 sm:text-left order-2 sm:order-1">
+            <p className="text-center text-xs text-zinc-400 sm:text-left order-2 sm:order-1">
               © {year} Exploria360. Tous droits réservés.
             </p>
 
             {/* Legal quick links — desktop only */}
             <div className="hidden sm:flex items-center gap-5 order-1 sm:order-2">
               {legal.map(({ label, href }) => (
-                <Link key={href} href={href} className="text-xs text-zinc-700 transition-colors hover:text-amber-400">
+                <Link key={href} href={href} className="text-xs text-zinc-400 transition-colors hover:text-amber-400">
                   {label}
                 </Link>
               ))}
             </div>
 
             {/* Made with love */}
-            <p className="flex items-center gap-1.5 text-xs text-zinc-700 order-3">
+            <p className="flex items-center gap-1.5 text-xs text-zinc-400 order-3">
               Fait avec <Heart className="size-3.5 fill-amber-400 text-amber-400" /> en Tunisie
             </p>
           </div>

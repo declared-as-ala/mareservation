@@ -1,435 +1,140 @@
-# 🚀 Ma Reservation — VPS Deployment Guide
+# DEPLOYMENT — Exploria360 (production)
 
-This guide walks through deploying Ma Reservation to a VPS using **Docker** and **MongoDB** (self-hosted, not Atlas).
+Target: VPS `187.53.136.225` · domain `https://www.exploria360.com/`
+Principle: **isolated, reversible, non-destructive.** The server may host other projects — nothing here stops, removes or overwrites anything that is not Exploria360.
 
----
+> Status: kit prepared and tested locally. **Nothing has been deployed yet** (SSH access pending). This file is updated as each step is actually performed.
 
-## Prerequisites
+## ⚠ Findings from public, read-only probes (2026-11-14, no credentials used)
 
-- **VPS Server**: Ubuntu 20.04+ or similar Linux distribution
-- **SSH Access**: Root or sudo-capable user
-- **Domain Name** (optional): For HTTPS setup
-- **DNS**: Pointing to your VPS IP
+* **The VPS already hosts another live production site**: `Art Visions Tunisie` (certificate `CN=art-visions.tn`, nginx 1.24 on Ubuntu, a Next.js app). It is the **default vhost** — requests for `exploria360.com` currently fall through to it (with a certificate mismatch). Therefore: **never edit, reload-break, or remove its nginx config, certificate, containers or ports.** Add only a *new* `server_name exploria360.com www.exploria360.com` block; always `nginx -t` before `reload`.
+* Host key to pin (ed25519, verify against your provider console before trusting):
+  `SHA256:m3wbnRDFs6qO4Ax3jpZi73+qS5NLw0ZPD3cZXWdXdec`
+* Ports 22, 80, 443 are reachable from the internet.
+* **DNS is already correct**: `exploria360.com` and `www.exploria360.com` → `A 187.53.136.225` (TTL 3600). No AAAA, no CAA. Existing records to KEEP: `MX` (mx1/mx2/mx3.mail.ovh.net), `TXT` SPF (`v=spf1 include:mx.ovh.com -all`), the OVH redirect marker `TXT "1|www.exploria360.com"`, and the OVH nameservers (`dns106.ovh.net`, `ns106.ovh.net`). **No DNS change is required** — only TLS issuance for our two names.
 
----
+## 0. What gets deployed
 
-## 🔐 Security First
+| Piece | How |
+|---|---|
+| Frontend (Next.js) | container `exploria360-frontend`, bound to `127.0.0.1:${FRONTEND_HOST_PORT:-3100}` |
+| Backend (Express) | container `exploria360-backend`, bound to `127.0.0.1:${BACKEND_HOST_PORT:-3101}` |
+| Database | **external MongoDB (Atlas)** — no DB container, no DB port published anywhere |
+| TLS / public entry | nginx (existing one if present) → `127.0.0.1:3100`; Let's Encrypt certificate |
+| Compose project | `docker compose -p exploria360` (own network `exploria360-network`) |
+| Public catalogue | `PUBLIC_VENUE_SLUGS=maison-hotes-demo-exploria360` → **only the demo is public** |
 
-> ⚠️ **CRITICAL**: Never commit `.env` or credentials to Git. Always use environment variables.
+Files: `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `deploy/nginx/*.conf`, `deploy/env.production.example`, `deploy/scripts/backup-atlas.sh`, `.github/workflows/deploy.yml` (manual, SSH key + pinned host key).
 
-1. Generate strong secrets:
-   ```bash
-   openssl rand -base64 64  # JWT_SECRET
-   openssl rand -base64 64  # REFRESH_SECRET
-   ```
+## 1. Access (you provide; never paste secrets in chat or commit them)
 
-2. Use `.env` file (gitignored) with sensitive values — never in code.
+Preferred: a dedicated non-root user in the `docker` group, key-only SSH.
 
----
-
-## Step 1: Prepare VPS
-
-### 1.1 SSH into your VPS
 ```bash
-ssh root@<your-vps-ip>
-# Enter password when prompted
+# on the VPS, as root (once):
+adduser --disabled-password --gecos "" deploy
+usermod -aG docker deploy
+install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
+# paste the PUBLIC key of a NEW keypair generated on your machine:
+echo "ssh-ed25519 AAAA… exploria360-deploy" >> /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
 ```
+Local: `ssh-keygen -t ed25519 -f ~/.ssh/exploria360_deploy -C exploria360-deploy`.
+Pin the host key (verify the fingerprint through your provider's console): `ssh-keyscan -t ed25519 187.53.136.225`.
+After deployment: rotate the root password and disable password SSH logins.
 
-### 1.2 Install Docker & Docker Compose
+## 2. Read-only inspection (run BEFORE changing anything; paste the output back)
+
 ```bash
-# Update system
-apt update && apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-
-# Verify installation
-docker --version
-docker-compose --version
+hostnamectl; uname -r; uptime
+nproc; free -h; df -h /; df -h /var/lib/docker 2>/dev/null
+ss -tlnp                                  # occupied ports (pick free ones for 3100/3101)
+docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
+docker compose ls; docker network ls; docker volume ls
+ls -la /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null; nginx -T 2>/dev/null | grep -E "server_name|listen|proxy_pass"
+ls -la /opt /app /srv /var/www 2>/dev/null
+systemctl list-units --type=service --state=running --no-pager | head -40
+ufw status verbose 2>/dev/null; iptables -S 2>/dev/null | head -20
 ```
+Decisions taken from the output: free host ports; whether nginx already runs (reuse it — add a new `server` block only) or is absent (install); whether the old workflow's directory `/app/mareservation` is a **previous deployment of this app** (then keep it untouched and deploy to a NEW dir such as `/opt/exploria360`).
 
-### 1.3 Create App Directory
+## 3. Backups (mandatory before any production change)
+
+1. **Application state** (if a previous deployment exists): `tar czf ~/pre-exploria360-app-$(date +%F).tgz <old app dir> /etc/nginx/sites-available /etc/nginx/conf.d` (config + .env only; no `node_modules`).
+2. **Database** (Atlas, read-only): `MONGODB_URI='…' deploy/scripts/backup-atlas.sh ~/backups` → dump + dry-run restore verification + sha256.
+   Also confirm an Atlas-side snapshot/backup exists (Atlas UI → Backup).
+3. Copy backups **off the server**; record the sha256.
+4. **Restore drill** (on a scratch DB/cluster, never production): `mongorestore --gzip --archive=dump.archive.gz --nsFrom 'prod.*' --nsTo 'restore_test.*' --uri <scratch>`.
+
+## 4. Deploy
+
 ```bash
-mkdir -p /app/mareservation
-cd /app/mareservation
+# as deploy@VPS
+sudo install -d -o deploy -g deploy /opt/exploria360 && cd /opt/exploria360
+git clone https://github.com/declared-as-ala/mareservation.git .   # or: git fetch && git checkout --detach <sha>
+cp deploy/env.production.example backend/.env && chmod 600 backend/.env   # then edit: MONGODB_URI, JWT_SECRET, …
+printf 'FRONTEND_HOST_PORT=3100\nBACKEND_HOST_PORT=3101\n' > .env          # ports confirmed free in §2
+docker compose -p exploria360 build
+docker compose -p exploria360 up -d
+docker compose -p exploria360 ps
+curl -fsS http://127.0.0.1:3101/api/v1/health          # → {"status":"ok","db":"connected"}
+curl -fsSI http://127.0.0.1:3100/ | head -1
 ```
+Never run: `docker system prune`, `docker volume prune`, `docker compose down -v`, `--remove-orphans`, `--force-recreate` on other projects.
 
----
+### 4a. Demo seed (only after §3 is verified)
 
-## Step 2: Clone Repository
-
-### 2.1 Clone from GitHub
 ```bash
-git clone https://github.com/declared-as-ala/mareservation.git .
-cd /app/mareservation
+cd /opt/exploria360
+docker compose -p exploria360 exec backend npx tsx src/scripts/seed-demo-maison.ts --dry-run --allow-remote   # preview
+docker compose -p exploria360 exec backend npx tsx src/scripts/seed-demo-maison.ts --yes --allow-remote       # inserts/updates ONLY the demo venue
 ```
-
-### 2.2 Verify Structure
-```bash
-ls -la
-# Should show: docker-compose.yml, Dockerfile, backend/, package.json, etc.
-```
-
----
-
-## Step 3: Configure Environment
-
-### 3.1 Create .env file
-```bash
-cp .env.example .env
-nano .env  # or use your editor
-```
-
-### 3.2 Required Variables (update these)
-```env
-# Frontend
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
-
-# Backend
-NODE_ENV=production
-FRONTEND_URL=https://yourdomain.com
-MONGO_URI=mongodb://admin:YOUR_STRONG_PASSWORD@mongodb:27017/mareservation?authSource=admin
-JWT_SECRET=YOUR_64_CHAR_GENERATED_SECRET
-REFRESH_SECRET=YOUR_64_CHAR_GENERATED_SECRET
-
-# Email (Resend recommended)
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-KONNECT_API_KEY=your-konnect-api-key
-KONNECT_SECRET_KEY=your-konnect-secret-key
-```
-
-### 3.3 Change MongoDB Credentials
-Edit docker-compose.yml and change:
-```yaml
-MONGO_INITDB_ROOT_USERNAME: admin  # ← change from admin
-MONGO_INITDB_ROOT_PASSWORD: changeme  # ← change from changeme
-```
-
-And update .env:
-```env
-MONGO_URI=mongodb://YOUR_USERNAME:YOUR_PASSWORD@mongodb:27017/mareservation?authSource=admin
-```
-
----
-
-## Step 4: Build & Start Containers
-
-### 4.1 Build Images
-```bash
-docker-compose build
-# This will build backend and frontend images
-# Takes 3–5 minutes on first run
-```
-
-### 4.2 Start Services
-```bash
-docker-compose up -d
-# -d = detached (background)
-
-# Verify services are running
-docker-compose ps
-```
-
-### 4.3 Check Logs
-```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f mongodb
-```
-
----
-
-## Step 5: Verify Deployment
-
-### 5.1 Check Backend Health
-```bash
-curl http://localhost:5000/api/v1/health
-# Should return: {"status":"ok"} or similar
-```
-
-### 5.2 Check Frontend
-```bash
-curl http://localhost:3000
-# Should return HTML
-```
-
-### 5.3 Check MongoDB
-```bash
-docker-compose exec mongodb mongosh --eval "db.adminCommand('ping')"
-# Should show: { ok: 1 }
-```
-
----
-
-## Step 6: Setup Reverse Proxy (Nginx/Caddy)
-
-### Option A: Nginx
-```bash
-apt install -y nginx
-
-# Create config
-cat > /etc/nginx/sites-available/mareservation.conf << 'EOF'
-upstream backend {
-    server localhost:5000;
-}
-
-upstream frontend {
-    server localhost:3000;
-}
-
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    # API routes → backend
-    location /api/v1 {
-        proxy_pass http://backend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Everything else → frontend
-    location / {
-        proxy_pass http://frontend;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-EOF
-
-# Enable config
-ln -s /etc/nginx/sites-available/mareservation.conf /etc/nginx/sites-enabled/
-
-# Test config
-nginx -t
-
-# Start Nginx
-systemctl start nginx
-systemctl enable nginx
-```
-
-### Option B: Caddy (easier, auto HTTPS)
-```bash
-apt install -y caddy
-
-# Create Caddyfile
-cat > /etc/caddy/Caddyfile << 'EOF'
-yourdomain.com {
-    encode gzip
-
-    # API routes
-    @api path /api/v1/*
-    reverse_proxy @api localhost:5000
-
-    # Frontend (with rewrites for SPA)
-    reverse_proxy localhost:3000
-}
-EOF
-
-# Start Caddy
-systemctl start caddy
-systemctl enable caddy
-```
-
----
-
-## Step 7: SSL Certificate (Let's Encrypt)
-
-### If using Caddy
-Caddy automatically handles SSL — no extra steps needed.
-
-### If using Nginx
-```bash
-apt install -y certbot python3-certbot-nginx
-
-certbot --nginx -d yourdomain.com
-
-# Auto-renewal
-systemctl enable certbot.timer
-```
-
----
-
-## Step 8: Persistence & Backups
-
-### 8.1 MongoDB Data Backup
-```bash
-# Backup
-docker-compose exec mongodb mongodump --archive=/backup/mongo-$(date +%Y%m%d).archive
-
-# Restore
-docker-compose exec mongodb mongorestore --archive=/backup/mongo-20260101.archive
-```
-
-### 8.2 Docker Volumes
-MongoDB data is stored in `mongodb_data` volume (persistent across restarts):
-```bash
-docker volume ls
-docker volume inspect mareservation_mongodb_data
-```
-
----
-
-## Step 9: Monitoring & Logs
-
-### 9.1 View Logs
-```bash
-# Real-time logs
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f backend --tail 100
-
-# Tail by timestamp
-docker-compose logs --since 30m
-```
-
-### 9.2 Health Check
-```bash
-# Simple health endpoint
-curl http://localhost:5000/api/v1/health
-
-# Check all containers
-docker-compose ps
-```
-
----
-
-## Step 10: Troubleshooting
-
-### 10.1 Backend won't start
-```bash
-# Check logs
-docker-compose logs backend
-
-# Common issues:
-# - MONGO_URI incorrect
-# - PORT already in use
-# - JWT_SECRET missing or < 32 chars
-
-# Fix and restart
-docker-compose restart backend
-```
-
-### 10.2 Frontend won't load
-```bash
-# Check NEXT_PUBLIC_API_URL is set correctly
-docker-compose logs frontend
-
-# Rebuild if needed
-docker-compose build --no-cache frontend
-docker-compose up -d
-```
-
-### 10.3 MongoDB won't start
-```bash
-# Check seed script output
-docker-compose logs mongodb
-
-# Recreate volume if corrupted
-docker-compose down
-docker volume rm mareservation_mongodb_data
-docker-compose up -d
-# (Will re-seed)
-```
-
----
-
-## Step 11: Updates & Maintenance
-
-### 11.1 Update Code
-```bash
-cd /app/mareservation
-git pull
-
-# Rebuild and restart
-docker-compose build
-docker-compose up -d
-```
-
-### 11.2 Clean Up
-```bash
-# Stop containers (keep data)
-docker-compose stop
-
-# Stop and remove (keep data)
-docker-compose down
-
-# Clean unused images/volumes
-docker system prune
-```
-
----
-
-## Step 12: Production Checklist
-
-- [ ] `.env` is in `.gitignore`
-- [ ] All secrets are strong (64-char base64)
-- [ ] `NEXT_PUBLIC_API_URL` points to production API
-- [ ] `FRONTEND_URL` is set correctly
-- [ ] MongoDB credentials changed from defaults
-- [ ] Reverse proxy (Nginx/Caddy) configured
-- [ ] SSL certificate installed
-- [ ] Firewall allows ports 80, 443
-- [ ] Backup strategy in place
-- [ ] Monitoring/alerting configured
-- [ ] Email service (Resend/SMTP) tested
-- [ ] Payment gateway (Konnect) configured and tested
-
----
-
-## Environment Variables Reference
-
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `NEXT_PUBLIC_API_URL` | ✅ | Backend API URL (exposed to frontend) |
-| `NODE_ENV` | ✅ | `production` or `development` |
-| `MONGO_URI` | ✅ | MongoDB connection string |
-| `JWT_SECRET` | ✅ | Min 32 characters, generate with openssl |
-| `REFRESH_SECRET` | ✅ | Min 32 characters, generate with openssl |
-| `FRONTEND_URL` | ✅ | Frontend URL for CORS |
-| `RESEND_API_KEY` | ✅ | Email service API key |
-| `KONNECT_API_KEY` | ✅ | Payment gateway API key |
-| `KONNECT_SECRET_KEY` | ✅ | Payment gateway secret |
-
----
-
-## Support & Issues
-
-For issues, check:
-1. Docker logs: `docker-compose logs -f`
-2. Environment variables: `docker-compose config`
-3. Backend health: `curl http://localhost:5000/api/v1/health`
-4. MongoDB connection: `docker-compose exec mongodb mongosh`
-
----
-
-## Next Steps
-
-- Set up automated backups (cron + S3)
-- Configure monitoring (Sentry, NewRelic, etc.)
-- Enable rate limiting on API
-- Setup CI/CD for automatic deployments (GitHub Actions)
-- Configure email templates (Resend)
-
----
-
-**Deployed successfully!** 🎉
+(If `tsx` is not in the production image, run the seed from your machine against the same URI with the same flags.) The script prints the target host/db, is idempotent, and fails if any other venue changed.
+
+## 5. nginx + HTTPS
+
+* If nginx already serves other sites: add `deploy/nginx/exploria360.http.conf` as a **new** file; do not edit other server blocks; `nginx -t && systemctl reload nginx`.
+* Obtain the certificate **only when DNS already points to the VPS**: `certbot certonly --webroot -w /var/www/certbot -d exploria360.com -d www.exploria360.com`.
+* Switch to `deploy/nginx/exploria360.conf` (HTTP→HTTPS, apex→www), `nginx -t && systemctl reload nginx`. Check renewal: `certbot renew --dry-run`.
+* Firewall: allow 80/443 (+ SSH); do **not** open 3100/3101/27017.
+
+## 6. DNS (at your domain provider)
+
+**Current state (verified): already correct — see the findings above. The table below is the target; at OVH it is already in place, so just verify, do not edit.**
+
+| Type | Host / Name | Value | TTL |
+|---|---|---|---|
+| A | `@` (exploria360.com) | `187.53.136.225` | 300 (raise to 3600 once stable) |
+| A | `www` | `187.53.136.225` | 300 |
+| AAAA | `@` and `www` | **none** unless the VPS has IPv6 *and* nginx listens on it — remove any stale AAAA pointing elsewhere | — |
+
+* Check existing records first and remove only **conflicting** `A`/`AAAA`/`CNAME` records for `@` and `www` (e.g. a parking page or an old host). A `CNAME` on `www` cannot coexist with an `A` on `www`.
+* **Keep** every `MX`, `TXT` (SPF `v=spf1…`, DKIM, DMARC `_dmarc`, verification), and `CAA` record. If a `CAA` exists it must allow `letsencrypt.org`.
+* Do **not** change nameservers.
+* Verify: `dig +short exploria360.com A`, `dig +short www.exploria360.com A`, `curl -I http://www.exploria360.com`, then after TLS: `curl -I https://www.exploria360.com` and `openssl s_client -connect www.exploria360.com:443 -servername www.exploria360.com </dev/null | openssl x509 -noout -dates -subject`. Propagation can take minutes to hours depending on previous TTLs.
+
+## 7. Post-deployment verification checklist
+
+- [ ] `/` loads, Exploria360 branding only, no hidden categories in nav/footer
+- [ ] `/accommodations` lists **only** the demo; `/accommodation/maison-hotes-demo-exploria360` shows the demo banner, 360° tour loads (click), fullscreen works
+- [ ] mobile (real phone): tour touch + layout
+- [ ] `curl -s https://www.exploria360.com/api/v1/venues` → only the demo, `isDemo:true`
+- [ ] `POST /api/v1/hotel-checkout/hold` and `/api/v1/reservations` for the demo → **403** `DEMO_VENUE_NOT_BOOKABLE`
+- [ ] `/cafes`, `/restaurants`, `/cinema`, `/coworking`, `/evenements`, `/sos-conseil` → 404; `/hotels` → 308 `/accommodations`
+- [ ] contact form → `201`, lead visible in `partnerapplications`
+- [ ] register/login/logout/refresh work over HTTPS (cookie `Secure`)
+- [ ] `robots.txt`, `sitemap.xml` (demo excluded), demo page `noindex`
+- [ ] browser console: no errors; `docker compose -p exploria360 logs --tail=100` clean
+
+## 8. Rollback
+
+* **App**: `cd /opt/exploria360 && git checkout --detach <previous-sha> && docker compose -p exploria360 build && docker compose -p exploria360 up -d`.
+  Fast stop (this project only): `docker compose -p exploria360 stop`.
+* **nginx**: `rm /etc/nginx/sites-enabled/exploria360.conf && nginx -t && systemctl reload nginx` (other sites untouched).
+* **Demo seed**: it only inserts/updates one document. To withdraw: remove `maison-hotes-demo-exploria360` from `PUBLIC_VENUE_SLUGS` (empties the public catalogue immediately) or set `isPublished:false` on that single venue.
+* **Database**: restore from the verified archive **only** with explicit approval (`mongorestore --gzip --archive=… --nsInclude '<db>.*'`), preferably into a scratch DB first.
+* **DNS**: re-point `A` records to the previous values (record them before changing).
+
+## 9. Security checklist (carried from the audit)
+
+JWT secret ≥32 chars and not a placeholder · `COOKIE_SECURE=true` · CORS restricted to the real origins · `trust proxy` on · MongoDB never published (Atlas IP allow-list = the VPS only; dedicated least-privilege DB user; no `0.0.0.0/0`) · frontend container has **no** backend secrets · containers run as non-root · SSH key-only, deploy user · root password rotated · `PARTNER_NOTIFICATION_EMAILS` configured on purpose · local development never points at the production database (a non-production server refuses to start against a remote DB unless `ALLOW_REMOTE_DB_IN_DEV=true`).

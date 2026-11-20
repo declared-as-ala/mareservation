@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { AppContainer } from '@/components/shared/AppContainer';
 import { Globe2 } from 'lucide-react';
 import { Reveal } from './Reveal';
@@ -6,7 +5,7 @@ import { Reveal } from './Reveal';
 const stats = [
   { value: '100%', label: 'Immersif' },
   { value: '360°', label: 'Immersion totale' },
-  { value: 'Direct', label: 'Réservation directe' },
+  { value: 'Bientôt', label: 'Réservations' },
 ];
 
 export function WorldPresenceSection() {
@@ -14,13 +13,6 @@ export function WorldPresenceSection() {
     <section className="relative min-h-[500px] overflow-hidden bg-[#111113] text-white md:min-h-[600px]">
       {/* Background image */}
       <div className="absolute inset-0">
-        <Image
-          src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80&auto=format&fit=crop"
-          alt=""
-          fill
-          className="object-cover opacity-15"
-          sizes="100vw"
-        />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-[#111113]/85 to-[#111113]/95" />
       </div>
 
@@ -49,13 +41,12 @@ export function WorldPresenceSection() {
           {/* Headline */}
           <Reveal delay={0.14}>
             <h2 className="mx-auto max-w-3xl font-serif text-xl leading-relaxed text-white/90 sm:text-2xl md:text-3xl lg:text-4xl">
-              La plateforme de réservation immersive,{' '}
-              <strong className="font-bold text-amber-400/90">bientôt</strong> dans le monde
-              entier
+              Les maisons d&apos;hôtes de Tunisie,{' '}
+              <strong className="font-bold text-amber-400/90">à visiter en 360°</strong> avant
+              de réserver
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-white/45">
-              De Tunis à Paris, de Dubaï à Montréal — nous construisons le futur de la
-              réservation d&apos;expériences.
+              Exploria360 est en phase de lancement : découvrez notre maison d&apos;hôtes de démonstration.
             </p>
             <div className="mx-auto mt-6 h-px w-16 bg-gradient-to-r from-amber-400/60 via-amber-400 to-amber-500/40" />
           </Reveal>

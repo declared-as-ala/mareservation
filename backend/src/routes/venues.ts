@@ -16,6 +16,8 @@ import { ReservationHold } from '../models/ReservationHold';
 import { TableBlock } from '../models/TableBlock';
 import { VenueTablePolicy } from '../models/VenueTablePolicy';
 import { subscribeToVenueAvailability } from '../services/availabilityEvents';
+import { guardPublicVenueParam, isPublicVenueType, publicVenueFilter } from '../config/publicCatalog';
+import { getAvailableRoomCounts, parseStayQuery } from '../utils/stayAvailability';
 
 const router = Router();
 
@@ -73,6 +75,9 @@ async function attachRoomTours(rooms: any[]) {
 }
 
 // GET /api/v1/venues/:id/virtual-tours — list virtual tours for a venue
+router.param('id', guardPublicVenueParam);
+router.param('venueId', guardPublicVenueParam);
+
 router.get('/:id/virtual-tours', async (req, res) => {
   try {
     const venue = await Venue.findOne(
@@ -114,8 +119,16 @@ router.get('/:id/hotspots', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { type, city, categoryId, hasEvent, hasVirtualTour, priceMin, priceMax, q } = req.query;
-    const filter: Record<string, unknown> = {};
-    if (type) filter.type = String(type).toUpperCase();
+    // Optional real-availability search: ?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&guests=N (validated server-side).
+    const stay = parseStayQuery(req.query);
+    if (!stay.ok) return res.status(400).json({ error: stay.error });
+    // Public catalogue visibility (feature flag): only enabled venue types, published, not archived.
+    const filter: Record<string, unknown> = publicVenueFilter();
+    if (type) {
+      const requested = String(type).toUpperCase();
+      // A hidden type yields an empty result instead of leaking it.
+      filter.type = isPublicVenueType(requested) ? requested : { $in: [] };
+    }
     if (city) filter.city = city;
     if (categoryId && mongoose.Types.ObjectId.isValid(categoryId as string)) {
       filter.categoryIds = new mongoose.Types.ObjectId(categoryId as string);
@@ -157,6 +170,13 @@ router.get('/', async (req, res) => {
       );
     }
 
+    // Keep only venues with at least one room genuinely bookable for the stay.
+    let availableRoomsByVenue: Map<string, number> | null = null;
+    if (stay.value) {
+      availableRoomsByVenue = await getAvailableRoomCounts(venues.map((v) => (v as any)._id), stay.value);
+      venues = venues.filter((v) => !(v as any).isDemo && availableRoomsByVenue!.has(String((v as any)._id)));
+    }
+
     const result = await Promise.all(
       venues.map(async (venue) => {
         const vid = (venue as any)._id;
@@ -164,6 +184,7 @@ router.get('/', async (req, res) => {
         return {
           ...venue,
           availableTables: tables,
+          ...(availableRoomsByVenue ? { availableRooms: availableRoomsByVenue.get(String(vid)) ?? 0 } : {}),
           minRoomPrice: minRoomPriceByVenue.get(vid.toString()) ?? null,
           hasEvent: venuesWithEvents.some((id: any) => id.toString() === vid.toString()),
           hasVirtualTour: Boolean((venue as any).hasVirtualTour || (venue as any).immersiveFile || immersiveVenueIds.has(vid.toString())),
@@ -517,7 +538,7 @@ router.get('/:id', async (req, res) => {
     const venueId = (venue as any)._id.toString();
     const venueType = (venue as any).type;
     const hasTables = venueType === 'CAFE' || venueType === 'RESTAURANT' || venueType === 'EVENT_SPACE';
-    const hasRooms = venueType === 'HOTEL';
+    const hasRooms = venueType === 'HOTEL' || venueType === 'MAISON_DHOTE';
     const hasSeats = venueType === 'CINEMA';
 
     const [media, tables, rooms, seats, tableHotspots, virtualTours, events, hasVenueScenes] = await Promise.all([

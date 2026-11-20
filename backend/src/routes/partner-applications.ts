@@ -4,12 +4,26 @@ import { PartnerApplication } from '../models/PartnerApplication';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { sendEmail, createPartnerApplicationAdminTemplate } from '../services/email.service';
 import { getEnv } from '../config/env';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-/** Emails notifiés pour chaque nouvelle demande de partenariat. */
-const PARTNER_EMAIL_DEFAULT =
-  'alamissaoui.dev@gmail.com,Wassim.ouelhazi100119862@gmail.com';
+// Public form → throttle abuse (10 submissions / hour / IP).
+const applicationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Trop de demandes. Réessayez plus tard.' },
+});
+
+/**
+ * Recipients of new-lead notifications come ONLY from PARTNER_NOTIFICATION_EMAILS.
+ * There is deliberately no hardcoded default: prospect data must never be mailed to
+ * addresses that were not configured for this deployment. Leads are always stored in
+ * the database (and visible to admins) either way.
+ */
+const PARTNER_EMAIL_DEFAULT = '';
 
 function parseEmailRecipientList(raw: string): string[] {
   const seen = new Set<string>();
@@ -35,6 +49,7 @@ function getPartnerNotificationRecipients(): string[] {
 /** Public: submit a partnership application */
 router.post(
   '/',
+  applicationLimiter,
   [
     body('establishmentName').trim().notEmpty().withMessage("Le nom de l'établissement est requis"),
     body('contactName').trim().notEmpty().withMessage('Le nom du contact est requis'),

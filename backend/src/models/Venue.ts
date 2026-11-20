@@ -38,6 +38,10 @@ export interface IVenue extends Document {
   priceRangeMax?: number;
   commissionRate?: number;
   isPublished: boolean;
+  /** Demonstration listing: visible, but NEVER bookable (enforced server-side). */
+  isDemo?: boolean;
+  /** IANA time zone of the property; "today" and past-date checks use it. */
+  timezone?: string;
   isFeatured: boolean;
   isVedette?: boolean;
   activeEventTonight?: boolean;
@@ -87,6 +91,8 @@ const VenueSchema = new Schema<IVenue>(
     priceRangeMax: { type: Number },
     commissionRate: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: true },
+    isDemo: { type: Boolean, default: false, index: true },
+    timezone: { type: String, default: 'Africa/Tunis' },
     isFeatured: { type: Boolean, default: false },
     isVedette: { type: Boolean, default: false },
     activeEventTonight: { type: Boolean, default: false },

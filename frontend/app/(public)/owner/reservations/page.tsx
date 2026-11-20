@@ -60,6 +60,8 @@ const STATUS_META: Record<string, { label: string; tone: 'amber' | 'emerald' | '
   completed: { label: 'Terminée', tone: 'neutral' },
   cancelled: { label: 'Annulée', tone: 'red' },
   no_show: { label: 'No-show', tone: 'red' },
+  rejected: { label: 'Refusée', tone: 'red' },
+  expired: { label: 'Expirée', tone: 'red' },
 };
 
 const STATUS_FILTERS = [

@@ -1,161 +1,135 @@
-name: 🚀 Deploy to VPS
+name: Deploy Exploria360 (manual, SSH key)
+
+# SAFETY MODEL
+#  - Manual only (workflow_dispatch). Pushing to main does NOT deploy.
+#  - CI (typecheck + tests + builds) must pass before the deploy job starts.
+#  - The deploy job targets the GitHub Environment "production": configure
+#    required reviewers there so a human approves every deployment.
+#  - SSH uses a dedicated key (no passwords) and a PINNED host key
+#    (StrictHostKeyChecking=yes) — never "accept any host key".
+#  - The remote step is deliberately minimal and non-destructive: it touches
+#    only the compose project "exploria360" in its own directory. It never runs
+#    image/volume prune, `--force-recreate`, `--remove-orphans`, seeds or DB
+#    migrations. Run those by hand, after a backup, when you decide to.
+#
+# REQUIRED repository secrets (Settings > Secrets and variables > Actions):
+#   VPS_HOST         server IP or hostname
+#   VPS_USER         SSH user (prefer a non-root deploy user in the docker group)
+#   VPS_SSH_KEY      private key (ed25519) authorised on the VPS for VPS_USER
+#   VPS_KNOWN_HOSTS  output of:  ssh-keyscan -t ed25519 <VPS_HOST>   (verify the fingerprint yourself!)
+# REQUIRED repository variable:
+#   VPS_APP_DIR      absolute path of the Exploria360 checkout on the VPS (e.g. /opt/exploria360)
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exploria360-deploy
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  verify:
+    if: ${{ github.event.inputs.confirm == 'DEPLOY' }}
     runs-on: ubuntu-latest
-    # Hard ceiling so a hung build can never run forever and burn minutes.
-    timeout-minutes: 30
-
+    timeout-minutes: 25
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Backend — install, typecheck, test, build
+        working-directory: backend
+        run: |
+          npm ci --ignore-scripts
+          npx tsc --noEmit
+          npm test
+          npm run build
+      - name: Frontend — install, typecheck, build
+        working-directory: frontend
+        run: |
+          npm ci --ignore-scripts
+          npx tsc --noEmit
+          npm run build
 
-      - name: 🔧 Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
-      - name: 🎯 Deploy to VPS
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      SHA: ${{ github.sha }}
+      APP_DIR: ${{ vars.VPS_APP_DIR }}
+    steps:
+      - name: Check configuration
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
-          # -o ServerAliveInterval/CountMax keep the SSH channel alive during the
-          #   long, output-quiet `docker compose build` (the usual cause of the
-          #   step "hanging" then failing — the idle channel gets dropped).
-          # -o ConnectTimeout fails fast if the host is unreachable.
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=30 \
-            -o ServerAliveCountMax=120 \
-            root@$VPS_HOST 'bash -s' << 'EOF'
-          set -euo pipefail
-
-          # On any error, surface diagnostics so the Actions log shows WHY it failed
-          # (instead of an opaque non-zero exit).
-          trap 'code=$?; echo "❌ Remote deploy failed (exit $code)"; echo "──── docker compose ps ────"; docker compose ps 2>/dev/null || true; echo "──── last 150 log lines ────"; docker compose logs --tail=150 2>/dev/null || true; echo "──── memory ────"; free -h || true; exit $code' ERR
-
-          export DEBIAN_FRONTEND=noninteractive
-          export DOCKER_BUILDKIT=1
-          export COMPOSE_DOCKER_CLI_BUILD=1
-
-          echo "📂 Navigating to app directory..."
-          cd /app/mareservation || { echo "❌ Directory not found, cloning..."; mkdir -p /app/mareservation; git clone https://github.com/declared-as-ala/mareservation.git /app/mareservation; cd /app/mareservation; }
-
-          echo "🧠 Ensuring swap exists (prevents OOM-kill during the Next.js build)..."
-          if ! swapon --show 2>/dev/null | grep -q .; then
-            echo "   No swap found — creating a 2G swapfile..."
-            fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048
-            chmod 600 /swapfile
-            mkswap /swapfile >/dev/null
-            swapon /swapfile
-            echo "   ✅ Swap enabled"
-          else
-            echo "   ✅ Swap already present"
-          fi
-          free -h || true
-
-          echo "📥 Fetching latest code (hard reset to origin/main — robust against force-pushed/rewritten history)..."
-          # Heal a stale or locked refs/remotes/origin/main from a previous
-          # interrupted fetch (causes "cannot lock ref ... unable to update local ref").
-          git update-ref -d refs/remotes/origin/main 2>/dev/null || true
-          rm -f .git/refs/remotes/origin/main.lock 2>/dev/null || true
-          git gc --prune=now 2>/dev/null || true
-          git fetch --prune origin main
-          git reset --hard FETCH_HEAD
-
-          echo "⚙️ Copying environment file..."
-          if [ -f ~/mareservation/.env ]; then
-            cp -f ~/mareservation/.env .env
-            echo "✅ Synchronized .env from ~/mareservation/.env"
-          elif [ -f /root/mareservation/.env ]; then
-            cp -f /root/mareservation/.env .env
-            echo "✅ Synchronized .env from /root/mareservation/.env"
-          elif [ ! -f .env ]; then
-            cp .env.example .env
-            echo "⚠️ Created .env from template - PLEASE UPDATE WITH YOUR SECRETS!"
-          fi
-
-          echo "🌐 Setting NEXT_PUBLIC_API_URL and FRONTEND_URL to VPS public IP (forced)..."
-          VPS_IP=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
-          echo "   Detected VPS IP: ${VPS_IP}"
-          # Force-set NEXT_PUBLIC_API_URL
-          if grep -q "^NEXT_PUBLIC_API_URL=" .env; then
-            sed -i "s|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=http://${VPS_IP}:5001|" .env
-          else
-            echo "NEXT_PUBLIC_API_URL=http://${VPS_IP}:5001" >> .env
-          fi
-          echo "   ✅ NEXT_PUBLIC_API_URL=http://${VPS_IP}:5001"
-
-          # Force-set FRONTEND_URL
-          if grep -q "^FRONTEND_URL=" .env; then
-            sed -i "s|^FRONTEND_URL=.*|FRONTEND_URL=http://${VPS_IP}:3000|" .env
-          else
-            echo "FRONTEND_URL=http://${VPS_IP}:3000" >> .env
-          fi
-          echo "   ✅ FRONTEND_URL=http://${VPS_IP}:3000"
-
-          echo "📋 Mirroring .env to backend/.env (docker-compose expects it there)..."
-          mkdir -p backend
-          cp -f .env backend/.env
-          echo "   ✅ backend/.env synced"
-
-          echo "🏗️ Building Docker images (plain progress keeps the SSH channel active)..."
-          docker compose build --progress=plain
-
-          echo "🧹 Cleaning up conflicting containers..."
-          CONTAINERS=$(docker ps -a -q --filter name=mareservation)
-          if [ -n "$CONTAINERS" ]; then
-            echo "Removing existing/conflicting containers..."
-            docker rm -f $CONTAINERS
-          fi
-
-          echo "🚀 Starting services..."
-          docker compose up -d --force-recreate --remove-orphans
-
-          echo "⏳ Waiting for backend health (up to ~90s)..."
-          HEALTHY=0
-          for i in $(seq 1 18); do
-            sleep 5
-            if curl -fsS --max-time 5 "http://localhost:5001/api/v1/health" >/dev/null 2>&1; then
-              echo "   ✅ Backend healthy after $((i*5))s"
-              HEALTHY=1
-              break
-            fi
-            echo "   …still starting ($((i*5))s)"
+          for v in VPS_HOST VPS_USER VPS_SSH_KEY VPS_KNOWN_HOSTS APP_DIR; do
+            if [ -z "${!v:-}" ]; then echo "::error::Missing required secret/variable: $v"; exit 1; fi
           done
 
-          echo "📊 Docker services status:"
-          docker compose ps
+      - name: Prepare SSH (key auth, pinned host key)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-          if [ "$HEALTHY" -ne 1 ]; then
-            echo "⚠️ Backend did not pass health check in time — dumping recent logs:"
-            docker compose logs --tail=150 || true
-            echo "❌ Marking deploy as failed so it does not silently ship a broken build."
-            exit 1
+      - name: Deploy (non-destructive, compose project "exploria360")
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=$HOME/.ssh/known_hosts \
+            -o ConnectTimeout=30 -o ServerAliveInterval=30 -o ServerAliveCountMax=40 \
+            "$VPS_USER@$VPS_HOST" "bash -s" -- "$APP_DIR" "$SHA" <<'REMOTE'
+          set -euo pipefail
+          APP_DIR="$1"; SHA="$2"
+          cd "$APP_DIR"
+
+          # Refuse to clobber manual edits on the server.
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "Working tree on the VPS has local modifications — aborting."; exit 1
           fi
+          test -f .env || { echo ".env missing in $APP_DIR — create it on the server first."; exit 1; }
 
-          echo "🎯 Migrating legacy CAFE_LOUNGE venues to precise nightlife types (idempotent)..."
-          docker compose exec -T backend npx tsx src/scripts/migrate-sortie-types.ts || echo "⚠️ Sortie-type migration skipped/failed (non-fatal)."
+          git fetch --prune origin
+          git checkout --detach "$SHA"
 
-          echo "🍽️ Seeding default menus for restaurants/cafés without one (idempotent)..."
-          docker compose exec -T backend npx tsx src/scripts/seed-default-menus.ts || echo "⚠️ Menu seed skipped/failed (non-fatal)."
+          docker compose -p exploria360 build
+          docker compose -p exploria360 up -d
 
-          echo "🧽 Pruning dangling images to reclaim disk..."
-          docker image prune -f >/dev/null 2>&1 || true
+          echo "Waiting for health…"
+          for i in $(seq 1 24); do
+            if docker compose -p exploria360 ps --status running | grep -q backend; then
+              if docker compose -p exploria360 exec -T backend wget -qO- http://localhost:3001/api/v1/health >/dev/null 2>&1; then
+                echo "Healthy"; docker compose -p exploria360 ps; exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "Health check failed — recent logs:"; docker compose -p exploria360 logs --tail=100 backend || true
+          exit 1
+          REMOTE
 
-          echo "✅ Deployment complete!"
-          EOF
-
-      - name: 📧 Notify on failure
-        if: failure()
-        run: echo "❌ Deployment failed. Check logs above."
-
-      - name: ✅ Notify on success
-        if: success()
-        run: echo "✅ Deployment succeeded! Services running on VPS."
+      - name: Remove SSH material
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/.ssh/known_hosts

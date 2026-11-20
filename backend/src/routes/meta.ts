@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AppSettings } from '../models/AppSettings';
 import { BannerSlide } from '../models/BannerSlide';
 import { sendSuccess } from '../utils/apiResponse';
+import { getPublicVenueTypes } from '../config/publicCatalog';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.get('/homepage-config', async (_req, res) => {
       defaultLanguage: settings?.defaultLanguage ?? 'fr',
       homeSectionsOrder: settings?.homeSectionsOrder ?? [],
       isMaintenanceMode: settings?.isMaintenanceMode ?? false,
+      publicVenueTypes: getPublicVenueTypes(),
       maintenanceMessageFr: settings?.maintenanceMessageFr,
       socialLinks: settings?.socialLinks ?? {},
       restaurationImages: settings?.restaurationImages ?? {},

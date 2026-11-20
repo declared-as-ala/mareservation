@@ -144,7 +144,7 @@ async function transition(
 // GET /admin-hotel/hotels?status=&q=
 router.get('/hotels', async (req: AuthRequest, res) => {
   try {
-    const filter: Record<string, unknown> = { type: 'HOTEL' };
+    const filter: Record<string, unknown> = { type: { $in: ['HOTEL', 'MAISON_DHOTE'] } };
     if (req.query.status && req.query.status !== 'all') {
       filter.approvalStatus = req.query.status;
     }
@@ -159,7 +159,7 @@ router.get('/hotels', async (req: AuthRequest, res) => {
       .lean();
 
     const counts = await Venue.aggregate([
-      { $match: { type: 'HOTEL' } },
+      { $match: { type: { $in: ['HOTEL', 'MAISON_DHOTE'] } } },
       { $group: { _id: '$approvalStatus', count: { $sum: 1 } } },
     ]);
     const countsMap: Record<string, number> = {};

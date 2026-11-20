@@ -28,17 +28,12 @@ import { Sheet, SheetContent, SheetTitle, SheetClose } from '@/components/ui/she
 import { PartnerApplicationModal } from '@/components/partners/PartnerApplicationModal';
 
 const primaryNav = [
-  { label: 'Explorer en 360°', href: '/explorer', icon: Compass },
-  { label: 'Coworking', href: '/coworking', icon: BriefcaseBusiness },
-  { label: 'Événements', href: '/evenements', icon: CalendarDays },
+  { label: "Maisons d'hôtes", href: '/accommodations', icon: BedDouble },
+  { label: 'Expérience 360°', href: '/#experience-360', icon: Compass },
+  { label: 'Propriétaires', href: '/contact', icon: BriefcaseBusiness },
 ];
 
-const categoryNav = [
-  { label: 'Hôtels', href: '/hotels', icon: BedDouble },
-  { label: 'Restauration', href: '/restauration', icon: UtensilsCrossed },
-  { label: 'Sorties', href: '/sorties', icon: Martini },
-  { label: 'Bien-être', href: '/bien-etre', icon: Flower2 },
-];
+const categoryNav: typeof primaryNav = [];
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '?') || pathname.startsWith(href + '/');
@@ -59,7 +54,6 @@ function Brand({ onClick, size = 'bar' }: { onClick?: () => void; size?: 'bar' |
       href="/"
       onClick={onClick}
       className="group flex shrink-0 flex-col justify-center leading-none rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70"
-      aria-label="Exploria 360 — accueil"
     >
       <span
         className={cn(
@@ -130,7 +124,8 @@ export function HomeNavbar() {
                   href={href}
                   className={cn(
                     'flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
-                    active ? 'bg-white/[0.08] text-white' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'
+                    active ? 'bg-white/[0.08] text-white' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white',
+                    href === '/contact' && 'max-xl:hidden'
                   )}
                 >
                   <Icon className="size-4 shrink-0" strokeWidth={1.8} />
@@ -139,22 +134,10 @@ export function HomeNavbar() {
                 </Link>
               );
             })}
-            <Link
-              href="/sos-conseil"
-              className={cn(
-                'ml-1 flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold whitespace-nowrap outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/70',
-                pathname === '/sos-conseil'
-                  ? 'border-amber-300 bg-amber-300 text-black shadow-[0_0_22px_rgba(251,191,36,0.4)]'
-                  : 'border-amber-300/50 bg-amber-300/[0.06] text-amber-200 hover:border-amber-300 hover:bg-amber-300 hover:text-black'
-              )}
-            >
-              <Sparkles className="size-4 shrink-0" strokeWidth={1.9} />
-              SOS Conseil
-            </Link>
             <button
               type="button"
               onClick={() => setPartnerOpen(true)}
-              className="ml-1 hidden items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm font-bold whitespace-nowrap text-neutral-200 outline-none transition-all duration-200 hover:border-amber-300/40 hover:bg-amber-300/[0.08] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 xl:flex"
+              className="ml-1 hidden items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-sm font-bold whitespace-nowrap text-neutral-200 outline-none transition-all duration-200 hover:border-amber-300/40 hover:bg-amber-300/[0.08] hover:text-amber-200 focus-visible:ring-2 focus-visible:ring-amber-300/70 2xl:flex"
             >
               <Store className="size-4 shrink-0" strokeWidth={1.9} />
               Devenir partenaire
@@ -164,7 +147,7 @@ export function HomeNavbar() {
           {/* Right actions */}
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5 lg:ml-0">
             {/* Search (lg+) */}
-            <form onSubmit={(e) => go(e)} className="relative hidden lg:block" role="search">
+            <form onSubmit={(e) => go(e)} className="relative hidden xl:block" role="search">
               <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-500" />
               <input
                 value={searchValue}
@@ -277,25 +260,6 @@ export function HomeNavbar() {
               </div>
             </form>
 
-            {/* SOS Conseil */}
-            <SheetClose asChild>
-              <Link
-                href="/sos-conseil"
-                className={cn(
-                  'mb-5 flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm font-bold transition-all',
-                  pathname === '/sos-conseil'
-                    ? 'border-amber-300 bg-amber-300 text-black'
-                    : 'border-amber-400/35 bg-gradient-to-r from-amber-400/[0.12] to-transparent text-amber-200 hover:border-amber-400/60'
-                )}
-              >
-                <span className="flex size-9 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300"><Sparkles className="size-5" /></span>
-                <span className="flex-1">
-                  SOS Conseil
-                  <span className="block text-[11px] font-medium text-amber-200/60">Conseil sur mesure</span>
-                </span>
-                <ChevronRight className="size-4 text-amber-300/60" />
-              </Link>
-            </SheetClose>
 
             {/* Devenir partenaire */}
             <button
@@ -312,7 +276,6 @@ export function HomeNavbar() {
             </button>
 
             <DrawerSection title="Naviguer" items={primaryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
-            <DrawerSection title="Catégories" items={categoryNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
           </div>
 
           {/* Footer */}

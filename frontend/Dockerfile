@@ -5,7 +5,15 @@ WORKDIR /app
 
 # Install deps from package.json (lockfile copied for reproducibility when present)
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --ignore-scripts
+
+# Build-time values (next.config.ts rewrites + metadata are baked at build)
+ARG BACKEND_INTERNAL_URL=http://backend:3001
+ARG NEXT_PUBLIC_SITE_URL=https://www.exploria360.com
+ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
+# Cap build memory: the server is shared with other production apps
+ENV NODE_OPTIONS=--max-old-space-size=1536
 
 # Copy source and build
 COPY . .
@@ -24,6 +32,9 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/next.config.ts ./next.config.ts
+
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 3000
 

@@ -13,7 +13,7 @@ const MAX_CHAT_MESSAGES = 30;
 
 /** Emails notifiés pour chaque nouvelle demande SOS Conseil (override via SOS_CONSEIL_NOTIFICATION_EMAILS). */
 const SOS_CONSEIL_EMAIL_DEFAULT =
-  'alamissaoui.dev@gmail.com,Wassim.ouelhazi100119862@gmail.com';
+  ''; // no hardcoded recipients: configure SOS_CONSEIL_NOTIFICATION_EMAILS
 
 function parseEmailRecipientList(raw: string): string[] {
   const seen = new Set<string>();

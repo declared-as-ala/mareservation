@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110" role="img" aria-label="Exploria360">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="0.5" stop-color="#fbbf24"/>
+      <stop offset="1" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(6 7)" fill="none" stroke="url(#g)" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="48" cy="48" r="42" stroke-width="3.5" stroke-dasharray="232 32" transform="rotate(-62 48 48)"/>
+    <path d="M30 70V46a18 18 0 0 1 36 0v24" stroke-width="5"/>
+    <path d="M40 70V48a8 8 0 0 1 16 0v22" stroke-width="3.5"/>
+  </g>
+  <text x="118" y="62" font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="800" letter-spacing="5" fill="url(#g)">EXPLORIA</text>
+  <text x="118" y="94" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="800" letter-spacing="12" fill="#fbbf24">360</text>
+</svg>

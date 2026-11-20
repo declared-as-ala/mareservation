@@ -371,7 +371,6 @@ function FilterPanel({
         <div className="flex flex-wrap gap-2">
           {[
             { key: 'all', label: 'Tous' },
-            { key: 'HOTEL', label: 'Hôtels' },
             { key: 'MAISON_DHOTE', label: "Maisons d'hôte" },
           ].map((opt) => {
             const active = (typeFilter ?? 'all') === opt.key;
@@ -531,7 +530,7 @@ export default function HotelsPage() {
             className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-400"
           >
             <Building2 className="size-3.5" />
-            Hôtels & Séjours de luxe
+            Maisons d&apos;hôtes · Tunisie
           </motion.div>
 
           <motion.h1
@@ -541,7 +540,7 @@ export default function HotelsPage() {
             className="font-serif text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
           >
             Trouvez votre{' '}
-            <span className="text-amber-400">hébergement idéal</span>
+            <span className="text-amber-400">maison d&apos;hôtes</span>
           </motion.h1>
 
           <motion.p
@@ -550,7 +549,7 @@ export default function HotelsPage() {
             transition={{ duration: 0.55, delay: 0.1 }}
             className="mx-auto mt-5 max-w-lg text-base text-neutral-400 leading-relaxed"
           >
-            Hôtels de luxe, suites panoramiques, villas privées — explorez et réservez votre chambre en quelques clics.
+            Les maisons d&apos;hôtes de Tunisie, à visiter en 360° avant de réserver.
           </motion.p>
 
           {/* Quick search bar */}
@@ -566,7 +565,7 @@ export default function HotelsPage() {
                 type="text"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Hôtel, ville, région..."
+                placeholder="Maison, ville, région..."
                 className="w-full rounded-xl bg-transparent py-2.5 pl-9 pr-3 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none"
               />
             </div>
@@ -603,7 +602,6 @@ export default function HotelsPage() {
             <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
               {[
                 { key: 'all', label: 'Tous' },
-                { key: 'HOTEL', label: 'Hôtels' },
                 { key: 'MAISON_DHOTE', label: "Maisons d'hôte" },
               ].map((opt) => {
                 const active = (typeFilter ?? 'all') === opt.key;
@@ -625,7 +623,7 @@ export default function HotelsPage() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
                 {/* Mobile filter trigger */}
                 <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
@@ -763,7 +761,7 @@ export default function HotelsPage() {
             ) : error ? (
               <div className="flex flex-col items-center gap-4 py-20 text-center">
                 <Building2 className="size-12 text-neutral-700" />
-                <p className="text-neutral-500">Erreur lors du chargement des hôtels.</p>
+                <p className="text-neutral-500">Erreur lors du chargement des maisons d'hôtes.</p>
                 <Button variant="outline" onClick={() => refetch()}>
                   Réessayer
                 </Button>
@@ -772,7 +770,7 @@ export default function HotelsPage() {
               <div className="flex flex-col items-center gap-4 py-20 text-center">
                 <Building2 className="size-14 text-neutral-700" />
                 <h3 className="text-lg font-semibold text-neutral-300">
-                  {hasFilters ? 'Aucun hébergement ne correspond' : 'Aucun hébergement disponible'}
+                  {hasFilters ? 'Aucune maison ne correspond' : 'Aucune maison disponible'}
                 </h3>
                 <p className="max-w-sm text-sm text-neutral-600">
                   {hasFilters

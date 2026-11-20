@@ -16,11 +16,14 @@
     "seed:fresh-catalog": "tsx src/scripts/seed-fresh-catalog.ts",
     "seed:menus": "tsx src/scripts/seed-default-menus.ts",
     "migrate:sortie-types": "tsx src/scripts/migrate-sortie-types.ts",
-    "fix-klapty-urls": "tsx src/scripts/fix-klapty-urls.ts"
+    "fix-klapty-urls": "tsx src/scripts/fix-klapty-urls.ts",
+    "test": "vitest run",
+    "seed:demo-maison": "tsx src/scripts/seed-demo-maison.ts",
+    "dev:memory": "tsx scripts/dev-memory-stack.mts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -30,27 +33,30 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
-    "multer": "^1.4.5-lts.1",
-    "multer-storage-cloudinary": "^4.0.0",
+    "multer": "^2.5.0",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.10",
+    "nodemailer": "^10.5.0",
     "qrcode": "^1.5.4",
     "resend": "^6.12.4",
     "twilio": "^6.0.2",
-    "zod": "^3.22.4"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/multer": "^1.4.13",
+    "@types/multer": "^2.3.0",
     "@types/node": "^20.10.5",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.0",
     "@types/qrcode": "^1.5.6",
+    "@types/supertest": "^6.0.3",
     "esbuild": "^0.24.2",
+    "mongodb-memory-server": "^10.4.3",
+    "supertest": "^7.3.2",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^2.1.9"
   }
 }

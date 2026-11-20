@@ -84,8 +84,9 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
 
   const href = `/hotel/${venue.slug || venue._id}`;
   const img = getVenueImage(venue);
-  const price = venue.minRoomPrice ?? venue.startingPrice ?? venue.priceRangeMin;
-  const amenities = guessAmenities(venue);
+  // Demonstration listings never show prices or guessed amenities.
+  const price = venue.isDemo ? undefined : venue.minRoomPrice ?? venue.startingPrice ?? venue.priceRangeMin;
+  const amenities = venue.isDemo ? [] : guessAmenities(venue);
   const isLuxury = starRating >= 5;
 
   return (
@@ -118,11 +119,11 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
             {/* Top-left: Premium or Luxe badge */}
-            {(venue.isVedette || isLuxury) && (
+            {(venue.isDemo || venue.isVedette || isLuxury) && (
               <div className="absolute top-3 left-3">
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-400 backdrop-blur-md">
                   <Crown className="size-2.5" />
-                  {venue.isVedette ? 'Premium' : 'Luxe'}
+                  {venue.isDemo ? 'Démonstration' : venue.isVedette ? 'Premium' : 'Luxe'}
                 </span>
               </div>
             )}
@@ -207,12 +208,12 @@ export function HotelCard({ venue, className, starRating = 4 }: HotelCardProps) 
                     </div>
                   </>
                 ) : (
-                  <span className="text-sm text-neutral-600 italic">Prix sur demande</span>
+                  <span className="text-sm text-neutral-600 italic">{venue.isDemo ? 'Non réservable' : 'Prix sur demande'}</span>
                 )}
               </div>
 
               <div className="flex items-center gap-1.5 rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-1.5 text-xs font-semibold text-amber-400 transition-all group-hover:bg-amber-400/15 group-hover:border-amber-400/40">
-                Voir
+                {venue.isDemo ? 'Visite 360°' : 'Voir'}
                 <ArrowUpRight className="size-3.5" />
               </div>
             </div>

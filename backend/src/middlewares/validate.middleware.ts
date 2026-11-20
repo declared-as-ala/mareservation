@@ -21,7 +21,7 @@ export function validate(schema: ZodSchema, source: ValidateSource = 'body') {
     const errors = err.flatten().fieldErrors;
     sendError(res, {
       message: 'Validation failed',
-      errors: Object.keys(errors).length ? errors : err.errors,
+      errors: Object.keys(errors).length ? errors : err.issues,
       statusCode: 400,
     });
   };

@@ -154,6 +154,7 @@ const tailNavGroups: NavGroup[] = [
     items: [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
+      { href: '/admin/calendrier', label: 'Calendrier', icon: BookOpen },
       { href: '/admin/hotels-approval', label: 'Approbation hôtels', icon: ShieldCheck },
       { href: '/admin/owners', label: 'Propriétaires', icon: UserCheck },
       { href: '/admin/moderation', label: 'Modération', icon: ShieldAlert },
@@ -421,7 +422,7 @@ function SidebarContent({
       <div className="flex items-center gap-3 border-b border-zinc-800/70 bg-zinc-950 px-4 py-4">
         <div className="flex-1 min-w-0">
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt="Exploria360"
             width={400}
             height={110}
@@ -532,7 +533,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
-          <Image src="/logo.png" alt="Exploria360" width={400} height={110} className="h-16 w-auto object-contain" />
+          <Image src="/logo.svg" alt="Exploria360" width={400} height={110} className="h-16 w-auto object-contain" />
           <p className="text-sm text-zinc-500">Vérification des droits...</p>
         </div>
       </div>

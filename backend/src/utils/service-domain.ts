@@ -23,6 +23,7 @@ export function normalizeServiceDomains(input: unknown): OwnerServiceDomain[] {
 export function venueTypeToDomain(type: VenueType): OwnerServiceDomain {
   switch (type) {
     case 'HOTEL':
+    case 'MAISON_DHOTE': // guesthouses are managed under the HOTEL service domain
       return 'HOTEL';
     case 'RESTAURANT':
       return 'RESTAURANT';
@@ -43,7 +44,10 @@ export function venueTypeToDomain(type: VenueType): OwnerServiceDomain {
 export function domainsToVenueTypes(domains: OwnerServiceDomain[]): VenueType[] {
   const out = new Set<VenueType>();
   for (const d of domains) {
-    if (d === 'HOTEL') out.add('HOTEL');
+    if (d === 'HOTEL') {
+      out.add('HOTEL');
+      out.add('MAISON_DHOTE');
+    }
     if (d === 'RESTAURANT') out.add('RESTAURANT');
     if (d === 'CAFE_LOUNGE') {
       out.add('CAFE');

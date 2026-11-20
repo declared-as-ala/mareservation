@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Venue } from '../models/Venue';
 import { Room } from '../models/Room';
 import { Event } from '../models/Event';
+import { getPublicVenueIds, publicVenueFilter } from '../config/publicCatalog';
 
 const router = Router();
 
@@ -19,10 +20,11 @@ router.get(['/', '/global'], async (req, res) => {
 
     const regex = new RegExp(escapeRegExp(q), 'i');
 
+    const publicVenueIds = await getPublicVenueIds();
+
     const [venues, rooms, events] = await Promise.all([
       Venue.find({
-        isPublished: true,
-        archivedAt: null,
+        ...publicVenueFilter(),
         $or: [
           { name: regex },
           { shortDescription: regex },
@@ -36,7 +38,7 @@ router.get(['/', '/global'], async (req, res) => {
         .sort({ isFeatured: -1, isVedette: -1, name: 1 })
         .lean()
         .limit(10),
-      Room.find()
+      Room.find({ venueId: { $in: publicVenueIds } })
         .populate('venueId', 'name city type')
         .lean()
         .then((list) =>
@@ -50,6 +52,7 @@ router.get(['/', '/global'], async (req, res) => {
         .then((list) => list.slice(0, 10)),
       Event.find({
         isPublished: true,
+        venueId: { $in: publicVenueIds },
         $or: [{ title: regex }, { description: regex }],
       })
         .select('venueId title slug type description coverImage afficheImageUrl startAt endsAt isVedette reservationMode ticketTypes')

@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { Table } from '../models/Table';
 import { Reservation } from '../models/Reservation';
+import { guardPublicVenueParam } from '../config/publicCatalog';
 
 const router = Router();
+router.param('venueId', guardPublicVenueParam);
 
 // GET /api/tables/venue/:venueId — tables for a venue; optional startAt, endAt for availability
 router.get('/venue/:venueId', async (req, res) => {

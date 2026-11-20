@@ -18,6 +18,7 @@ import {
   createReservationTicketEmail,
   RESERVATION_QR_CONTENT_ID,
 } from '../services/reservation-ticket-email';
+import { requirePublicVenueInBody } from '../config/publicCatalog';
 
 const router = Router();
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -36,7 +37,7 @@ function finalizePaymentStatus(): 'paid' | 'unpaid' | 'pending' {
 }
 
 // POST /api/reservations — create reservation (TABLE | ROOM | SEAT); prevent conflicts
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post('/', authenticate, requirePublicVenueInBody, async (req: AuthRequest, res) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Authentication required' });
 
@@ -410,7 +411,7 @@ router.get(['/me', '/'], authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-router.post('/holds', authenticate, async (req: AuthRequest, res) => {
+router.post('/holds', authenticate, requirePublicVenueInBody, async (req: AuthRequest, res) => {
   try {
     const { venueId, reservableUnitId, tableId, roomId, seatId, startsAt, endsAt, peopleCount } = req.body ?? {};
     const resources = [reservableUnitId, tableId, roomId, seatId].filter(Boolean);

@@ -6,13 +6,16 @@ export type ReservationStatus =
   | 'CANCELLED'
   | 'COMPLETED'
   | 'EXPIRED'
+  | 'REJECTED'
   // Lowercase variants used by hotel/event/owner flows
   | 'pending'
   | 'confirmed'
   | 'cancelled'
   | 'completed'
   | 'checked_in'
-  | 'no_show';
+  | 'no_show'
+  | 'rejected'
+  | 'expired';
 
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded';
 
@@ -99,6 +102,20 @@ export interface IReservationExtra {
   priceBreakdown?: IReservationPriceBreakdown;
   cancellationDeadline?: Date;
   holdId?: Types.ObjectId | string;
+  /** Pending booking requests auto-expire at this instant (see BOOKING_REQUEST_TTL_HOURS). */
+  expiresAt?: Date;
+  /** sha256 of the secret in the customer's confirmation link (never the secret itself). */
+  accessTokenHash?: string;
+  /** Client-supplied key making a repeated submission return the same reservation. */
+  idempotencyKey?: string;
+  statusHistory?: {
+    from?: string;
+    to: string;
+    byUserId?: Types.ObjectId | string;
+    byRole?: string;
+    reason?: string;
+    at: Date;
+  }[];
   // QR + reminders + reviews
   qrCodeData?: string;
   qrCodeImageUrl?: string;
@@ -132,7 +149,8 @@ export interface IReservation extends Document, IReservationExtra {
 
 const ReservationSchema = new Schema<IReservation>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // Guest booking requests (source 'web-request') have no account.
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: function (this: { source?: string }) { return this.source !== 'web-request'; } },
     venueId: { type: Schema.Types.ObjectId, ref: 'Venue', required: true },
     eventId: { type: Schema.Types.ObjectId, ref: 'Event' },
     bookingType: { type: String, enum: ['TABLE', 'ROOM', 'SEAT', 'COWORKING'], required: true },
@@ -146,6 +164,7 @@ const ReservationSchema = new Schema<IReservation>(
       enum: [
         'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'EXPIRED',
         'pending', 'confirmed', 'cancelled', 'completed', 'checked_in', 'no_show',
+        'rejected', 'expired', 'REJECTED',
       ],
       default: 'CONFIRMED',
     },
@@ -230,6 +249,22 @@ const ReservationSchema = new Schema<IReservation>(
     },
     cancellationDeadline: { type: Date },
     holdId: { type: Schema.Types.ObjectId, ref: 'ReservationHold' },
+    expiresAt: { type: Date },
+    accessTokenHash: { type: String, select: false },
+    idempotencyKey: { type: String },
+    statusHistory: {
+      type: [
+        {
+          from: { type: String },
+          to: { type: String, required: true },
+          byUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+          byRole: { type: String },
+          reason: { type: String, maxlength: 500 },
+          at: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
     qrCodeData: { type: String },
     qrCodeImageUrl: { type: String },
     reminderEmailSentAt: { type: Date },
@@ -240,6 +275,9 @@ const ReservationSchema = new Schema<IReservation>(
 
 ReservationSchema.index({ tableId: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ roomId: 1, startAt: 1, endAt: 1 });
+ReservationSchema.index({ status: 1, expiresAt: 1 });
+ReservationSchema.index({ venueId: 1, bookingType: 1, status: 1, startAt: 1 });
+ReservationSchema.index({ idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } });
 ReservationSchema.index({ seatId: 1, startAt: 1 });
 ReservationSchema.index({ userId: 1, createdAt: -1 });
 ReservationSchema.index({ venueId: 1, bookingType: 1, startAt: 1 });

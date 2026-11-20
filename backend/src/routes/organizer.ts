@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getEnv } from '../config/env';
 
 const router = Router();
 
@@ -17,7 +18,8 @@ const router = Router();
 //   legacyHeaders: false,
 // });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+// Single source of truth for the signing secret (validated, no hardcoded fallback).
+const jwtSecret = () => getEnv().JWT_SECRET;
 const ACCESS_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
 const REFRESH_EXPIRY_DAYS = 7;
 const ORGANIZER_COOKIE = 'organizerRefreshToken';
@@ -70,7 +72,7 @@ router.post('/auth/login', async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
 
@@ -132,7 +134,7 @@ router.post('/auth/refresh', async (req, res) => {
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
-      JWT_SECRET,
+      jwtSecret(),
       { expiresIn: ACCESS_EXPIRY } as jwt.SignOptions
     );
 

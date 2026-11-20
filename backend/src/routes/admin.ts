@@ -340,6 +340,8 @@ router.get('/reservations', async (req, res) => {
     const venueId = req.query.venueId as string;
     const from = req.query.from as string;
     const to = req.query.to as string;
+    const ownerId = req.query.ownerId as string;
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
     const filter: Record<string, unknown> = {};
     if (status) filter.status = status;
@@ -354,13 +356,22 @@ router.get('/reservations', async (req, res) => {
       const venueIdsInCity = await Venue.find({ city }).distinct('_id');
       filter.venueId = { $in: venueIdsInCity };
     }
+    if (ownerId && mongoose.Types.ObjectId.isValid(ownerId)) {
+      const ownedVenueIds = await Venue.find({ ownerId }).distinct('_id');
+      filter.venueId = { $in: ownedVenueIds };
+    }
+    if (q) {
+      const special = '.*+?^${}()|[]\\';
+      const rx = new RegExp(q.split('').map((ch) => (special.includes(ch) ? `\\${ch}` : ch)).join(''), 'i');
+      filter.$or = [{ reservationCode: rx }, { confirmationCode: rx }, { customerEmail: rx }, { customerPhone: rx }, { customerFirstName: rx }, { customerLastName: rx }, { guestFirstName: rx }, { guestLastName: rx }];
+    }
 
     const [list, total] = await Promise.all([
       Reservation.find(filter)
         .populate('userId', 'fullName email')
-        .populate('venueId', 'name city type')
+        .populate({ path: 'venueId', select: 'name city type ownerId', populate: { path: 'ownerId', select: 'fullName email' } })
         .populate('tableId', 'tableNumber price')
-        .populate('roomId', 'roomNumber pricePerNight')
+        .populate('roomId', 'roomNumber name pricePerNight')
         .populate('seatId', 'seatNumber price')
         .sort({ startAt: -1 })
         .skip(skip)
@@ -511,6 +522,8 @@ router.patch('/venues/:id', async (req, res) => {
       'isPublished', 'isFeatured', 'isVedette', 'reservationModes',
       'immersiveType', 'immersiveSourceType', 'immersiveUrl', 'immersiveFile', 'immersiveProvider',
       'checkInPolicy', 'checkOutPolicy', 'rating',
+      // booking engine: admin-only switches (demo → real bookable property, owner assignment, time zone)
+      'isDemo', 'timezone', 'ownerId',
     ];
     for (const key of allowed) {
       if (req.body && key in req.body) {
@@ -545,7 +558,7 @@ router.delete('/venues/:id', async (req, res) => {
 // Returns { hotels, total } matching the front-end fetchAdminHotels shape.
 router.get('/hotels', async (req, res) => {
   try {
-    const filter: Record<string, unknown> = { type: 'HOTEL' };
+    const filter: Record<string, unknown> = { type: { $in: ['HOTEL', 'MAISON_DHOTE'] } };
     if (req.query.city) filter.city = req.query.city;
     if (req.query.q) {
       const re = new RegExp(String(req.query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
@@ -595,6 +608,7 @@ router.patch('/hotels/:id', async (req, res) => {
       'isPublished', 'isFeatured', 'isVedette',
       'checkInPolicy', 'checkOutPolicy',
       'immersiveType', 'immersiveSourceType', 'immersiveUrl', 'immersiveFile', 'immersiveProvider',
+      'isDemo', 'timezone', 'ownerId',
     ];
     for (const key of allowed) {
       if (req.body && key in req.body) (venue as any)[key] = (req.body as any)[key];

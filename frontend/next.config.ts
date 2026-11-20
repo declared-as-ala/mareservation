@@ -2,15 +2,55 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const isDev = process.env.NODE_ENV !== "production";
-const VPS_BACKEND_API_URL = isDev ? 'http://localhost:3001' : 'http://backend:3001';
+// Where the Next server reaches the API (rewrites + server-side fetches). In the
+// production compose network this is the backend service; override with BACKEND_INTERNAL_URL.
+const BACKEND_API_URL =
+  process.env.BACKEND_INTERNAL_URL || (isDev ? 'http://localhost:3001' : 'http://backend:3001');
+
+// Account, checkout and back-office areas must never be indexed.
+const PRIVATE_PATHS = [
+  '/admin/:path*',
+  '/owner/:path*',
+  '/dashboard/:path*',
+  '/mes-reservations/:path*',
+  '/profile/:path*',
+  '/panier/:path*',
+  '/checkout/:path*',
+  '/reservation/:path*',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  '/email-verified',
+  '/unauthorized',
+  '/maintenance',
+];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   async rewrites() {
     return [
       {
         source: '/api/v1/:path*',
-        destination: `${VPS_BACKEND_API_URL}/api/v1/:path*`,
+        destination: `${BACKEND_API_URL}/api/v1/:path*`,
       },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+      ...PRIVATE_PATHS.map((source) => ({
+        source,
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      })),
     ];
   },
   transpilePackages: [

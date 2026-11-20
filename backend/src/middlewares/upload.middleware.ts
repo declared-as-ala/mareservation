@@ -1,6 +1,5 @@
-import multer from 'multer';
+import multer, { type StorageEngine } from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -14,24 +13,45 @@ const VIDEO_MIMES = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/
 
 const UPLOAD_MAX_FILE_SIZE_MB = Number(process.env.UPLOAD_MAX_FILE_SIZE_MB) || 200;
 
-// Cloudinary storage for images
-const imageStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'ma-reservation/images',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-    resource_type: 'image',
-  } as any,
+/**
+ * Minimal multer storage engine streaming straight to Cloudinary (SDK v2).
+ * Replaces the unmaintained `multer-storage-cloudinary` wrapper (pinned to SDK v1,
+ * which carries a known argument-injection advisory). Behaviour is unchanged:
+ * `req.file.path` is the Cloudinary secure URL.
+ */
+function cloudinaryStorage(opts: {
+  folder: string;
+  resourceType: 'image' | 'video';
+  allowedFormats: string[];
+}): StorageEngine {
+  return {
+    _handleFile(_req, file, cb) {
+      const upload = cloudinary.uploader.upload_stream(
+        { folder: opts.folder, resource_type: opts.resourceType, allowed_formats: opts.allowedFormats },
+        (error, result) => {
+          if (error || !result) return cb(error ?? new Error('Cloudinary upload failed'));
+          cb(null, { path: result.secure_url, filename: result.public_id, size: result.bytes });
+        }
+      );
+      file.stream.on('error', (err) => cb(err));
+      file.stream.pipe(upload);
+    },
+    _removeFile(_req, _file, cb) {
+      cb(null);
+    },
+  };
+}
+
+const imageStorage = cloudinaryStorage({
+  folder: 'exploria360/images',
+  resourceType: 'image',
+  allowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
 });
 
-// Cloudinary storage for videos
-const videoStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'ma-reservation/videos',
-    allowed_formats: ['mp4', 'mov', 'mkv', 'webm'],
-    resource_type: 'video',
-  } as any,
+const videoStorage = cloudinaryStorage({
+  folder: 'exploria360/videos',
+  resourceType: 'video',
+  allowedFormats: ['mp4', 'mov', 'mkv', 'webm'],
 });
 
 export const uploadImage = multer({
@@ -55,8 +75,8 @@ export const uploadVideo = multer({
 
 /**
  * Returns the Cloudinary secure URL for an uploaded file.
- * multer-storage-cloudinary sets req.file.path to the Cloudinary secure URL automatically.
- * This function is kept for backward compatibility — prefer req.file.path directly in route handlers.
+ * The storage engine sets req.file.path to the Cloudinary secure URL.
+ * Kept for backward compatibility — prefer req.file.path directly in route handlers.
  */
 export function getFileUrl(filePathOrFilename: string, _type?: 'images' | 'videos'): string {
   return filePathOrFilename;

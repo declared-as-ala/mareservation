@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDefaultRedirectForRole, isOwnerRole, resolvePostLoginRedirect, sanitizeReturnTo } from '@/lib/auth/redirect';
 import { API_BASE } from '@/lib/api/base-url';
+import { isHiddenCategoryPath } from '@/lib/publicCatalog';
 
 // ── Cookie-based JWT decode (no secret needed for expiry check) ──
 
@@ -102,6 +103,25 @@ export function middleware(request: NextRequest) {
   // Skip middleware for public/static assets
   if (PUBLIC_PATTERNS.some((p) => p.test(pathname))) {
     return NextResponse.next();
+  }
+
+  // ── Public catalogue gate (maisons d'hôtes only at launch) ───
+  // Hidden categories keep their code/data but are not publicly reachable.
+  // /hotel(s) maps to the accommodation pages (permanent redirect);
+  // everything else answers a real 404 and is marked noindex.
+  if (isHiddenCategoryPath(pathname)) {
+    if (pathname === '/hotels' || pathname === '/hotel') {
+      return NextResponse.redirect(new URL('/accommodations', request.url), 308);
+    }
+    if (pathname.startsWith('/hotel/')) {
+      return NextResponse.redirect(
+        new URL(pathname.replace(/^\/hotel\//, '/accommodation/'), request.url),
+        308
+      );
+    }
+    const res = NextResponse.rewrite(new URL('/__category-hidden__', request.url));
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return res;
   }
 
   const accessTokenCookie = request.cookies.get('accessToken')?.value;
@@ -221,5 +241,8 @@ export const config = {
     '/profile/:path*',
     '/login',
     '/',
+    // Category gate (see lib/publicCatalog.ts)
+    '/(cafes?|restaurants?|restauration|cinema|evenements?|event-space|coworking|sorties|bien-etre|hotels?|lieu|sos-conseil)/:path*',
+    '/(cafes?|restaurants?|restauration|cinema|evenements?|event-space|coworking|sorties|bien-etre|hotels?|lieu|sos-conseil)',
   ],
 };

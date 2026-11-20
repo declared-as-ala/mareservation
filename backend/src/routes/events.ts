@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Event } from '../models/Event';
 import { Venue } from '../models/Venue';
+import { getPublicVenueIds, isPublicVenue } from '../config/publicCatalog';
 
 const router = Router();
 
@@ -9,12 +10,14 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const { city, type, venueId, upcoming } = req.query;
-    const filter: Record<string, unknown> = {};
+    // Only events hosted by publicly enabled venue types.
+    const publicIds = await getPublicVenueIds();
+    const filter: Record<string, unknown> = { venueId: { $in: publicIds } };
     if (upcoming !== 'false') filter.startAt = { $gte: new Date() };
     if (type) filter.type = type;
-    if (venueId) filter.venueId = venueId;
+    if (venueId) filter.venueId = { $in: publicIds.filter((id) => String(id) === String(venueId)) };
     if (city) {
-      const venueIds = await Venue.find({ city }).distinct('_id');
+      const venueIds = await Venue.find({ city, _id: { $in: publicIds } }).distinct('_id');
       filter.venueId = { $in: venueIds };
     }
 
@@ -37,7 +40,9 @@ router.get('/:id', async (req, res) => {
       ? Event.findById(idOrSlug)
       : Event.findOne({ slug: idOrSlug })
     ).populate('venueId');
-    if (!event) return res.status(404).json({ error: 'Événement non trouvé' });
+    if (!event || !isPublicVenue(event.venueId as any)) {
+      return res.status(404).json({ error: 'Événement non trouvé' });
+    }
     res.json(event);
   } catch (error) {
     console.error('Error fetching event:', error);

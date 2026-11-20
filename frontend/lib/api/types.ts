@@ -66,7 +66,11 @@ export interface Venue {
   priceRangeMax?: number;
   /** Lowest active room pricePerNight (hotels/maisons d'hôte), computed in the venue list. */
   minRoomPrice?: number | null;
+  /** Rooms still bookable for the searched stay (only present on availability searches). */
+  availableRooms?: number;
   isPublished?: boolean;
+  /** Demonstration listing — never bookable (the API enforces this). */
+  isDemo?: boolean;
   isFeatured?: boolean;
   isVedette?: boolean;
   vedetteOrder?: number;
