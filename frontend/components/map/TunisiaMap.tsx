@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 export interface MapMarker {
   id: string;
@@ -35,6 +36,105 @@ type Props = {
   className?: string;
   ariaLabel?: string;
 };
+
+const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+const OFM_ATTR = '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> ' + OSM_ATTR;
+
+/** Labels in French / Latin script (the default style prints Latin + Arabic side by side). */
+function frenchLabels(style: any) {
+  for (const layer of style.layers ?? []) {
+    const tf = layer.layout?.['text-field'];
+    if (tf && JSON.stringify(tf).includes('name')) {
+      layer.layout['text-field'] = ['coalesce', ['get', 'name:fr'], ['get', 'name:latin'], ['get', 'name']];
+    }
+  }
+  return style;
+}
+
+let styleCache: Promise<any> | null = null;
+
+/**
+ * Basemap: OpenFreeMap "Positron" vector tiles (free, no API key, commercial use allowed) rendered by MapLibre
+ * inside Leaflet. Falls back to OpenStreetMap raster tiles if WebGL or the style is unavailable.
+ */
+async function addBasemap(L: any, map: any) {
+  try {
+    const hasWebGL = (() => {
+      try {
+        const c = document.createElement('canvas');
+        return !!(c.getContext('webgl2') || c.getContext('webgl'));
+      } catch {
+        return false;
+      }
+    })();
+    if (!hasWebGL) throw new Error('no webgl');
+    const mod: any = await import('maplibre-gl');
+    const maplibregl = mod.default ?? mod;
+    (window as any).maplibregl = maplibregl;
+    await import('@maplibre/maplibre-gl-leaflet');
+    styleCache ??= fetch('https://tiles.openfreemap.org/styles/positron').then((r) => {
+      if (!r.ok) throw new Error('style');
+      return r.json();
+    });
+    const style = frenchLabels(structuredClone(await styleCache));
+    (L as any).maplibreGL({ style, attributionControl: false }).addTo(map);
+    map.attributionControl.addAttribution(OFM_ATTR);
+  } catch {
+    styleCache = null;
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: OSM_ATTR }).addTo(map);
+  }
+}
+
+/** "Ma position" control: asks the browser for the visitor's location and shows it (never stored or sent). */
+function addLocateControl(L: any, map: any) {
+  let dot: any = null;
+  let ring: any = null;
+  const Ctl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd() {
+      const wrap = L.DomUtil.create('div', 'leaflet-bar ex-locate');
+      const btn = L.DomUtil.create('a', '', wrap);
+      btn.href = '#';
+      btn.title = 'Afficher ma position';
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-label', 'Afficher ma position');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7.5"/></svg>';
+      L.DomEvent.disableClickPropagation(wrap);
+      L.DomEvent.on(btn, 'click', (e: Event) => {
+        L.DomEvent.preventDefault(e);
+        if (!navigator.geolocation) return alertless(btn, 'Géolocalisation indisponible');
+        btn.classList.add('ex-locate--busy');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            btn.classList.remove('ex-locate--busy');
+            const ll = [pos.coords.latitude, pos.coords.longitude];
+            dot?.remove();
+            ring?.remove();
+            ring = L.circle(ll, { radius: Math.min(pos.coords.accuracy, 3000), color: '#2563eb', weight: 1, fillColor: '#3b82f6', fillOpacity: 0.12, interactive: false }).addTo(map);
+            dot = L.circleMarker(ll, { radius: 7, color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }).addTo(map).bindTooltip('Vous êtes ici', { direction: 'top', offset: [0, -8] });
+            map.setMaxBounds(null);
+            map.flyTo(ll, Math.max(map.getZoom(), 11), { duration: 0.8 });
+          },
+          (err) => {
+            btn.classList.remove('ex-locate--busy');
+            alertless(btn, err.code === 1 ? 'Autorisez la localisation dans votre navigateur' : 'Position introuvable');
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      });
+      return wrap;
+    },
+  });
+  new Ctl().addTo(map);
+}
+
+/** Small inline message next to the control (no blocking browser dialogs). */
+function alertless(btn: HTMLElement, text: string) {
+  btn.title = text;
+  btn.setAttribute('aria-label', text);
+  btn.classList.add('ex-locate--error');
+  setTimeout(() => btn.classList.remove('ex-locate--error'), 2500);
+}
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -70,13 +170,20 @@ export function TunisiaMap({ markers, highlightedId, selectedId, onSelect, onBou
         attributionControl: true,
         scrollWheelZoom: !single,
       });
-      // OpenStreetMap standard tiles: no API key. Darkened with a CSS filter (.ex-osm-dark) to fit the theme.
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        className: 'ex-osm-dark',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-      }).addTo(map);
+      await addBasemap(L, map);
+      addLocateControl(L, map);
       if (!single) map.fitBounds(TUNISIA_BOUNDS, { padding: [10, 10] });
+      // The container may not have its final size yet (sticky / hidden panels): re-measure, then re-fit.
+      const refit = () => {
+        map.invalidateSize();
+        if (!userMoved.current && !latest.current.markers.length && !single) map.fitBounds(TUNISIA_BOUNDS, { padding: [10, 10] });
+      };
+      setTimeout(refit, 250);
+      if (typeof ResizeObserver !== 'undefined' && el.current) {
+        const ro = new ResizeObserver(() => map.invalidateSize());
+        ro.observe(el.current);
+        map.on('unload', () => ro.disconnect());
+      }
       map.on('dragend zoomend', () => {
         if (!userMoved.current) return;
         const b = map.getBounds();
