@@ -28,6 +28,7 @@ function buildOwnerNav(types: Set<string>): NavGroup[] {
     ops.push({ label: 'Chambres', href: '/owner/rooms', icon: BedDouble });
     ops.push({ label: 'Disponibilités', href: '/owner/availability', icon: CalendarRange });
     ops.push({ label: 'Calendrier', href: '/owner/calendrier', icon: CalendarRange });
+    ops.push({ label: 'Paramètres de réservation', href: '/owner/parametres-reservation', icon: CalendarRange });
   }
   if (hasCoworking) {
     ops.push({ label: 'Espaces & 360°', href: '/owner/coworking-operations', icon: BriefcaseBusiness });

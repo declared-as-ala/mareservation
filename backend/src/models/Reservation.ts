@@ -108,6 +108,13 @@ export interface IReservationExtra {
   accessTokenHash?: string;
   /** Client-supplied key making a repeated submission return the same reservation. */
   idempotencyKey?: string;
+  /** Rooms occupied by this booking (multi-room). `roomId` stays the first one for legacy readers. */
+  roomIds?: Types.ObjectId[];
+  /** 'entire' = the whole property is booked (no room). */
+  unitScope?: 'room' | 'entire';
+  /** Demonstration booking: never a commercial transaction. */
+  isDemo?: boolean;
+  bookingMode?: 'request' | 'instant';
   statusHistory?: {
     from?: string;
     to: string;
@@ -164,7 +171,7 @@ const ReservationSchema = new Schema<IReservation>(
       enum: [
         'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'EXPIRED',
         'pending', 'confirmed', 'cancelled', 'completed', 'checked_in', 'no_show',
-        'rejected', 'expired', 'REJECTED',
+        'rejected', 'expired', 'REJECTED', 'NO_SHOW',
       ],
       default: 'CONFIRMED',
     },
@@ -243,6 +250,7 @@ const ReservationSchema = new Schema<IReservation>(
       taxes: { type: Number },
       discount: { type: Number },
       serviceFee: { type: Number },
+      cleaningFee: { type: Number },
       extrasTotal: { type: Number },
       total: { type: Number },
       currency: { type: String, default: 'TND' },
@@ -252,6 +260,10 @@ const ReservationSchema = new Schema<IReservation>(
     expiresAt: { type: Date },
     accessTokenHash: { type: String, select: false },
     idempotencyKey: { type: String },
+    roomIds: { type: [{ type: Schema.Types.ObjectId, ref: 'Room' }], default: undefined },
+    unitScope: { type: String, enum: ['room', 'entire'] },
+    isDemo: { type: Boolean, default: false, index: true },
+    bookingMode: { type: String, enum: ['request', 'instant'] },
     statusHistory: {
       type: [
         {
@@ -275,6 +287,7 @@ const ReservationSchema = new Schema<IReservation>(
 
 ReservationSchema.index({ tableId: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ roomId: 1, startAt: 1, endAt: 1 });
+ReservationSchema.index({ roomIds: 1, startAt: 1, endAt: 1 });
 ReservationSchema.index({ status: 1, expiresAt: 1 });
 ReservationSchema.index({ venueId: 1, bookingType: 1, status: 1, startAt: 1 });
 ReservationSchema.index({ idempotencyKey: 1 }, { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } });

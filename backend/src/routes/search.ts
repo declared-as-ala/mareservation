@@ -24,14 +24,18 @@ router.get(['/', '/global'], async (req, res) => {
 
     const [venues, rooms, events] = await Promise.all([
       Venue.find({
-        ...publicVenueFilter(),
-        $or: [
-          { name: regex },
-          { shortDescription: regex },
-          { description: regex },
-          { city: regex },
-          { governorate: regex },
-          { address: regex },
+        $and: [
+          publicVenueFilter(),
+          {
+            $or: [
+              { name: regex },
+              { shortDescription: regex },
+              { description: regex },
+              { city: regex },
+              { governorate: regex },
+              { address: regex },
+            ],
+          },
         ],
       })
         .select('name slug type shortDescription description city governorate address coverImage isFeatured isVedette hasVirtualTour immersiveType immersiveFile')

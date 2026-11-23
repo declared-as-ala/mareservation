@@ -6,7 +6,9 @@ type AvailabilityEventType =
   | 'hold_converted'
   | 'hold_expired'
   | 'reservation_created'
-  | 'reservation_cancelled';
+  | 'reservation_cancelled'
+  | 'block_changed'
+  | 'settings_changed';
 
 export type AvailabilityEventPayload = {
   venueId: string;

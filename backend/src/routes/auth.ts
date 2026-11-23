@@ -7,6 +7,10 @@ import { User } from '../models/User';
 import { RefreshToken } from '../models/RefreshToken';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { getEnv } from '../config/env';
+import { AuditLog } from '../models/AuditLog';
+import { validatePasswordStrength } from '../utils/password.util';
+import { issuePasswordLink, consumePasswordToken } from '../services/accountTokens';
+import { queueAccountEmail } from '../services/bookingEmails';
 
 const router = Router();
 
@@ -156,6 +160,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (!valid) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
     }
+    if ((user as any).isActive === false) {
+      return res.status(403).json({ error: 'Ce compte est suspendu. Contactez le support Exploria360.', code: 'ACCOUNT_SUSPENDED' });
+    }
 
     const accessToken = jwt.sign(
       { userId: user._id.toString(), role: user.role },
@@ -203,7 +210,7 @@ router.post('/refresh', async (req, res) => {
     }
 
     const user = await User.findById((stored as any).userId);
-    if (!user) {
+    if (!user || (user as any).isActive === false) {
       await RefreshToken.deleteOne({ _id: stored._id });
       clearRefreshCookie(res);
       return res.status(401).json({ error: 'Utilisateur introuvable.' });
@@ -257,6 +264,76 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error fetching me:', error);
     res.status(500).json({ error: 'Erreur lors de la récupération du profil.' });
+  }
+});
+
+/* ── password reset / first-login setup ───────────────────────── */
+const resetLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 8, standardHeaders: true, legacyHeaders: false, message: { error: 'Trop de demandes. Réessayez plus tard.' } });
+
+// POST /api/auth/forgot-password — always answers 200 (no account enumeration)
+router.post('/forgot-password', resetLimiter, async (req, res) => {
+  const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const generic = { message: 'Si un compte existe pour cet e-mail, un lien de réinitialisation vient d’être envoyé.' };
+  if (!email || email.length > 160 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.json(generic);
+  try {
+    const user = await User.findOne({ email }).select('_id email fullName isActive').lean();
+    if (user && (user as any).isActive !== false) {
+      const link = await issuePasswordLink((user as any)._id, 2);
+      await queueAccountEmail({
+        key: `reset:${String((user as any)._id)}:${link.expiresAt.getTime()}`,
+        to: (user as any).email,
+        subject: 'Réinitialisation de votre mot de passe Exploria360',
+        heading: 'Réinitialiser votre mot de passe',
+        intro: `Bonjour ${(user as any).fullName ?? ''}, une réinitialisation du mot de passe a été demandée pour votre compte. Ce lien est valable 2 heures et ne peut servir qu’une fois.`,
+        ctaLabel: 'Choisir un nouveau mot de passe',
+        ctaUrl: link.url,
+        note: 'Si vous n’êtes pas à l’origine de cette demande, ignorez ce message : votre mot de passe actuel reste inchangé.',
+      });
+    }
+  } catch (error) {
+    console.error('forgot-password failed:', String(error));
+  }
+  return res.json(generic);
+});
+
+// POST /api/auth/reset-password { token, password }
+router.post('/reset-password', resetLimiter, async (req, res) => {
+  const { token, password } = req.body ?? {};
+  const strength = validatePasswordStrength(typeof password === 'string' ? password : '');
+  if (!strength.valid) return res.status(400).json({ error: strength.errors[0] ?? 'Mot de passe trop faible.', errors: strength.errors });
+  try {
+    const userId = await consumePasswordToken(token);
+    if (!userId) return res.status(400).json({ error: 'Lien invalide ou expiré. Demandez un nouveau lien.' });
+    const passwordHash = await bcrypt.hash(password, 12);
+    await User.updateOne({ _id: userId }, { $set: { passwordHash, emailVerified: true } });
+    await RefreshToken.deleteMany({ userId }); // every existing session is closed
+    await AuditLog.create({ userId, action: 'PASSWORD_RESET', entityType: 'user', entityId: userId, ipAddress: req.ip, timestamp: new Date() }).catch(() => undefined);
+    return res.json({ message: 'Mot de passe mis à jour. Vous pouvez vous connecter.' });
+  } catch (error) {
+    console.error('reset-password failed:', String(error));
+    return res.status(500).json({ error: 'Réinitialisation impossible.' });
+  }
+});
+
+// POST /api/auth/change-password { currentPassword, newPassword } (signed in)
+router.post('/change-password', authenticate, resetLimiter, async (req: AuthRequest, res) => {
+  const { currentPassword, newPassword } = req.body ?? {};
+  const strength = validatePasswordStrength(typeof newPassword === 'string' ? newPassword : '');
+  if (!strength.valid) return res.status(400).json({ error: strength.errors[0] ?? 'Mot de passe trop faible.', errors: strength.errors });
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || typeof currentPassword !== 'string' || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      return res.status(400).json({ error: 'Mot de passe actuel incorrect.' });
+    }
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    const keep = req.cookies?.[COOKIE_NAME];
+    await RefreshToken.deleteMany({ userId: user._id, ...(keep ? { token: { $ne: keep } } : {}) }); // other sessions closed
+    await AuditLog.create({ userId: user._id, action: 'PASSWORD_CHANGE', entityType: 'user', entityId: user._id, ipAddress: req.ip, timestamp: new Date() }).catch(() => undefined);
+    return res.json({ message: 'Mot de passe modifié.' });
+  } catch (error) {
+    console.error('change-password failed:', String(error));
+    return res.status(500).json({ error: 'Modification impossible.' });
   }
 });
 

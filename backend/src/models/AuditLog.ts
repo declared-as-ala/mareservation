@@ -52,7 +52,15 @@ export type AuditAction =
   | 'SUPPORT_CASE_CREATED'
   | 'SUPPORT_CASE_REPLIED'
   | 'SUPPORT_CASE_UPDATED'
-  | 'SUPPORT_CASE_CLOSED';
+  | 'SUPPORT_CASE_CLOSED'
+  | 'BOOKING_SETTINGS_CHANGED'
+  | 'RESERVATION_COMPLETED'
+  | 'EMAIL_TEST_SENT'
+  | 'EMAIL_RETRY'
+  | 'PASSWORD_RESET_LINK_ISSUED'
+  | 'OWNER_ASSIGNED'
+  | 'USER_SUSPENDED'
+  | 'USER_REACTIVATED';
 
 export interface IAuditLog extends Document {
   userId?: mongoose.Types.ObjectId;
@@ -87,6 +95,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
         'PAYOUT_GENERATED', 'PAYOUT_APPROVED', 'PAYOUT_MARKED_PAID',
         'PAYOUT_HELD', 'PAYOUT_REJECTED',
         'SUPPORT_CASE_CREATED', 'SUPPORT_CASE_REPLIED', 'SUPPORT_CASE_UPDATED', 'SUPPORT_CASE_CLOSED',
+        'BOOKING_SETTINGS_CHANGED', 'RESERVATION_COMPLETED', 'EMAIL_TEST_SENT', 'EMAIL_RETRY', 'PASSWORD_RESET_LINK_ISSUED', 'OWNER_ASSIGNED', 'USER_SUSPENDED', 'USER_REACTIVATED',
       ]
     },
     entityType: { type: String, enum: ['user', 'reservation', 'venue', 'event', 'payment', 'setting', 'support_case', 'payout'] },

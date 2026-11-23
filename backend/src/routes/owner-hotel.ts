@@ -20,7 +20,9 @@ import {
 import { sendWhatsApp } from '../services/whatsapp.service';
 import { withBookingLock } from '../utils/bookingLock';
 import { publishAvailabilityEvent } from '../services/availabilityEvents';
-import { DEFAULT_TZ, bookingSummary, buildManagementCalendar, inventoryConflict, parseDay, pushStatus, todayInZone, toDay, addDays } from '../services/bookingEngine';
+import { DEFAULT_TZ, bookingSummary, buildManagementCalendar, canTransition, createManualReservation, inventoryConflict, normalizeStatus, parseDay, pushStatus, todayInZone, toDay, addDays } from '../services/bookingEngine';
+import { notifyBookingEvent } from '../services/bookingEmails';
+import { ownerSettingsSchema, toUpdate, SETTINGS_FIELDS } from '../services/bookingSettings';
 
 const router = Router();
 router.use(authenticate, requireEstablishmentOwner, requireAnyServiceDomains('HOTEL'));
@@ -144,7 +146,7 @@ router.post('/venues/:venueId/blocks', authenticate, requireEstablishmentOwner, 
         startAt: { $lt: end },
         endAt: { $gt: start },
       };
-      if (scope === 'room') reservationFilter.roomId = roomId;
+      if (scope === 'room') reservationFilter.$or = [{ roomId }, { roomIds: roomId }, { unitScope: 'entire' }];
       const conflicting = await Reservation.findOne(reservationFilter).session(session ?? null).lean();
       if (conflicting) return { conflict: true as const };
 
@@ -277,126 +279,71 @@ router.delete('/blocks/:id', authenticate, requireEstablishmentOwner, async (req
 // POST /owner-hotel/venues/:venueId/reservations/manual
 router.post('/venues/:venueId/reservations/manual', authenticate, requireEstablishmentOwner, async (req: AuthRequest, res) => {
   try {
-    const venue = await assertVenueOwnedBy(req.params.venueId, req);
-    if (!venue) return sendError(res, { message: 'Hôtel introuvable ou non autorisé.', statusCode: 404 });
-
-    const {
-      roomId,
-      checkIn,
-      checkOut,
-      adults = 2,
-      children = 0,
-      firstName,
-      lastName,
-      phone,
-      email,
-      price,
-      paymentStatus = 'unpaid',
-      depositAmount = 0,
-      source = 'phone',
-      notes,
-    } = req.body ?? {};
-
-    if (!roomId || !checkIn || !checkOut || !firstName || !lastName || !phone) {
-      return sendError(res, { message: 'Champs requis: roomId, checkIn, checkOut, firstName, lastName, phone.', statusCode: 400 });
-    }
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
-      return sendError(res, { message: 'Dates invalides.', statusCode: 400 });
+    const venue: any = await assertVenueOwnedBy(req.params.venueId, req);
+    if (!venue) return sendError(res, { message: 'Hébergement introuvable ou non autorisé.', statusCode: 404 });
+    const { roomId, roomIds, checkIn, checkOut, adults = 2, children = 0, firstName, lastName, phone, email, price, source = 'phone', notes } = req.body ?? {};
+    if (!checkIn || !checkOut || !firstName || !lastName || !phone) {
+      return sendError(res, { message: 'Champs requis : checkIn, checkOut, firstName, lastName, phone.', statusCode: 400 });
     }
     if (!['phone', 'walk_in', 'whatsapp', 'agency', 'other'].includes(source)) {
       return sendError(res, { message: 'Source invalide.', statusCode: 400 });
     }
-
-    const room = await Room.findOne({ _id: roomId, venueId: venue._id }).lean();
-    if (!room) return sendError(res, { message: 'Chambre introuvable.', statusCode: 404 });
-
-    // Conflict check against reservations + holds + blocks
-    const reservationConflict = await Reservation.findOne({
-      roomId,
-      status: { $in: ACTIVE_RES_STATUSES },
-      ...hasOverlap(start, end),
-    }).lean();
-    if (reservationConflict) {
-      return sendError(res, { message: 'Une réservation existe déjà sur cette plage.', statusCode: 409 });
-    }
-    const holdConflict = await ReservationHold.findOne({
-      reservableUnitId: roomId,
-      status: 'active',
-      expiresAt: { $gt: new Date() },
-      ...hasOverlap(start, end),
-    }).lean();
-    if (holdConflict) {
-      return sendError(res, { message: 'Un client est en train de réserver cette chambre. Réessayez dans 15 min.', statusCode: 409 });
-    }
-    const blockConflict = await RoomBlock.findOne({
-      isActive: true,
-      ...hasOverlap(start, end),
-      $or: [{ scope: 'room', roomId }, { scope: 'venue', venueId: venue._id }],
-    }).lean();
-    if (blockConflict) {
-      return sendError(res, { message: 'La chambre est bloquée sur cette plage.', statusCode: 409 });
-    }
-
-    const nights = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000));
-    const total = Number.isFinite(Number(price)) ? Number(price) : room.pricePerNight * nights;
-    const amountPaid = Math.max(0, Math.min(total, Number(depositAmount) || 0));
-
-    const reservationCode = `EX-${new Date().getFullYear()}-${generateConfirmationCode(6)}`;
-    const confirmationCode = generateConfirmationCode(8);
-
-    // Find or create a placeholder user for offline guests (uses owner as fallback userId)
-    const placeholderUserId = req.userId;
-
-    const reservation = await Reservation.create({
-      reservationCode,
-      confirmationCode,
-      userId: placeholderUserId,
-      venueId: venue._id,
-      roomId,
-      bookingType: 'ROOM',
-      reservableType: 'room',
-      startAt: start,
-      endAt: end,
-      reservationDate: start,
-      nights,
-      adults: Number(adults),
-      children: Number(children || 0),
-      partySize: Number(adults) + Number(children || 0),
-      peopleCount: Number(adults) + Number(children || 0),
-      guestFirstName: firstName,
-      guestLastName: lastName,
-      guestPhone: phone,
-      customerFirstName: firstName,
-      customerLastName: lastName,
-      customerPhone: phone,
-      customerEmail: email,
-      totalPrice: total,
-      priceBreakdown: { subtotal: total, total, currency: 'TND' },
-      paymentStatus,
-      paymentMethod: 'cash',
-      amountPaid,
-      remainingAmount: total - amountPaid,
-      status: 'confirmed',
-      checkInStatus: 'not_checked_in',
+    const priceNum = price === undefined || price === null || price === '' ? undefined : Number(price);
+    if (priceNum !== undefined && (!Number.isFinite(priceNum) || priceNum < 0)) return sendError(res, { message: 'Prix invalide.', statusCode: 400 });
+    const result = await createManualReservation({
+      venue,
+      stay: { checkIn, checkOut, adults, children, roomId, roomIds },
+      guest: { firstName: String(firstName).slice(0, 80), lastName: String(lastName).slice(0, 80), phone: String(phone).slice(0, 30), email: email ? String(email).slice(0, 160) : undefined },
+      price: priceNum,
       source,
-      notes,
-      acceptedHotelPolicy: true,
-      acceptedPlatformTerms: true,
+      notes: typeof notes === 'string' ? notes.slice(0, 1000) : undefined,
+      actor: { userId: req.userId, role: req.userRole },
     });
-
+    if (!result.ok) return sendError(res, { message: result.error, statusCode: result.status });
+    const reservation = result.reservation;
     await logAudit(req, {
       userId: req.userId as any,
       action: 'RESERVATION_MANUAL_CREATED',
       entityType: 'reservation',
       entityId: reservation._id as any,
-      details: { venueId: String(venue._id), roomId: String(roomId), source, nights, total },
+      details: { venueId: String(venue._id), reference: reservation.reservationCode, source, nights: reservation.nights, total: reservation.totalPrice },
     });
     return sendSuccess(res, { data: reservation, statusCode: 201 });
   } catch (err) {
     logger.error('owner-hotel/manual-reservation failed', err);
     return sendError(res, { message: 'Échec de la création de la réservation.', statusCode: 500 });
+  }
+});
+
+/* ─── BOOKING SETTINGS (owner) ─────────────────────────────────────── */
+
+router.get('/venues/:venueId/booking-settings', async (req: AuthRequest, res) => {
+  const venue = await assertVenueOwnedBy(req.params.venueId, req);
+  if (!venue) return sendError(res, { message: 'Hébergement introuvable ou non autorisé.', statusCode: 404 });
+  const full = await Venue.findById(venue._id).select(SETTINGS_FIELDS).lean();
+  return sendSuccess(res, { data: full });
+});
+
+router.patch('/venues/:venueId/booking-settings', async (req: AuthRequest, res) => {
+  try {
+    const venue = await assertVenueOwnedBy(req.params.venueId, req);
+    if (!venue) return sendError(res, { message: 'Hébergement introuvable ou non autorisé.', statusCode: 404 });
+    const parsed = ownerSettingsSchema.safeParse(req.body ?? {});
+    if (!parsed.success) return sendError(res, { message: parsed.error.issues[0]?.message ?? 'Données invalides.', statusCode: 422 });
+    const update = toUpdate(parsed.data);
+    const updated = await Venue.findByIdAndUpdate(venue._id, update, { new: true, runValidators: true }).select(SETTINGS_FIELDS).lean();
+    await logAudit(req, {
+      userId: req.userId as any,
+      action: 'BOOKING_SETTINGS_CHANGED',
+      entityType: 'venue',
+      entityId: venue._id as any,
+      details: { fields: Object.keys(parsed.data), by: req.userRole },
+    });
+    publishAvailabilityEvent({ venueId: String(venue._id), type: 'settings_changed', at: new Date().toISOString() });
+    return sendSuccess(res, { data: updated });
+  } catch (err) {
+    logger.error('owner-hotel/booking-settings failed', err);
+    return sendError(res, { message: 'Échec de l’enregistrement.', statusCode: 500 });
   }
 });
 
@@ -431,23 +378,7 @@ router.post('/reservations/:id/accept', authenticate, requireEstablishmentOwner,
       entityId: reservation._id as any,
       details: { venueId: String(reservation.venueId) },
     });
-    void (async () => {
-      try {
-        const built = await buildEmailParams(reservation._id as any);
-        if (built?.to) {
-          const tpl = createReservationAcceptedTemplate(built.params);
-          await sendEmail({ to: built.to, ...tpl });
-        }
-        if (built?.phone) {
-          await sendWhatsApp({
-            to: built.phone,
-            body: `✅ Votre réservation *${built.reservationCode}* a été acceptée par ${built.hotelName}.\n📅 ${built.checkInShort} → ${built.checkOutShort}`,
-          });
-        }
-      } catch (err) {
-        logger.error('owner-hotel/accept notification failed', err);
-      }
-    })();
+    void notifyBookingEvent(reservation._id, 'confirmed');
     return sendSuccess(res, { data: reservation });
   } catch (err) {
     logger.error('owner-hotel/accept failed', err);
@@ -478,25 +409,7 @@ router.post('/reservations/:id/reject', authenticate, requireEstablishmentOwner,
       entityId: reservation._id as any,
       details: { venueId: String(reservation.venueId), reason: req.body?.reason ?? null },
     });
-    void (async () => {
-      try {
-        const built = await buildEmailParams(reservation._id as any);
-        if (built?.to) {
-          const tpl = createReservationRejectedTemplate({ ...built.params, reason: req.body?.reason });
-          await sendEmail({ to: built.to, ...tpl });
-        }
-        if (built?.phone) {
-          const reason: string | undefined = req.body?.reason;
-          const reasonPart = reason ? `\nMotif : ${reason}` : '';
-          await sendWhatsApp({
-            to: built.phone,
-            body: `❌ Votre réservation *${built.reservationCode}* a été refusée par ${built.hotelName}.${reasonPart}`,
-          });
-        }
-      } catch (err) {
-        logger.error('owner-hotel/reject notification failed', err);
-      }
-    })();
+    void notifyBookingEvent(reservation._id, 'rejected');
     return sendSuccess(res, { data: reservation });
   } catch (err) {
     logger.error('owner-hotel/reject failed', err);
@@ -611,12 +524,13 @@ router.post('/reservations/:id/check-out', authenticate, requireEstablishmentOwn
   try {
     const reservation = await findOwnedReservation(req.params.id, req);
     if (!reservation) return sendError(res, { message: 'Réservation introuvable ou non autorisée.', statusCode: 404 });
-    if (String(reservation.status).toLowerCase() === 'completed') {
-      return sendError(res, { message: 'Séjour déjà clôturé.', statusCode: 409 });
+    if (!canTransition(reservation.status, 'completed')) {
+      return sendError(res, { message: 'Seule une réservation confirmée ou en cours peut être clôturée.', statusCode: 409 });
     }
-    reservation.status = 'completed';
+    pushStatus(reservation, 'completed', { userId: req.userId, role: req.userRole }, 'Séjour terminé');
     let autoSettled = 0;
-    if (reservation.remainingAmount && reservation.remainingAmount > 0) {
+    // Payment is recorded only when the owner explicitly confirms it was collected (never for demos).
+    if (req.body?.paymentCollected === true && !(reservation as any).isDemo && reservation.remainingAmount && reservation.remainingAmount > 0) {
       autoSettled = reservation.remainingAmount;
       reservation.amountPaid = (reservation.amountPaid ?? 0) + reservation.remainingAmount;
       reservation.remainingAmount = 0;
@@ -641,9 +555,8 @@ router.post('/reservations/:id/cancel', authenticate, requireEstablishmentOwner,
   try {
     const reservation = await findOwnedReservation(req.params.id, req);
     if (!reservation) return sendError(res, { message: 'Réservation introuvable ou non autorisée.', statusCode: 404 });
-    const status = String(reservation.status).toLowerCase();
-    if (['cancelled', 'completed', 'no_show'].includes(status)) {
-      return sendError(res, { message: `Réservation déjà ${status}.`, statusCode: 409 });
+    if (!canTransition(reservation.status, 'cancelled')) {
+      return sendError(res, { message: `Réservation ${normalizeStatus(reservation.status)} : annulation impossible.`, statusCode: 409 });
     }
     pushStatus(reservation, 'cancelled', { userId: req.userId, role: req.userRole }, typeof req.body?.reason === 'string' ? req.body.reason : undefined);
     (reservation as any).expiresAt = undefined;
@@ -658,6 +571,7 @@ router.post('/reservations/:id/cancel', authenticate, requireEstablishmentOwner,
       entityId: reservation._id as any,
       details: { flow: 'owner_cancel', reason: req.body?.reason ?? null },
     });
+    void notifyBookingEvent(reservation._id, 'cancelled_by_host');
     return sendSuccess(res, { data: reservation });
   } catch (err) {
     logger.error('owner-hotel/cancel failed', err);
@@ -669,8 +583,12 @@ router.post('/reservations/:id/no-show', authenticate, requireEstablishmentOwner
   try {
     const reservation = await findOwnedReservation(req.params.id, req);
     if (!reservation) return sendError(res, { message: 'Réservation introuvable ou non autorisée.', statusCode: 404 });
-    reservation.status = 'no_show';
+    if (!canTransition(reservation.status, 'no_show')) {
+      return sendError(res, { message: 'Seule une réservation confirmée peut être marquée « non présenté ».', statusCode: 409 });
+    }
+    pushStatus(reservation, 'no_show', { userId: req.userId, role: req.userRole }, 'Client non présenté');
     await reservation.save();
+    publishAvailabilityEvent({ venueId: String(reservation.venueId), type: 'reservation_cancelled', at: new Date().toISOString(), reservationId: String(reservation._id) });
     await logAudit(req, {
       userId: req.userId as any,
       action: 'RESERVATION_NO_SHOW',

@@ -71,6 +71,22 @@ export interface Venue {
   isPublished?: boolean;
   /** Demonstration listing — never bookable (the API enforces this). */
   isDemo?: boolean;
+  bookingMode?: 'request' | 'instant';
+  rentalMode?: 'rooms' | 'entire';
+  entirePricePerNight?: number;
+  cleaningFee?: number;
+  serviceFee?: number;
+  minimumNights?: number;
+  maxGuests?: number;
+  bedrooms?: number;
+  beds?: number;
+  bathrooms?: number;
+  features?: string[];
+  houseRules?: string[];
+  cancellationNotes?: string;
+  arrivalInstructions?: string;
+  hostDisplayName?: string;
+  hostBio?: string;
   isFeatured?: boolean;
   isVedette?: boolean;
   vedetteOrder?: number;

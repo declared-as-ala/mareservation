@@ -48,10 +48,14 @@ export function isPublicVenueType(type: unknown): boolean {
 }
 
 /** Type enabled AND (no slug allowlist OR slug in allowlist). */
-export function isPublicVenue(venue: { type?: unknown; slug?: unknown } | null | undefined): boolean {
+export function isPublicVenue(
+  venue: { type?: unknown; slug?: unknown; publicListed?: unknown; approvalStatus?: unknown } | null | undefined
+): boolean {
   if (!venue || !isPublicVenueType(venue.type)) return false;
   const slugs = getPublicVenueSlugs();
   if (!slugs) return true;
+  // Listed by the super admin (Venue.publicListed) once approved, or allow-listed by slug in the environment.
+  if (venue.publicListed === true && venue.approvalStatus === 'approved') return true;
   return typeof venue.slug === 'string' && slugs.includes(venue.slug.toLowerCase());
 }
 
@@ -63,7 +67,7 @@ export function publicVenueFilter(): Record<string, unknown> {
     archivedAt: null,
   };
   const slugs = getPublicVenueSlugs();
-  if (slugs) filter.slug = { $in: slugs };
+  if (slugs) filter.$or = [{ slug: { $in: slugs } }, { publicListed: true, approvalStatus: 'approved' }];
   return filter;
 }
 
@@ -86,8 +90,8 @@ export async function guardPublicVenueParam(
   try {
     const query =
       mongoose.Types.ObjectId.isValid(value) && value.length === 24 ? { _id: value } : { slug: value };
-    const venue = await Venue.findOne(query).select('type slug').lean();
-    if (venue && !isPublicVenue(venue as { type?: string; slug?: string })) {
+    const venue = await Venue.findOne(query).select('type slug publicListed approvalStatus').lean();
+    if (venue && !isPublicVenue(venue as any)) {
       res.status(404).json({ error: 'Lieu non trouvé' });
       return;
     }

@@ -307,7 +307,7 @@ describe('owner: blocks, ownership and lifecycle', () => {
     expect(r.status).toBe(201);
     expect((await book(String(ids.single), d(170), d(172))).status).toBe(409);
     await M.Reservation.updateOne({ reservationCode: r.body.reference }, { $set: { expiresAt: new Date(Date.now() - 1000) } });
-    expect(await engine.expirePendingRequests()).toBeGreaterThanOrEqual(1);
+    expect((await engine.expirePendingRequests()).length).toBeGreaterThanOrEqual(1);
     const stored = await M.Reservation.findOne({ reservationCode: r.body.reference }).lean();
     expect(stored.status).toBe('expired');
     expect(stored.statusHistory.at(-1)).toMatchObject({ to: 'expired', byRole: 'SYSTEM' });

@@ -21,13 +21,17 @@ const { Venue } = await import('../src/models/Venue');
 const { upsertDemoMaison } = await import('../src/utils/demoMaison');
 await Venue.init();
 await upsertDemoMaison(Venue);
+// Dev: open DEMO bookings on the demo maison (as the provisioning script does in production).
+await Venue.updateOne({ slug: 'maison-hotes-demo-exploria360' }, { $set: { rentalMode: 'entire', entirePricePerNight: 250, maxGuests: 6, bookingEnabled: true, bookingMode: 'request' } });
 
 // Dev-only: `--bookable` adds a clearly labelled test maison with two rooms so the booking flow can be exercised.
 if (process.argv.includes('--bookable')) {
   const { Room } = await import('../src/models/Room');
   const v = await Venue.create({
-    name: '[DEV] Maison Test Réservable', slug: 'maison-test-dev', type: 'MAISON_DHOTE', city: 'Tunis', address: 'Adresse de test',
-    description: 'DEV ONLY — fiche de test du moteur de réservation.', amenities: ['Wi-Fi'], isPublished: true,
+    name: '[DEV] Maison Test Réservable', slug: 'maison-test-dev', type: 'MAISON_DHOTE', city: 'Sidi Bou Saïd', governorate: 'Tunis', address: 'Adresse de test',
+    description: 'DEV ONLY — fiche de test du moteur de réservation.', amenities: ['Wi-Fi'], isPublished: true, approvalStatus: 'approved',
+    coordinates: { lat: 36.87, lng: 10.34 }, features: ['wifi', 'sea_view', 'breakfast'], cleaningFee: 30, maxGuests: 6, bedrooms: 2,
+    coverImage: '/demo/maison-demo-cover.jpg', gallery: ['/demo/maison-demo-cover.jpg'],
   });
   await Room.create({ venueId: v._id, roomNumber: 1, name: 'Chambre Jasmin', roomType: 'double', capacity: 2, pricePerNight: 150 });
   await Room.create({ venueId: v._id, roomNumber: 2, name: 'Suite Olivier', roomType: 'suite', capacity: 4, pricePerNight: 260 });

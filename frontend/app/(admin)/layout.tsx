@@ -155,6 +155,7 @@ const tailNavGroups: NavGroup[] = [
       { href: '/admin/users', label: 'Utilisateurs', icon: Users },
       { href: '/admin/reservations', label: 'Réservations', icon: BookOpen },
       { href: '/admin/calendrier', label: 'Calendrier', icon: BookOpen },
+      { href: '/admin/plateforme', label: 'Plateforme & e-mails', icon: BookOpen },
       { href: '/admin/hotels-approval', label: 'Approbation hôtels', icon: ShieldCheck },
       { href: '/admin/owners', label: 'Propriétaires', icon: UserCheck },
       { href: '/admin/moderation', label: 'Modération', icon: ShieldAlert },

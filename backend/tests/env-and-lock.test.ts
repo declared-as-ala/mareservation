@@ -62,7 +62,7 @@ describe('public catalogue flag', () => {
       type: { $in: ['MAISON_DHOTE'] },
       isPublished: { $ne: false },
       archivedAt: null,
-      slug: { $in: ['villa-one', 'villa-two'] },
+      $or: [{ slug: { $in: ['villa-one', 'villa-two'] } }, { publicListed: true, approvalStatus: 'approved' }],
     });
   });
 });

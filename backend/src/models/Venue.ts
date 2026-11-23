@@ -42,6 +42,29 @@ export interface IVenue extends Document {
   isDemo?: boolean;
   /** IANA time zone of the property; "today" and past-date checks use it. */
   timezone?: string;
+  /** GPS position — only ever set from real data (owner/admin map picker). Never inferred. */
+  coordinates?: { lat?: number; lng?: number };
+  /** Booking configuration (accommodations). */
+  /** Super-admin switch: shown in the public catalogue (in addition to the PUBLIC_VENUE_SLUGS allowlist). */
+  publicListed?: boolean;
+  bookingEnabled?: boolean;          // super-admin switch: may this listing take bookings at all?
+  bookingMode?: 'request' | 'instant';
+  rentalMode?: 'rooms' | 'entire';
+  entirePricePerNight?: number;
+  cleaningFee?: number;
+  serviceFee?: number;
+  minimumNights?: number;
+  maxGuests?: number;
+  bedrooms?: number;
+  beds?: number;
+  bathrooms?: number;
+  features?: string[];
+  houseRules?: string[];
+  cancellationPolicy?: 'flexible' | 'moderate' | 'strict';
+  cancellationNotes?: string;
+  arrivalInstructions?: string;
+  hostDisplayName?: string;
+  hostBio?: string;
   isFeatured: boolean;
   isVedette?: boolean;
   activeEventTonight?: boolean;
@@ -93,6 +116,30 @@ const VenueSchema = new Schema<IVenue>(
     isPublished: { type: Boolean, default: true },
     isDemo: { type: Boolean, default: false, index: true },
     timezone: { type: String, default: 'Africa/Tunis' },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 },
+    },
+    // No default: undefined = historical behaviour (real listing open, demo closed). See venueBookability().
+    bookingEnabled: { type: Boolean },
+    publicListed: { type: Boolean, default: false, index: true },
+    bookingMode: { type: String, enum: ['request', 'instant'], default: 'request' },
+    rentalMode: { type: String, enum: ['rooms', 'entire'], default: 'rooms' },
+    entirePricePerNight: { type: Number, min: 0 },
+    cleaningFee: { type: Number, min: 0, default: 0 },
+    serviceFee: { type: Number, min: 0, default: 0 },
+    minimumNights: { type: Number, min: 1, max: 30, default: 1 },
+    maxGuests: { type: Number, min: 1, max: 50 },
+    bedrooms: { type: Number, min: 0, max: 50 },
+    beds: { type: Number, min: 0, max: 100 },
+    bathrooms: { type: Number, min: 0, max: 50 },
+    features: { type: [String], default: [] },
+    houseRules: { type: [String], default: [] },
+    cancellationPolicy: { type: String, enum: ['flexible', 'moderate', 'strict'], default: 'moderate' },
+    cancellationNotes: { type: String, maxlength: 2000 },
+    arrivalInstructions: { type: String, maxlength: 2000 },
+    hostDisplayName: { type: String, maxlength: 120 },
+    hostBio: { type: String, maxlength: 1500 },
     isFeatured: { type: Boolean, default: false },
     isVedette: { type: Boolean, default: false },
     activeEventTonight: { type: Boolean, default: false },

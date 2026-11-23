@@ -19,6 +19,10 @@ interface Props {
   quote: AvailableQuote | null;
   onBooked: () => void;
   onConflict: (message: string) => void;
+  /** Instant booking: confirmed immediately (otherwise a request the host accepts). */
+  instant?: boolean;
+  /** Demonstration listing: the booking is a labelled simulation. */
+  demo?: boolean;
 }
 
 const input =
@@ -28,7 +32,7 @@ function newKey() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-export function BookingRequestDialog({ open, onClose, venueName, params, quote, onBooked, onConflict }: Props) {
+export function BookingRequestDialog({ open, onClose, venueName, params, quote, onBooked, onConflict, instant = false, demo = false }: Props) {
   const uid = useId();
   const firstField = useRef<HTMLInputElement>(null);
   const idemKey = useRef<string>(newKey());
@@ -102,6 +106,7 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
   }
 
   const trackUrl = done?.accessToken ? `/reservation-demande/${done.reference}?t=${done.accessToken}` : null;
+  const confirmed = String(done?.status ?? '').toLowerCase() === 'confirmed';
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="presentation">
@@ -119,7 +124,8 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
         {done ? (
           <div role="status" aria-live="polite" className="pt-2 text-center">
             <CheckCircle2 className="mx-auto size-14 text-emerald-400" aria-hidden="true" />
-            <h2 id={`${uid}-title`} className="mt-4 font-serif text-3xl font-black text-white">Demande envoyée</h2>
+            <h2 id={`${uid}-title`} className="mt-4 font-serif text-3xl font-black text-white">{confirmed ? 'Réservation confirmée' : 'Demande envoyée'}</h2>
+            {done.isDemo && <p className="mx-auto mt-3 max-w-sm rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">DÉMO — réservation simulée : aucun séjour réel, aucun paiement.</p>}
             <p className="mt-2 text-sm text-neutral-400">Votre numéro de référence</p>
             <p className="mt-1 inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-3 font-mono text-2xl font-bold tracking-wider text-amber-300">
               {done.reference}
@@ -136,7 +142,8 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
                 ['Départ', formatLong(done.summary.checkOut)],
                 ['Durée', `${done.summary.nights} nuit${done.summary.nights > 1 ? 's' : ''}`],
                 ['Voyageurs', `${done.summary.adults} adulte${done.summary.adults > 1 ? 's' : ''}${done.summary.children ? `, ${done.summary.children} enfant${done.summary.children > 1 ? 's' : ''}` : ''}`],
-                ['Total estimé', done.summary.total != null ? formatMoney(done.summary.total) : 'À confirmer'],
+                ['Total', done.summary.total != null ? formatMoney(done.summary.total) : 'À confirmer'],
+                ['Paiement', done.isDemo ? 'Aucun (démonstration)' : 'Non payé — règlement sur place'],
               ].filter(([, v]) => v).map(([k, v]) => (
                 <div key={k as string} className="flex justify-between gap-4 border-b border-white/[0.06] pb-2">
                   <dt className="text-neutral-500">{k}</dt>
@@ -148,17 +155,27 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
             <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left text-sm leading-relaxed text-neutral-300">
               <p className="font-semibold text-white">Et maintenant ?</p>
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-neutral-400">
-                <li>Votre demande est <strong className="text-amber-300">en attente de confirmation</strong> par la maison d&apos;hôtes.</li>
-                <li>Vous serez informé(e) de sa décision.</li>
-                <li>Aucun paiement n&apos;est demandé à ce stade.</li>
-                {done.expiresAt && <li>Sans réponse avant le {new Date(done.expiresAt).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}, la demande expire et les dates sont libérées.</li>}
+                {confirmed ? (
+                  <>
+                    <li>Votre réservation est <strong className="text-emerald-300">confirmée</strong>. Un e-mail récapitulatif vous est envoyé.</li>
+                    <li>Présentez votre référence à l&apos;arrivée.</li>
+                    <li>Aucun paiement n&apos;a été effectué en ligne.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Votre demande est <strong className="text-amber-300">en attente de confirmation</strong> par la maison d&apos;hôtes.</li>
+                    <li>Vous recevrez sa décision par e-mail.</li>
+                    <li>Aucun paiement n&apos;est demandé à ce stade.</li>
+                    {done.expiresAt && <li>Sans réponse avant le {new Date(done.expiresAt).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' })}, la demande expire et les dates sont libérées.</li>}
+                  </>
+                )}
               </ol>
             </div>
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
               {trackUrl && (
                 <Link href={trackUrl} className="inline-flex h-12 items-center justify-center rounded-2xl bg-amber-400 px-6 text-sm font-black text-black hover:bg-amber-300">
-                  Suivre ma demande
+                  {confirmed ? 'Voir ma réservation' : 'Suivre ma demande'}
                 </Link>
               )}
               <button type="button" onClick={onClose} className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/15 px-6 text-sm font-bold text-white hover:bg-white/10">Fermer</button>
@@ -167,14 +184,18 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
           </div>
         ) : (
           <form onSubmit={submit} noValidate>
-            <h2 id={`${uid}-title`} className="pr-10 font-serif text-2xl font-black text-white sm:text-3xl">Finaliser ma demande</h2>
+            <h2 id={`${uid}-title`} className="pr-10 font-serif text-2xl font-black text-white sm:text-3xl">{instant ? 'Finaliser ma réservation' : 'Finaliser ma demande'}</h2>
             <p className="mt-1 text-sm text-neutral-400">{venueName}</p>
+            {demo && <p className="mt-3 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">Mode démonstration : cette réservation sera simulée et marquée « DÉMO ».</p>}
 
             <div className="mt-5 grid gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm">
               <div className="flex justify-between gap-3"><span className="text-neutral-500">Arrivée</span><span className="font-semibold text-white">{formatLong(params.checkIn)}</span></div>
               <div className="flex justify-between gap-3"><span className="text-neutral-500">Départ</span><span className="font-semibold text-white">{formatLong(params.checkOut)}</span></div>
               <div className="flex justify-between gap-3"><span className="text-neutral-500">Voyageurs</span><span className="font-semibold text-white">{params.adults} adulte{params.adults > 1 ? 's' : ''}{params.children ? `, ${params.children} enfant${params.children > 1 ? 's' : ''}` : ''}</span></div>
               {quote && <div className="flex justify-between gap-3"><span className="text-neutral-500">Hébergement</span><span className="font-semibold text-white">{quote.room.name}</span></div>}
+              {quote && quote.subtotal != null && <div className="flex justify-between gap-3"><span className="text-neutral-500">{quote.nights} nuit{quote.nights > 1 ? 's' : ''}</span><span className="text-white">{formatMoney(quote.subtotal)}</span></div>}
+              {quote && quote.cleaningFee > 0 && <div className="flex justify-between gap-3"><span className="text-neutral-500">Frais de ménage</span><span className="text-white">{formatMoney(quote.cleaningFee)}</span></div>}
+              {quote && quote.serviceFee > 0 && <div className="flex justify-between gap-3"><span className="text-neutral-500">Frais de service</span><span className="text-white">{formatMoney(quote.serviceFee)}</span></div>}
               {quote && <div className="flex justify-between gap-3 border-t border-white/10 pt-2"><span className="text-neutral-300">Total ({quote.nights} nuit{quote.nights > 1 ? 's' : ''})</span><span className="font-serif text-xl font-black text-amber-400">{quote.total != null ? formatMoney(quote.total) : 'À confirmer'}</span></div>}
             </div>
 
@@ -216,10 +237,10 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
             <button type="submit" disabled={sending}
               className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-base font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.35)] transition hover:brightness-110 disabled:opacity-60">
               {sending && <Loader2 className="size-5 animate-spin" aria-hidden="true" />}
-              Envoyer ma demande de réservation
+              {instant ? 'Confirmer ma réservation' : 'Envoyer ma demande de réservation'}
             </button>
             <p className="mt-3 text-center text-xs leading-relaxed text-neutral-500">
-              Aucun paiement en ligne. La maison d&apos;hôtes confirme ou refuse votre demande ; vous en serez informé(e).
+              Aucun paiement en ligne : règlement sur place. {instant ? 'La réservation est confirmée immédiatement.' : 'La maison d’hôtes confirme ou refuse votre demande ; vous en serez informé(e) par e-mail.'}
               En envoyant, vous acceptez que vos coordonnées soient transmises à la maison pour traiter votre demande (<Link href="/confidentialite" className="underline">confidentialité</Link>).
             </p>
           </form>

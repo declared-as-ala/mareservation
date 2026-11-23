@@ -1,105 +1,77 @@
 'use client';
 
+/**
+ * /carte — full-screen map of Tunisia's guesthouses.
+ * No API key: Leaflet + OpenStreetMap tiles (attribution shown on the map).
+ * Only real coordinates stored on each listing are plotted; nothing is geocoded or invented.
+ */
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchVenues } from '@/lib/api/venues';
-import { MapPin } from 'lucide-react';
-import { getVenueHref } from '@/lib/venueHref';
+import { MapPin, X } from 'lucide-react';
+import { GOVERNORATES, searchGuesthouses } from '@/lib/api/bookings';
+import { formatMoney } from '@/lib/booking/dates';
 
-function normalize(value: number, min: number, max: number) {
-  if (min === max) return 50;
-  return ((value - min) / (max - min)) * 100;
-}
+const TunisiaMap = dynamic(() => import('@/components/map/TunisiaMap').then((m) => m.TunisiaMap), {
+  ssr: false,
+  loading: () => <div className="size-full animate-pulse bg-[#111112]" aria-hidden="true" />,
+});
 
 export default function MapPage() {
-  const [type, setType] = useState('');
-  const { data: venues = [] } = useQuery({
-    queryKey: ['map-venues', type],
-    queryFn: () => fetchVenues({ type: type || undefined }),
+  const [governorate, setGovernorate] = useState('');
+  const [selected, setSelected] = useState<string | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: ['carte', governorate],
+    queryFn: () => searchGuesthouses(new URLSearchParams(governorate ? { governorate } : {})),
   });
-
-  const positioned = useMemo(() => {
-    const withCoords = venues.filter((venue) => venue.coordinates?.lat != null && venue.coordinates?.lng != null);
-    const lats = withCoords.map((venue) => venue.coordinates!.lat as number);
-    const lngs = withCoords.map((venue) => venue.coordinates!.lng as number);
-    const minLat = Math.min(...lats, 0);
-    const maxLat = Math.max(...lats, 1);
-    const minLng = Math.min(...lngs, 0);
-    const maxLng = Math.max(...lngs, 1);
-
-    return withCoords.map((venue) => ({
-      ...venue,
-      top: 100 - normalize(venue.coordinates!.lat as number, minLat, maxLat),
-      left: normalize(venue.coordinates!.lng as number, minLng, maxLng),
-    }));
-  }, [venues]);
+  const results = data?.results ?? [];
+  const mapped = results.filter((r) => r.coordinates);
+  const markers = useMemo(
+    () => mapped.map((r) => ({ id: r.id, lat: r.coordinates!.lat, lng: r.coordinates!.lng, title: r.name, label: r.fromPrice != null ? formatMoney(r.fromPrice) : r.name.slice(0, 18) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data]
+  );
+  const sel = results.find((r) => r.id === selected);
 
   return (
-    <div className="min-h-screen bg-zinc-950 px-4 py-10 text-zinc-100">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Carte des lieux</h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Explorez les lieux par position et ouvrez directement leur fiche.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {['', 'CAFE', 'CAFE_LOUNGE', 'RESTAURANT', 'HOTEL', 'COWORKING', 'CINEMA', 'EVENT_SPACE'].map((value) => (
-              <button
-                key={value || 'all'}
-                type="button"
-                onClick={() => setType(value)}
-                className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                  type === value
-                    ? 'border-amber-400 bg-amber-400 text-black'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                {value || 'Tous'}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="relative h-[calc(100dvh-4rem)] min-h-[520px] bg-[#0B0B0C] text-white">
+      <TunisiaMap className="size-full" markers={markers} selectedId={selected} onSelect={setSelected} ariaLabel="Carte des maisons d’hôtes en Tunisie" />
 
-        <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <section className="relative min-h-[560px] overflow-hidden rounded-[28px] border border-zinc-800 bg-[radial-gradient(circle_at_top,rgba(212,175,55,0.08),transparent_35%),linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))]">
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
-            {positioned.map((venue) => (
-              <Link
-                key={venue._id}
-                href={getVenueHref(venue)}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
-                style={{ top: `${venue.top}%`, left: `${venue.left}%` }}
-              >
-                <div className="rounded-full border border-amber-400/30 bg-amber-400/15 px-3 py-2 text-xs font-semibold text-amber-200 shadow-[0_8px_30px_rgba(212,175,55,0.2)]">
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="size-3.5" />
-                    {venue.name}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </section>
-
-          <section className="rounded-[28px] border border-zinc-800 bg-zinc-900/70 p-5">
-            <h2 className="mb-4 text-lg font-semibold">Liste rapide</h2>
-            <div className="space-y-3">
-              {venues.map((venue) => (
-                <Link
-                  key={venue._id}
-                  href={getVenueHref(venue)}
-                  className="block rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4 transition-colors hover:border-amber-400/30"
-                >
-                  <p className="font-medium text-zinc-100">{venue.name}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{venue.city}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
+      <div className="absolute left-3 right-3 top-3 z-[500] flex flex-wrap items-center gap-2 sm:left-4 sm:right-auto">
+        <div className="rounded-2xl border border-white/10 bg-[#111112]/95 px-4 py-3 shadow-xl backdrop-blur">
+          <h1 className="flex items-center gap-2 font-serif text-xl"><MapPin className="size-5 text-amber-400" aria-hidden="true" /> Carte des maisons d’hôtes</h1>
+          <p className="text-xs text-neutral-400" aria-live="polite">
+            {isLoading ? 'Chargement…' : `${mapped.length} sur la carte${results.length > mapped.length ? ` · ${results.length - mapped.length} sans position GPS vérifiée` : ''}`}
+          </p>
         </div>
+        <label className="sr-only" htmlFor="gov">Gouvernorat</label>
+        <select id="gov" value={governorate} onChange={(e) => { setGovernorate(e.target.value); setSelected(null); }} className="h-12 rounded-2xl border border-white/10 bg-[#111112]/95 px-4 text-sm text-white shadow-xl [color-scheme:dark]">
+          <option value="">Toute la Tunisie</option>
+          {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+        </select>
+        <Link href="/accommodations" className="inline-flex h-12 items-center rounded-2xl bg-amber-400 px-4 text-sm font-bold text-black shadow-xl">Liste + filtres</Link>
       </div>
+
+      {sel && (
+        <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[600] sm:left-4 sm:right-auto sm:w-96">
+          <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111112] shadow-2xl">
+            <button type="button" aria-label="Fermer" onClick={() => setSelected(null)} className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-black/70"><X className="size-4" /></button>
+            <Link href={`/accommodation/${sel.slug}`} className="flex gap-3 p-3">
+              {sel.coverImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={sel.coverImage} alt="" className="size-24 shrink-0 rounded-xl object-cover" />
+              )}
+              <span className="min-w-0">
+                <span className="block truncate font-serif text-lg">{sel.name}</span>
+                <span className="block text-xs text-neutral-400">{[sel.city, sel.governorate].filter(Boolean).join(', ')}{sel.isDemo ? ' · Démo' : ''}</span>
+                {sel.fromPrice != null && <span className="mt-1 block text-sm font-semibold text-amber-300">Dès {formatMoney(sel.fromPrice)} / nuit</span>}
+                <span className="mt-1 block text-xs text-amber-200 underline">Voir la maison{sel.hasVirtualTour ? ' et la visite 360°' : ''}</span>
+              </span>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
