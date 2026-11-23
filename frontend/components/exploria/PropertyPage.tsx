@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Bath, BedDouble, Check, ChevronRight, Clock, Hand, MapPin, Maximize2, ScrollText, ShieldCheck, Smartphone, UserRound, Users } from 'lucide-react';
 import type { Venue } from '@/lib/api/types';
-import { MobileBookingBar, ShareButton, Tour360Button } from './PropertyActions';
+import { MobileBookingBar, ShareButton } from './PropertyActions';
 import { TourViewer } from './TourViewer';
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyLocationMap, SimilarGuesthouses } from './PropertyExtras';
@@ -70,8 +70,8 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
       {isDemo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(breadcrumbJsonLd(breadcrumbs)) }} />}
 
       {/* Title block */}
-      <header className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:px-6 lg:px-10 lg:pt-12">
-        <nav aria-label="Fil d’Ariane" className="mb-6 text-xs text-white/60">
+      <header className="mx-auto max-w-7xl px-4 pb-5 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+        <nav aria-label="Fil d’Ariane" className="mb-4 text-xs text-white/60">
           <ol className="flex flex-wrap items-center gap-1.5">
             <li><Link href="/" className="hover:text-white">Accueil</Link></li>
             <ChevronRight className="size-3" aria-hidden="true" />
@@ -85,8 +85,8 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
           {tourUrl && <span className="rounded-full border border-white/25 px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/80">Visite 360°</span>}
           {venue.bookingMode === 'instant' && <span className="rounded-full border border-amber-400/40 px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-amber-200">Réservation instantanée</span>}
         </div>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="max-w-4xl font-serif text-[clamp(2.2rem,5.6vw,4.4rem)] font-medium leading-[1.02]">{venue.name}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="max-w-4xl font-serif text-[clamp(1.9rem,4.6vw,3.6rem)] font-medium leading-[1.05]">{venue.name}</h1>
           <ShareButton title={venue.name} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/70">
@@ -95,40 +95,35 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
         </div>
       </header>
 
-      {/* Gallery */}
-      {photos.length > 0 && (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
-          <PropertyGallery images={photos} name={venue.name} />
-        </div>
+      {/* 1. Virtual tour first — the Exploria360 experience */}
+      {tourUrl && (
+        <section id="visite" aria-labelledby="visite-title" className="mx-auto max-w-7xl scroll-mt-24 px-4 sm:px-6 lg:px-10">
+          <h2 id="visite-title" className="sr-only">Visite virtuelle 360°</h2>
+          <div className="overflow-hidden rounded-[1.6rem] shadow-[0_24px_70px_rgba(23,20,15,0.16)]">
+            <TourViewer url={tourUrl} title={`Visite virtuelle 360° — ${venue.name}`} posterLabel={isDemo ? 'Maison d’hôtes de démonstration' : venue.name} posterImage={cover} />
+          </div>
+          <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-neutral-400" aria-label="Comment visiter">
+            {HOW_TO.map(({ icon: Icon, title }) => (
+              <li key={title} className="flex items-center gap-2"><Icon className="size-4 text-amber-400" aria-hidden="true" />{title}</li>
+            ))}
+          </ul>
+        </section>
       )}
 
-      {/* 360° CTA (hidden when no tour) */}
-      {tourUrl && (
-        <div className="mx-auto mt-5 flex max-w-7xl flex-wrap items-center gap-3 px-4 sm:px-6 lg:px-10">
-          <Tour360Button url={tourUrl} name={venue.name} poster={cover} />
-          <span className="text-sm text-neutral-400">Parcourez chaque pièce avant de réserver.</span>
-        </div>
+      {/* 2. Photo album */}
+      {photos.length > 0 && (
+        <section aria-labelledby="album-title" className="mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:px-10">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <h2 id="album-title" className="font-serif text-3xl font-medium">Album photos</h2>
+            <span className="text-sm text-neutral-500">{photos.length} photo{photos.length > 1 ? 's' : ''}</span>
+          </div>
+          <PropertyGallery images={photos} name={venue.name} />
+        </section>
       )}
 
       {/* Two columns: content + sticky reservation card */}
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-14 lg:px-10">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-14 lg:px-10">
         <div className="min-w-0 space-y-14">
-          {tourUrl && (
-            <section id="visite" aria-labelledby="visite-title" className="scroll-mt-20">
-              <h2 id="visite-title" className="mb-5 font-serif text-3xl font-medium">Visite virtuelle 360°</h2>
-              <TourViewer url={tourUrl} title={`Visite virtuelle 360° — ${venue.name}`} posterLabel={isDemo ? 'Maison d’hôtes de démonstration' : venue.name} posterImage={cover} />
-              <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-                {HOW_TO.map(({ icon: Icon, title, text }) => (
-                  <li key={title} className="rounded-2xl border border-white/10 bg-[#111112] p-4">
-                    <Icon className="size-5 text-amber-400" aria-hidden="true" />
-                    <h3 className="mt-2 font-serif text-lg font-medium">{title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-400">{text}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           <section aria-labelledby="about-title">
             <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-amber-400">{isDemo ? 'L’expérience immersive' : 'À propos'}</p>
             <h2 id="about-title" className="font-serif text-3xl font-medium">{isDemo ? 'Visiter avant de réserver.' : 'La maison'}</h2>

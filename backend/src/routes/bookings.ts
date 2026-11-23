@@ -250,7 +250,7 @@ router.get('/destinations', readLimiter, async (_req: Request, res: Response) =>
       const img = v.coverImage ?? v.gallery?.[0] ?? null;
       if (v.governorate) add(v.governorate, 'governorate', v.governorate, img);
       // Demo listings have no real city.
-      if (v.city && !v.isDemo && v.city !== v.governorate) add(v.city, 'city', v.governorate ?? null, img);
+      if (v.city && v.city !== v.governorate && !/^tunisie$/i.test(v.city)) add(v.city, 'city', v.governorate ?? null, img);
     }
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.json({ total: venues.length, destinations: [...byKey.values()].sort((a, b) => b.count - a.count), governorates: TUNISIA_GOVERNORATES });

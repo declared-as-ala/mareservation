@@ -119,7 +119,7 @@ export default function RegisterPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
       {/* Premium Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-950 to-black" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#FFFDF8] via-[#FAF7F1] to-[#F3EEE4]" />
 
       {/* Ambient gold glows */}
       <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-amber-500/10 blur-[120px]" />
@@ -149,7 +149,7 @@ export default function RegisterPage() {
         className={`relative z-10 w-full max-w-md px-4 transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
       >
-        <Card className="border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40 rounded-2xl overflow-hidden">
+        <Card className="border border-[#e7dfd0] bg-white shadow-[0_24px_70px_rgba(23,20,15,0.10)] rounded-2xl overflow-hidden">
           {/* Subtle top border glow */}
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
 

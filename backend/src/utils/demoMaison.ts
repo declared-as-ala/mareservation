@@ -26,15 +26,19 @@ export function demoMaisonFields() {
       "Cette maison d'hôtes est une présentation de démonstration d'Exploria360. Elle illustre la manière dont une maison " +
       "d'hôtes tunisienne peut se faire découvrir en immersion 360° avant toute réservation : pièces de vie, extérieurs, " +
       "ambiance, tout se parcourt à son rythme, sur ordinateur comme sur mobile. " +
-      "Il ne s'agit pas d'une vraie maison d'hôtes : l'adresse n'est volontairement pas renseignée, et les réservations " +
+      "Il ne s'agit pas d'une vraie maison d'hôtes : sa position sur la carte (Hammamet) est indicative, et les réservations " +
       "éventuellement ouvertes sur cette fiche sont des simulations marquées DÉMO — aucun séjour réel, aucun paiement. " +
       "Vous êtes propriétaire d'une maison d'hôtes ? Contactez-nous pour faire visiter la vôtre de la même façon.",
     // `city` and `address` are required by the schema; they are explicit non-addresses.
-    city: 'Tunisie',
-    address: 'Adresse non communiquée (fiche de démonstration)',
+    // Demonstration position (Hammamet) so the listing appears on the map — not a real address.
+    city: 'Hammamet',
+    governorate: 'Nabeul',
+    address: 'Position de démonstration — Hammamet (fiche fictive)',
+    coordinates: { lat: 36.4033, lng: 10.6012 },
     // Real still rendered from the authorised 360° tour itself (served from the frontend /public).
     coverImage: '/demo/maison-demo-cover.jpg',
-    gallery: ['/demo/maison-demo-cover.jpg'],
+    // Stills rendered from the authorised 360° tour (real photos of the villa shown in the tour).
+    gallery: ['/demo/maison-demo-cover.jpg', ...Array.from({ length: 12 }, (_, i) => `/demo/album/villa-${String(i + 1).padStart(2, '0')}.webp`)],
     amenities: [] as string[],
     isPublished: true,
     isFeatured: true,

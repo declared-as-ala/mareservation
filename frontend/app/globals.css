@@ -582,3 +582,9 @@
 /* Brand wordmark on light surfaces (solid navbar, drawer) */
 .theme-light .brand-word:not(.on-dark *) { background-image: linear-gradient(90deg, #6f4700, #a8740f 55%, #c99a2e) !important; }
 .theme-light .text-amber-400:not(.on-dark, .on-dark *) { color: #9a6700 !important; }
+/* Map "Ma position" control */
+.ex-locate a { display: grid !important; place-items: center; width: 34px; height: 34px; cursor: pointer; }
+.ex-locate--busy svg { animation: ex-spin 1s linear infinite; }
+.ex-locate--error { color: #b91c1c !important; }
+@keyframes ex-spin { to { transform: rotate(360deg); } }
+.leaflet-container .maplibregl-canvas { outline: none; }

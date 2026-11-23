@@ -78,7 +78,8 @@ describe('demo seed', () => {
     expect(demo.ratingCount).toBe(0);
     expect(demo.startingPrice).toBe(0);
     expect(demo.amenities).toEqual([]);
-    expect(demo.address).toMatch(/non communiquée/i);
+    expect(demo.address).toMatch(/démonstration/i); // indicative demo position, labelled as such
+    expect(demo.coordinates).toMatchObject({ lat: 36.4033, lng: 10.6012 });
     expect(demo.immersiveUrl).toBe('https://spinview360.com/villaaa/');
     expect(await Room.countDocuments({ venueId: demo._id })).toBe(0); // no invented inventory
   });

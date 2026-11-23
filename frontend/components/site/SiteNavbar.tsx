@@ -168,13 +168,13 @@ export function SiteNavbar() {
           </nav>
 
           <div className="ms-auto flex items-center gap-1.5 md:ms-0">
-            <div className="hidden sm:block"><LanguageMenu /></div>
+            <div className="hidden md:block"><LanguageMenu /></div>
             {user ? (
               <AccountMenu />
             ) : (
               <>
-                <Link href="/login" className="hidden h-11 items-center rounded-full px-4 text-sm font-semibold text-white hover:bg-white/[0.07] sm:inline-flex">{t('nav.login')}</Link>
-                <Link href="/register" className="hidden h-11 items-center rounded-full bg-gradient-to-b from-amber-300 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_22px_rgba(245,158,11,0.3)] hover:brightness-110 sm:inline-flex">{t('nav.signup')}</Link>
+                <Link href="/login" className="hidden h-11 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold text-white hover:bg-white/[0.07] lg:inline-flex">{t('nav.login')}</Link>
+                <Link href="/register" className="hidden h-11 items-center whitespace-nowrap rounded-full bg-gradient-to-b from-amber-300 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_22px_rgba(245,158,11,0.3)] hover:brightness-110 sm:inline-flex">{t('nav.signup')}</Link>
               </>
             )}
             <button type="button" onClick={() => setDrawer(true)} aria-label={t('nav.menu')} aria-expanded={drawer} className="grid size-11 place-items-center rounded-full border border-white/15 text-white md:hidden">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { BecomeHostSection, CategoryRail, DestinationsSection, Experience360Section, FeaturedSection, HomeHero } from '@/components/site/home/HomeSections';
+import { BecomeHostSection, CategoryRail, Experience360Section, FeaturedSection, HomeHero } from '@/components/site/home/HomeSections';
+import { DestinationsExplorer } from '@/components/site/home/DestinationsExplorer';
 import { getHomeDataServer, SITE_URL } from '@/lib/serverApi';
 import { jsonLd } from '@/lib/seo';
 
@@ -31,7 +32,7 @@ export default async function HomePage() {
         <CategoryRail />
       </nav>
       <FeaturedSection results={data.results} />
-      <DestinationsSection destinations={data.destinations} />
+      <DestinationsExplorer destinations={data.destinations} />
       <Experience360Section venue={data.tourVenue} />
       <BecomeHostSection />
     </div>
