@@ -106,6 +106,7 @@ async function bookingProfile(venue: any) {
 /* ── search (discovery page + map) ─────────────────────────── */
 const searchSchema = z.object({
   q: z.string().trim().max(80).optional(),
+  where: z.string().trim().max(80).optional(),
   governorate: z.string().trim().max(40).optional(),
   city: z.string().trim().max(60).optional(),
   checkIn: z.string().optional(),
@@ -133,6 +134,10 @@ router.get('/search', readLimiter, async (req: Request, res: Response) => {
     const and: Record<string, unknown>[] = [publicVenueFilter(), { type: 'MAISON_DHOTE' }];
     if (f.governorate) and.push({ governorate: new RegExp(`^${escapeRegex(f.governorate)}$`, 'i') });
     if (f.city) and.push({ city: new RegExp(`^${escapeRegex(f.city)}$`, 'i') });
+    if (f.where) {
+      const rx = new RegExp(`^${escapeRegex(f.where)}$`, 'i');
+      and.push({ $or: [{ city: rx }, { governorate: rx }] });
+    }
     if (f.q) {
       const rx = new RegExp(escapeRegex(f.q), 'i');
       and.push({ $or: [{ name: rx }, { city: rx }, { governorate: rx }, { shortDescription: rx }] });
@@ -223,6 +228,35 @@ router.get('/search', readLimiter, async (req: Request, res: Response) => {
   } catch (err) {
     logger.error('bookings/search failed', err);
     return res.status(500).json({ error: 'Recherche impossible.' });
+  }
+});
+
+/* ── destinations (home page + autocomplete) ───────────────── */
+router.get('/destinations', readLimiter, async (_req: Request, res: Response) => {
+  try {
+    const venues: any[] = await Venue.find({ $and: [publicVenueFilter(), { type: 'MAISON_DHOTE' }] })
+      .select('city governorate coverImage gallery isDemo')
+      .lean();
+    const byKey = new Map<string, { name: string; governorate: string | null; kind: 'city' | 'governorate'; count: number; image: string | null }>();
+    const add = (name: string, kind: 'city' | 'governorate', governorate: string | null, image: string | null) => {
+      const key = `${kind}:${name.toLowerCase()}`;
+      const cur = byKey.get(key);
+      if (cur) {
+        cur.count += 1;
+        if (!cur.image && image) cur.image = image;
+      } else byKey.set(key, { name, kind, governorate, count: 1, image });
+    };
+    for (const v of venues) {
+      const img = v.coverImage ?? v.gallery?.[0] ?? null;
+      if (v.governorate) add(v.governorate, 'governorate', v.governorate, img);
+      // Demo listings have no real city.
+      if (v.city && !v.isDemo && v.city !== v.governorate) add(v.city, 'city', v.governorate ?? null, img);
+    }
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.json({ total: venues.length, destinations: [...byKey.values()].sort((a, b) => b.count - a.count), governorates: TUNISIA_GOVERNORATES });
+  } catch (err) {
+    logger.error('bookings/destinations failed', err);
+    return res.status(500).json({ error: 'Erreur.' });
   }
 });
 

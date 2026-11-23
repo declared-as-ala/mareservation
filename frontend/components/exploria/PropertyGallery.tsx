@@ -56,7 +56,7 @@ export function PropertyGallery({ images, name }: { images: string[]; name: stri
           role="dialog"
           aria-modal="true"
           aria-label={`Photos de ${name}`}
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/95"
+          className="on-dark fixed inset-0 z-[80] flex items-center justify-center bg-black/95"
           onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
           onTouchEnd={(e) => {
             if (touchX == null) return;

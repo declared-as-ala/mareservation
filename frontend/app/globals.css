@@ -395,3 +395,190 @@
 .leaflet-bar a { background: #111112 !important; color: #fafafa !important; border-color: #262626 !important; }
 .leaflet-bar a:hover { background: #1f1f1f !important; }
 @media (prefers-reduced-motion: reduce) { .ex-pin { transition: none; } }
+
+/* ════════════ Exploria360 LIGHT theme (public site) ════════════
+   Applied by <div class="theme-light"> around public pages. Anything inside .on-dark (photo heroes,
+   footer, lightbox, 360° modal, image badges) keeps the original dark styling. */
+.theme-light {
+  --lt-page: #FAF7F1; --lt-surface: #FFFFFF; --lt-surface-2: #F3EEE4; --lt-ink: #17140F;
+  --lt-line: rgba(23,20,15,.12); --lt-gold-ink: #8A5A00;
+  background-color: var(--lt-page); color: var(--lt-ink); color-scheme: light;
+}
+.theme-light input:not(.on-dark *), .theme-light select:not(.on-dark *), .theme-light textarea:not(.on-dark *) { color-scheme: light; }
+.theme-light .leaflet-container { background: #e8e2d6 !important; }
+.theme-light .ex-osm-dark { filter: saturate(.8); }
+.theme-light .ex-pin { background: #fff; color: #17140f; border-color: rgba(138,90,0,.55); box-shadow: 0 6px 18px rgba(23,20,15,.18); }
+.theme-light .ex-pin--hover, .theme-light .ex-pin--selected { background: #fbbf24; color: #0a0a0a; border-color: #fbbf24; }
+.theme-light .leaflet-bar a { background: #fff !important; color: #17140f !important; border-color: #e5dfd3 !important; }
+.theme-light .leaflet-control-attribution { background: rgba(255,255,255,.85) !important; color: #5f584d !important; }
+.theme-light .leaflet-control-attribution a { color: #8A5A00 !important; }
+.theme-light .bg-\[\#0B0B0C\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0B0B0C\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0b0b0c\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#080808\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#070707\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#050505\]\/60:not(.on-dark, .on-dark *) { background-color: var(--lt-page) !important; }
+.theme-light .bg-\[\#111112\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#111112\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0E0E0F\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#0d0d0e\]\/60:not(.on-dark, .on-dark *) { background-color: var(--lt-surface) !important; }
+.theme-light .bg-\[\#141415\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#141415\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#161617\]\/60:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/90:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/92:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/95:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/85:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/80:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/70:not(.on-dark, .on-dark *),
+.theme-light .bg-\[\#1a1a1b\]\/60:not(.on-dark, .on-dark *) { background-color: var(--lt-surface-2) !important; }
+.theme-light .bg-white\/\[0\.02\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.03\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.04\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.05\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.06\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.07\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/\[0\.08\]:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/5:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/10:not(.on-dark, .on-dark *),
+.theme-light .bg-white\/20:not(.on-dark, .on-dark *) { background-color: rgba(23,20,15,.045) !important; }
+.theme-light .hover\:bg-white\/\[0\.02\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.03\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.04\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.05\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.06\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.07\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/\[0\.08\]:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/5:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/10:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:bg-white\/20:hover:not(.on-dark, .on-dark *) { background-color: rgba(23,20,15,.07) !important; }
+.theme-light .focus-within\:bg-white\/\[0\.06\]:focus-within:not(.on-dark, .on-dark *) { background-color: rgba(23,20,15,.06) !important; }
+.theme-light .text-white:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-100:not(.on-dark, .on-dark *),
+.theme-light .text-white\/90:not(.on-dark, .on-dark *),
+.theme-light .text-white\/85:not(.on-dark, .on-dark *) { color: var(--lt-ink) !important; }
+.theme-light .hover\:text-white:hover:not(.on-dark, .on-dark *) { color: var(--lt-ink) !important; }
+.theme-light .text-white\/80:not(.on-dark, .on-dark *),
+.theme-light .text-white\/75:not(.on-dark, .on-dark *),
+.theme-light .text-white\/70:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-200:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-300:not(.on-dark, .on-dark *),
+.theme-light .text-zinc-300:not(.on-dark, .on-dark *) { color: #3b362e !important; }
+.theme-light .text-white\/60:not(.on-dark, .on-dark *),
+.theme-light .text-white\/55:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-400:not(.on-dark, .on-dark *),
+.theme-light .text-zinc-400:not(.on-dark, .on-dark *),
+.theme-light .hover\:text-neutral-300:not(.on-dark, .on-dark *) { color: #5f584d !important; }
+.theme-light .text-neutral-500:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-600:not(.on-dark, .on-dark *),
+.theme-light .text-neutral-700:not(.on-dark, .on-dark *) { color: #847b6d !important; }
+.theme-light .text-amber-100:not(.on-dark, .on-dark *),
+.theme-light .text-amber-200:not(.on-dark, .on-dark *),
+.theme-light .text-amber-300:not(.on-dark, .on-dark *),
+.theme-light .text-amber-100\/90:not(.on-dark, .on-dark *),
+.theme-light .text-amber-200\/90:not(.on-dark, .on-dark *),
+.theme-light .text-amber-300\/85:not(.on-dark, .on-dark *),
+.theme-light .text-amber-300\/80:not(.on-dark, .on-dark *) { color: var(--lt-gold-ink) !important; }
+.theme-light .hover\:text-amber-200:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:text-amber-300:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:text-amber-400:hover:not(.on-dark, .on-dark *),
+.theme-light .group-hover\:text-amber-300:hover:not(.on-dark, .on-dark *),
+.theme-light .group-hover\:text-amber-100:hover:not(.on-dark, .on-dark *) { color: var(--lt-gold-ink) !important; }
+.theme-light .placeholder\:text-neutral-400::placeholder:not(.on-dark, .on-dark *),
+.theme-light .placeholder\:text-neutral-500::placeholder:not(.on-dark, .on-dark *),
+.theme-light .placeholder\:text-neutral-600::placeholder:not(.on-dark, .on-dark *),
+.theme-light .placeholder\:text-white\/55::placeholder:not(.on-dark, .on-dark *),
+.theme-light .placeholder\:text-white\/50::placeholder:not(.on-dark, .on-dark *) { color: #7d7466 !important; }
+.theme-light .border-white\/10:not(.on-dark, .on-dark *),
+.theme-light .border-white\/12:not(.on-dark, .on-dark *),
+.theme-light .border-white\/15:not(.on-dark, .on-dark *),
+.theme-light .border-white\/20:not(.on-dark, .on-dark *),
+.theme-light .border-white\/25:not(.on-dark, .on-dark *),
+.theme-light .border-white\/30:not(.on-dark, .on-dark *),
+.theme-light .border-white\/35:not(.on-dark, .on-dark *),
+.theme-light .border-white\/\[0\.06\]:not(.on-dark, .on-dark *),
+.theme-light .border-white\/\[0\.07\]:not(.on-dark, .on-dark *),
+.theme-light .border-white\/\[0\.08\]:not(.on-dark, .on-dark *) { border-color: var(--lt-line) !important; }
+.theme-light .divide-white\/\[0\.06\] > :not(:last-child):not(.on-dark, .on-dark *),
+.theme-light .divide-white\/10 > :not(:last-child):not(.on-dark, .on-dark *) { border-color: var(--lt-line) !important; }
+.theme-light .hover\:border-white\/25:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:border-white\/30:hover:not(.on-dark, .on-dark *),
+.theme-light .hover\:border-white\/40:hover:not(.on-dark, .on-dark *) { border-color: rgba(23,20,15,.28) !important; }
+.theme-light .text-emerald-300:not(.on-dark, .on-dark *),
+.theme-light .text-emerald-200:not(.on-dark, .on-dark *) { color: #047857 !important; }
+.theme-light .text-orange-300:not(.on-dark, .on-dark *),
+.theme-light .text-orange-200:not(.on-dark, .on-dark *) { color: #b45309 !important; }
+.theme-light .text-red-300:not(.on-dark, .on-dark *),
+.theme-light .text-red-300\/80:not(.on-dark, .on-dark *) { color: #b91c1c !important; }
+.theme-light .bg-white:not(.on-dark, .on-dark *) { box-shadow: 0 1px 0 rgba(23,20,15,.06), 0 8px 24px rgba(23,20,15,.10); }
+/* Brand wordmark on light surfaces (solid navbar, drawer) */
+.theme-light .brand-word:not(.on-dark *) { background-image: linear-gradient(90deg, #6f4700, #a8740f 55%, #c99a2e) !important; }
+.theme-light .text-amber-400:not(.on-dark, .on-dark *) { color: #9a6700 !important; }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Bath, BedDouble, Check, ChevronRight, Clock, Hand, MapPin, Maximize2, ScrollText, ShieldCheck, Smartphone, UserRound, Users } from 'lucide-react';
 import type { Venue } from '@/lib/api/types';
-import { StickyTourCta } from './StickyTourCta';
+import { MobileBookingBar, ShareButton, Tour360Button } from './PropertyActions';
 import { TourViewer } from './TourViewer';
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyLocationMap, SimilarGuesthouses } from './PropertyExtras';
@@ -40,6 +40,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
   const venueKey = venue.slug || venue._id;
   const location = [venue.city, venue.governorate && venue.governorate !== venue.city ? venue.governorate : null].filter(Boolean).join(', ');
   const coords = venue.coordinates?.lat != null && venue.coordinates?.lng != null ? { lat: venue.coordinates.lat, lng: venue.coordinates.lng } : null;
+  const fromPrice = venue.rentalMode === 'entire' ? (venue.entirePricePerNight ?? null) : null;
   const policy = CANCELLATION_LABEL[(venue.cancellationPolicy as CancellationPolicy) ?? 'moderate'] ?? CANCELLATION_LABEL.moderate;
 
   const specs = [
@@ -84,7 +85,10 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
           {tourUrl && <span className="rounded-full border border-white/25 px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/80">Visite 360°</span>}
           {venue.bookingMode === 'instant' && <span className="rounded-full border border-amber-400/40 px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-amber-200">Réservation instantanée</span>}
         </div>
-        <h1 className="max-w-4xl font-serif text-[clamp(2.2rem,5.6vw,4.4rem)] font-medium leading-[1.02]">{venue.name}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h1 className="max-w-4xl font-serif text-[clamp(2.2rem,5.6vw,4.4rem)] font-medium leading-[1.02]">{venue.name}</h1>
+          <ShareButton title={venue.name} />
+        </div>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/70">
           {!isDemo && location && <span className="flex items-center gap-1.5"><MapPin className="size-4 text-amber-400" aria-hidden="true" /> {location}</span>}
           {specs.map(({ icon: Icon, label }) => <span key={label} className="flex items-center gap-1.5"><Icon className="size-4 text-amber-400" aria-hidden="true" /> {label}</span>)}
@@ -98,15 +102,11 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
         </div>
       )}
 
-      {/* 360° CTA */}
+      {/* 360° CTA (hidden when no tour) */}
       {tourUrl && (
-        <div className="mx-auto mt-6 flex max-w-7xl flex-wrap gap-3 px-4 sm:px-6 lg:px-10">
-          <a href="#visite" className="inline-flex h-13 items-center justify-center rounded-full bg-amber-400 px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.16em] text-black transition-colors hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-            Visiter en 360°
-          </a>
-          <a href="#reserver" className="inline-flex items-center justify-center rounded-full border border-white/35 px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.16em] text-white hover:border-amber-400 hover:text-amber-400 lg:hidden">
-            Réserver
-          </a>
+        <div className="mx-auto mt-5 flex max-w-7xl flex-wrap items-center gap-3 px-4 sm:px-6 lg:px-10">
+          <Tour360Button url={tourUrl} name={venue.name} poster={cover} />
+          <span className="text-sm text-neutral-400">Parcourez chaque pièce avant de réserver.</span>
         </div>
       )}
 
@@ -194,14 +194,10 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
             </section>
           )}
 
-          {/* Mobile / tablet booking */}
-          <section id="reserver" aria-label="Réservation" className="scroll-mt-20 lg:hidden">
-            <BookingWidget venueKey={venueKey} venueName={venue.name} tourAnchor="#visite" compact />
-          </section>
         </div>
 
         <aside className="hidden lg:block" aria-label="Réservation">
-          <div className="sticky top-6">
+          <div className="sticky top-24">
             <BookingWidget venueKey={venueKey} venueName={venue.name} tourAnchor="#visite" compact />
           </div>
         </aside>
@@ -221,7 +217,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
         </section>
       )}
 
-      <StickyTourCta targetId="reserver" label={isDemo ? 'Voir le calendrier' : 'Réserver cette maison'} />
+      <MobileBookingBar venueKey={venueKey} venueName={venue.name} fromPrice={fromPrice} demo={isDemo} />
     </article>
   );
 }

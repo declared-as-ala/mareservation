@@ -32,3 +32,21 @@ export async function getPublicVenuesServer(): Promise<Venue[]> {
   const data = await getJson<Venue[]>('/venues?type=MAISON_DHOTE', 300);
   return Array.isArray(data) ? data : [];
 }
+
+export interface HomeData {
+  results: import('@/lib/api/bookings').SearchResult[];
+  destinations: { name: string; kind: 'city' | 'governorate'; governorate: string | null; count: number; image: string | null }[];
+  tourVenue: Venue | null;
+}
+
+/** Everything the home page needs, fetched server-side (fast first paint, SEO). Degrades to empty data. */
+export async function getHomeDataServer(): Promise<HomeData> {
+  const [search, dest] = await Promise.all([
+    getJson<{ results: HomeData['results'] }>('/bookings/search', 60),
+    getJson<{ destinations: HomeData['destinations'] }>('/bookings/destinations', 60),
+  ]);
+  const results = search?.results ?? [];
+  const withTour = results.find((r) => r.hasVirtualTour && !r.isDemo) ?? results.find((r) => r.hasVirtualTour);
+  const tourVenue = withTour ? await getVenueServer(withTour.slug) : null;
+  return { results, destinations: dest?.destinations ?? [], tourVenue };
+}

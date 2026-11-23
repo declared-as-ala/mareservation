@@ -82,7 +82,7 @@ export function TourViewer({ url, title, posterLabel, posterTitle = 'Visiter en 
   };
 
   return (
-    <div className={className}>
+    <div className={["on-dark", className].filter(Boolean).join(" ")}>
       <div
         ref={frameRef}
         className={cn(

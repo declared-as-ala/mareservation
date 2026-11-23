@@ -163,6 +163,11 @@ export const FEATURES: { key: string; label: string }[] = [
   { key: 'mountain_view', label: 'Vue montagne' },
   { key: 'breakfast', label: 'Petit-déjeuner' },
   { key: 'pets_allowed', label: 'Animaux acceptés' },
+  { key: 'beachfront', label: 'Bord de mer' },
+  { key: 'traditional', label: 'Traditionnel' },
+  { key: 'luxury', label: 'Luxe' },
+  { key: 'family_friendly', label: 'En famille' },
+  { key: 'romantic', label: 'Romantique' },
 ];
 export const featureLabel = (k: string) => FEATURES.find((f) => f.key === k)?.label ?? k;
 

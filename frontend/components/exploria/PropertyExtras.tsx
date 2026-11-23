@@ -38,7 +38,7 @@ export function SimilarGuesthouses({ currentId, governorate }: { currentId: stri
   if (!data?.length) return null;
   return (
     <section aria-labelledby="similar-title" className="mt-16">
-      <h2 id="similar-title" className="font-serif text-3xl font-medium text-white">{governorate ? `Autres maisons d’hôtes — ${governorate} et alentours` : 'Autres maisons d’hôtes'}</h2>
+      <h2 id="similar-title" className="font-serif text-3xl font-medium text-white">Découvrez d’autres maisons d’hôtes à proximité</h2>
       <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {data.map((r: any) => (
           <li key={r.id}>
