@@ -666,7 +666,7 @@ export default function SOSConseilPage() {
           type="button"
           onClick={() => setChatOpen(true)}
           aria-label="Ouvrir l'assistant IA"
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-4 py-3.5 text-sm font-black text-black shadow-[0_12px_34px_rgba(245,158,11,0.5)] transition-transform active:scale-95 lg:hidden"
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-[#e0a527] hover:bg-[#eab33a] px-4 py-3.5 text-sm font-black text-black transition-transform active:scale-95 lg:hidden"
         >
           <span className="relative flex size-5 items-center justify-center">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-black/20" />

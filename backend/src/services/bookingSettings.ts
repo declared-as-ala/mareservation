@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { FEATURE_KEYS, TUNISIA_GOVERNORATES } from '../config/tunisia';
 
 const money = z.coerce.number().min(0).max(100000);
+/** Stored media: absolute https URL (Cloudinary) or a site-relative path (/demo/…). */
+const mediaUrl = z.string().trim().max(600).regex(/^(https:\/\/|\/(?!\/))\S+$/, 'URL d’image invalide.');
 const smallInt = (max: number) => z.coerce.number().int().min(0).max(max);
 
 export const ownerSettingsSchema = z
@@ -54,6 +56,12 @@ export const adminSettingsSchema = ownerSettingsSchema
     shortDescription: z.string().trim().max(300),
     description: z.string().trim().min(1).max(8000),
     immersiveUrl: z.string().trim().url().max(500).nullable(),
+    // Listing management (admin editor)
+    slug: z.string().trim().min(3).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug : minuscules, chiffres et tirets uniquement.'),
+    approvalStatus: z.enum(['draft', 'pending_review', 'approved', 'rejected', 'changes_requested', 'suspended']),
+    coverImage: mediaUrl.nullable(),
+    gallery: z.array(mediaUrl).max(60),
+    galleryMeta: z.array(z.object({ url: mediaUrl, alt: z.string().trim().max(200) })).max(60),
   })
   .partial()
   .strict();
@@ -79,4 +87,4 @@ export function toUpdate(input: SettingsInput): { $set: Record<string, unknown>;
 }
 
 export const SETTINGS_FIELDS =
-  'name slug type city governorate address shortDescription description coverImage gallery ownerId isDemo isPublished publicListed approvalStatus bookingEnabled bookingMode rentalMode entirePricePerNight cleaningFee serviceFee minimumNights maxGuests bedrooms beds bathrooms features houseRules cancellationPolicy cancellationNotes arrivalInstructions checkInPolicy checkOutPolicy hostDisplayName hostBio coordinates timezone immersiveUrl hasVirtualTour';
+  'name slug type city governorate address shortDescription description coverImage gallery ownerId isDemo isPublished publicListed approvalStatus bookingEnabled bookingMode rentalMode entirePricePerNight cleaningFee serviceFee minimumNights maxGuests bedrooms beds bathrooms features houseRules cancellationPolicy cancellationNotes arrivalInstructions checkInPolicy checkOutPolicy hostDisplayName hostBio coordinates timezone immersiveUrl hasVirtualTour galleryMeta updatedAt';

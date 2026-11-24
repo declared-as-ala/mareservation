@@ -54,7 +54,7 @@ function frenchLabels(style: any) {
 let styleCache: Promise<any> | null = null;
 
 /**
- * Basemap: OpenFreeMap "Positron" vector tiles (free, no API key, commercial use allowed) rendered by MapLibre
+ * Basemap: OpenFreeMap "Liberty" vector tiles (free, no API key, commercial use allowed) rendered by MapLibre
  * inside Leaflet. Falls back to OpenStreetMap raster tiles if WebGL or the style is unavailable.
  */
 async function addBasemap(L: any, map: any) {
@@ -72,7 +72,7 @@ async function addBasemap(L: any, map: any) {
     const maplibregl = mod.default ?? mod;
     (window as any).maplibregl = maplibregl;
     await import('@maplibre/maplibre-gl-leaflet');
-    styleCache ??= fetch('https://tiles.openfreemap.org/styles/positron').then((r) => {
+    styleCache ??= fetch('https://tiles.openfreemap.org/styles/liberty').then((r) => {
       if (!r.ok) throw new Error('style');
       return r.json();
     });
@@ -170,17 +170,29 @@ export function TunisiaMap({ markers, highlightedId, selectedId, onSelect, onBou
         attributionControl: true,
         scrollWheelZoom: !single,
       });
+      // Register immediately so an unmount during the async basemap load still removes this map.
+      mapRef.current = map;
       await addBasemap(L, map);
+      if (cancelled) return;
       addLocateControl(L, map);
       if (!single) map.fitBounds(TUNISIA_BOUNDS, { padding: [10, 10] });
       // The container may not have its final size yet (sticky / hidden panels): re-measure, then re-fit.
       const refit = () => {
+        if (cancelled || mapRef.current !== map) return;
         map.invalidateSize();
         if (!userMoved.current && !latest.current.markers.length && !single) map.fitBounds(TUNISIA_BOUNDS, { padding: [10, 10] });
       };
       setTimeout(refit, 250);
       if (typeof ResizeObserver !== 'undefined' && el.current) {
-        const ro = new ResizeObserver(() => map.invalidateSize());
+        let wasHidden = el.current.clientWidth === 0 || el.current.clientHeight === 0;
+        const ro = new ResizeObserver(() => {
+          if (cancelled || mapRef.current !== map) return;
+          map.invalidateSize();
+          const hidden = !el.current || el.current.clientWidth === 0 || el.current.clientHeight === 0;
+          // Shown after being hidden (mobile "Voir la carte", layout toggle): re-frame on the markers.
+          if (wasHidden && !hidden && !userMoved.current) renderMarkers();
+          wasHidden = hidden;
+        });
         ro.observe(el.current);
         map.on('unload', () => ro.disconnect());
       }
@@ -196,7 +208,6 @@ export function TunisiaMap({ markers, highlightedId, selectedId, onSelect, onBou
         if (cb.current.onPick) cb.current.onPick(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
         else cb.current.onSelect?.(null);
       });
-      mapRef.current = map;
       renderMarkers();
     })();
     return () => {

@@ -836,6 +836,15 @@ router.delete('/rooms/:id', authenticate, requireEstablishmentOwner, requireAnyS
     const room = await assertRoomOwnedByCaller(req.params.id, req);
     if (!room) return res.status(404).json({ error: 'Chambre introuvable ou non autorisé.' });
     const venueId = room.venueId;
+    // Never orphan upcoming or in-progress stays: deactivate the room instead, or move the bookings first.
+    const activeStays = await Reservation.countDocuments({
+      $or: [{ roomId: room._id }, { roomIds: room._id }],
+      status: { $in: ['pending', 'confirmed', 'checked_in', 'PENDING', 'CONFIRMED'] },
+      endAt: { $gt: new Date() },
+    });
+    if (activeStays > 0) {
+      return res.status(409).json({ error: `Suppression impossible : ${activeStays} réservation(s) à venir ou en cours sur cette chambre. Désactivez-la ou déplacez ces réservations.` });
+    }
     const snapshot = { roomNumber: room.roomNumber, roomType: room.roomType, name: room.name };
     await room.deleteOne();
     await logAudit(req, {

@@ -1,529 +1,293 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import {
-  Building2,
-  ExternalLink,
-  Loader2,
-  Search,
-  ShieldOff,
-  UserCheck,
-  UserX,
-  Percent,
-  MailCheck,
-  MailX,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import {
-  fetchAdminOwners,
-  suspendOwner,
-  reactivateOwner,
-  updateOwnerCommissionRate,
-  verifyOwner,
-  unverifyOwner,
-  inviteOwner,
-  updateOwnerServiceDomains,
-  type OwnerUser,
-} from '@/lib/api/admin-owners';
 import Link from 'next/link';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Copy, KeyRound, Mail, Plus, Search, ShieldOff, ShieldCheck, UserCheck, X } from 'lucide-react';
+import {
+  createOwner, fetchGuesthouses, fetchOwnersConsole, fetchReservations, savePropertySettings, sendPasswordLink, setUserActive, type OwnerConsoleRow,
+} from '@/lib/api/admin-console';
+import {
+  Card, Drawer, EmptyState, ErrorBox, Field, PageHeader, Skeleton, Spinner, StatusBadge, button, fmtDateTime, fmtDay, fmtStayDay, fmtTND, inputCls, labelCls, selectCls, td, th,
+} from '@/components/admin/console/ui';
+import { ReservationDrawer } from '@/components/admin/console/ReservationDrawer';
+import { cn } from '@/lib/utils';
 
-type StatusFilter = '' | 'active' | 'suspended';
+const ONBOARDING: Record<string, { label: string; cls: string }> = {
+  invited: { label: 'Invité', cls: 'bg-sky-50 text-sky-800 ring-sky-200' },
+  no_property: { label: 'Sans maison', cls: 'bg-[#F1EFEA] text-[#4A4740] ring-[#E7E4DD]' },
+  setup: { label: 'Fiche en préparation', cls: 'bg-amber-50 text-amber-800 ring-amber-200' },
+  active: { label: 'En ligne', cls: 'bg-emerald-50 text-emerald-800 ring-emerald-200' },
+};
 
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
-  { key: '', label: 'Tous' },
-  { key: 'active', label: 'Actifs' },
-  { key: 'suspended', label: 'Suspendus' },
-];
-
-const SERVICE_DOMAIN_OPTIONS = [
-  { key: 'HOTEL', label: 'Hôtel' },
-  { key: 'EVENT', label: 'Event' },
-  { key: 'COWORKING', label: 'Coworking' },
-  { key: 'CAFE_LOUNGE', label: 'Café & Lounge' },
-  { key: 'RESTAURANT', label: 'Restaurant' },
-  { key: 'CINEMA', label: 'Cinéma' },
-  { key: 'EVENT_SPACE', label: 'Salle Event' },
-] as const;
-
-function StatusBadge({ owner }: { owner: OwnerUser }) {
-  const suspended = owner.isSuspended === true;
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium',
-        suspended
-          ? 'border-red-500/30 bg-red-500/10 text-red-400'
-          : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-      )}
-    >
-      {suspended ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-      {suspended ? 'Suspendu' : 'Actif'}
-    </span>
-  );
-}
-
-/* ── Suspend Dialog ── */
-function SuspendDialog({
-  owner,
-  onClose,
-  onConfirm,
-}: {
-  owner: OwnerUser;
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-}) {
-  const [reason, setReason] = useState('');
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
-      <div
-        className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-1 flex items-center gap-2">
-          <ShieldOff className="h-5 w-5 text-red-400" />
-          <h2 className="text-lg font-semibold text-zinc-100">Suspendre le propriétaire</h2>
-        </div>
-        <p className="mb-4 text-sm text-zinc-400">
-          Vous allez suspendre <strong className="text-zinc-200">{owner.fullName}</strong>. Son accès sera désactivé.
-        </p>
-        <div>
-          <label className="mb-1 block text-xs text-zinc-400">Raison (optionnel)</label>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            placeholder="Ex: Violation des CGU, non-paiement..."
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-amber-400 focus:outline-none resize-none"
-          />
-        </div>
-        <div className="mt-4 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-400 hover:bg-zinc-800">
-            Annuler
-          </button>
-          <button
-            onClick={() => onConfirm(reason)}
-            className="flex-1 rounded-lg bg-red-500/20 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/30"
-          >
-            Suspendre
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Commission Dialog ── */
-function CommissionDialog({
-  owner,
-  onClose,
-  onConfirm,
-}: {
-  owner: OwnerUser;
-  onClose: () => void;
-  onConfirm: (rate: number) => void;
-}) {
-  const [rate, setRate] = useState('');
-  const numRate = parseFloat(rate);
-  const valid = !isNaN(numRate) && numRate >= 0 && numRate <= 100;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
-      <div
-        className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-1 flex items-center gap-2">
-          <Percent className="h-5 w-5 text-amber-400" />
-          <h2 className="text-lg font-semibold text-zinc-100">Modifier le taux de commission</h2>
-        </div>
-        <p className="mb-4 text-sm text-zinc-400">
-          Nouveau taux pour tous les établissements de <strong className="text-zinc-200">{owner.fullName}</strong>.
-        </p>
-        <div>
-          <label className="mb-1 block text-xs text-zinc-400">Taux (%)</label>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={0.5}
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-            placeholder="Ex: 10"
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-amber-400 focus:outline-none"
-          />
-        </div>
-        <div className="mt-4 flex gap-3">
-          <button onClick={onClose} className="flex-1 rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-400 hover:bg-zinc-800">
-            Annuler
-          </button>
-          <button
-            disabled={!valid}
-            onClick={() => onConfirm(numRate)}
-            className="flex-1 rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-black hover:bg-amber-400 disabled:opacity-40"
-          >
-            Appliquer
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Main Page ── */
-export default function AdminOwnersPage() {
-  const qc = useQueryClient();
+function OwnersInner() {
+  const sp = useSearchParams();
+  const router = useRouter();
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<StatusFilter>('');
-  const [suspendTarget, setSuspendTarget] = useState<OwnerUser | null>(null);
-  const [commissionTarget, setCommissionTarget] = useState<OwnerUser | null>(null);
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [invitePhone, setInvitePhone] = useState('');
-  const [inviteDomains, setInviteDomains] = useState<string[]>(['EVENT', 'HOTEL']);
+  const [status, setStatus] = useState('');
+  const [openId, setOpenId] = useState<string | null>(sp.get('owner'));
+  const [createOpen, setCreateOpen] = useState(sp.get('new') === '1');
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ['admin-owners-console'], queryFn: fetchOwnersConsole });
+  useEffect(() => { if (sp.get('owner')) setOpenId(sp.get('owner')); }, [sp]);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-owners', q, status],
-    queryFn: () => fetchAdminOwners({ q: q || undefined, status: status || undefined }),
-    placeholderData: (prev) => prev,
-  });
-
-  const owners = data?.data ?? [];
-
-  const suspendMut = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => suspendOwner(id, reason),
-    onSuccess: () => {
-      toast.success('Propriétaire suspendu.');
-      setSuspendTarget(null);
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const reactivateMut = useMutation({
-    mutationFn: (id: string) => reactivateOwner(id),
-    onSuccess: () => {
-      toast.success('Propriétaire réactivé.');
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const commissionMut = useMutation({
-    mutationFn: ({ id, rate }: { id: string; rate: number }) => updateOwnerCommissionRate(id, rate),
-    onSuccess: (res) => {
-      toast.success(res.message ?? 'Taux mis à jour.');
-      setCommissionTarget(null);
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const verifyMut = useMutation({
-    mutationFn: ({ id, verify }: { id: string; verify: boolean }) => (verify ? verifyOwner(id) : unverifyOwner(id)),
-    onSuccess: (_res, vars) => {
-      toast.success(vars.verify ? 'Propriétaire vérifié.' : 'Vérification retirée.');
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const inviteMut = useMutation({
-    mutationFn: inviteOwner,
-    onSuccess: () => {
-      toast.success('Invitation envoyee.');
-      setInviteName('');
-      setInviteEmail('');
-      setInvitePhone('');
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const domainsMut = useMutation({
-    mutationFn: ({ id, serviceDomains }: { id: string; serviceDomains: string[] }) => updateOwnerServiceDomains(id, serviceDomains),
-    onSuccess: () => {
-      toast.success('Domaines mis à jour.');
-      qc.invalidateQueries({ queryKey: ['admin-owners'] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const rows = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    return (data ?? []).filter((o) =>
+      (!s || [o.fullName, o.email, o.phone, ...o.properties.map((p) => p.name)].some((x) => x?.toLowerCase().includes(s))) &&
+      (!status || (status === 'suspended' ? !o.isActive : status === 'active' ? o.isActive : o.onboarding === status))
+    );
+  }, [data, q, status]);
+  const open = data?.find((o) => o.id === openId) ?? null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Propriétaires</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Gérez les propriétaires d&apos;établissements, leurs statuts et taux de commission.
-          </p>
-        </div>
-        {data?.total != null && (
-          <span className="rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
-            {data.total} propriétaire{data.total > 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
+    <div className="space-y-4">
+      <PageHeader title="Propriétaires" subtitle={data ? `${data.length} compte${data.length > 1 ? 's' : ''} propriétaire · ${data.filter((o) => o.isActive).length} actif${data.filter((o) => o.isActive).length > 1 ? 's' : ''}` : undefined}
+        actions={<button type="button" className={button('primary')} onClick={() => setCreateOpen(true)}><Plus className="size-4" /> Inviter un propriétaire</button>} />
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher par nom, email…"
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 pl-9 pr-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:border-amber-400 focus:outline-none"
-          />
+      <Card bodyClassName="p-3 sm:p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_14rem]">
+          <div className="relative">
+            <label htmlFor="o-q" className="sr-only">Recherche</label>
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[#9A968D]" aria-hidden="true" />
+            <input id="o-q" type="search" className={cn(inputCls, 'pl-8')} placeholder="Nom, e-mail, téléphone, maison" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          <select aria-label="Statut" className={selectCls} value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="">Tous les statuts</option><option value="active">Comptes actifs</option><option value="suspended">Suspendus</option>
+            <option value="invited">Invités (jamais connectés)</option><option value="no_property">Sans maison</option><option value="setup">Fiche en préparation</option>
+          </select>
         </div>
-        {/* Status pills */}
-        <div className="flex gap-1.5">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setStatus(f.key)}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-xs font-medium transition',
-                status === f.key
-                  ? 'border-amber-400 bg-amber-400/10 text-amber-300'
-                  : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-600',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <p className="mb-3 text-sm font-semibold text-zinc-200">Inviter un proprietaire</p>
-        <div className="mb-2 flex flex-wrap gap-2">
-          {[
-            { label: 'Hôtel', domains: ['HOTEL'] },
-            { label: 'Café', domains: ['CAFE_LOUNGE'] },
-            { label: 'Restaurant', domains: ['RESTAURANT'] },
-            { label: 'Coworking', domains: ['COWORKING'] },
-            { label: 'Événement', domains: ['EVENT', 'EVENT_SPACE'] },
-          ].map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => setInviteDomains(preset.domains)}
-              className="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs text-zinc-300 hover:border-amber-400/40 hover:text-amber-300"
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <div className="grid gap-2 md:grid-cols-4">
-          <input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Nom complet" className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-          <input value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Email" className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-          <input value={invitePhone} onChange={(e) => setInvitePhone(e.target.value)} placeholder="Téléphone (optionnel)" className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100" />
-          <div className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 md:col-span-1">
-            <p className="mb-2 text-xs text-zinc-500">Domaines</p>
-            <div className="flex flex-wrap gap-1.5">
-              {SERVICE_DOMAIN_OPTIONS.map((opt) => {
-                const active = inviteDomains.includes(opt.key);
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() =>
-                      setInviteDomains((prev) =>
-                        prev.includes(opt.key) ? prev.filter((v) => v !== opt.key) : [...prev, opt.key]
-                      )
-                    }
-                    className={cn(
-                      'rounded-full border px-2 py-1 text-[11px] font-medium transition',
-                      active
-                        ? 'border-amber-400/40 bg-amber-400/15 text-amber-300'
-                        : 'border-zinc-700 bg-zinc-950 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
+      {error && <ErrorBox error={error} onRetry={() => refetch()} />}
+      <Card bodyClassName="p-0 sm:p-0">
+        {isLoading ? <div className="p-4"><Skeleton className="h-64" /></div> : !rows.length ? (
+          <EmptyState icon={UserCheck} title={data?.length ? 'Aucun résultat' : 'Aucun propriétaire'} action={!data?.length && <button type="button" className={button('primary')} onClick={() => setCreateOpen(true)}>Inviter le premier</button>} />
+        ) : (
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full">
+                <thead className="bg-[#FBFAF8]"><tr>
+                  <th className={th}>Propriétaire</th><th className={th}>Téléphone</th><th className={th}>Maisons</th><th className={cn(th, 'text-right')}>Réserv. actives</th>
+                  <th className={th}>Compte</th><th className={th}>Onboarding</th><th className={th}>Inscrit</th><th className={th}>Dernière connexion</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((o) => (
+                    <tr key={o.id} className="cursor-pointer border-t border-[#F1EFEA] hover:bg-[#FBFAF8]" onClick={() => setOpenId(o.id)}>
+                      <td className={td}><span className="block font-semibold">{o.fullName}</span><span className="block text-[11.5px] text-[#8A867E]">{o.email}</span></td>
+                      <td className={cn(td, 'text-[#4A4740]')}>{o.phone ?? '—'}</td>
+                      <td className={cn(td, 'max-w-[14rem] truncate')}>{o.properties.length ? o.properties.map((p) => p.name).join(', ') : <span className="text-[#9A968D]">Aucune</span>}</td>
+                      <td className={cn(td, 'text-right tabular-nums')}>{o.reservations.active}{o.reservations.pending > 0 && <span className="ml-1 rounded bg-amber-50 px-1 text-[11px] font-semibold text-amber-800">{o.reservations.pending} att.</span>}</td>
+                      <td className={td}>{o.isActive ? <span className="text-[12px] font-medium text-emerald-700">Actif</span> : <span className="text-[12px] font-medium text-red-700">Suspendu</span>}</td>
+                      <td className={td}><StatusBadge status={o.onboarding} map={ONBOARDING} /></td>
+                      <td className={cn(td, 'text-[#6B6760]')}>{fmtDay(o.createdAt)}</td>
+                      <td className={cn(td, 'text-[#6B6760]')}>{o.lastLoginAt ? fmtDateTime(o.lastLoginAt) : 'Jamais'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            <ul className="divide-y divide-[#F1EFEA] md:hidden">
+              {rows.map((o) => (
+                <li key={o.id}><button type="button" className="w-full px-4 py-3 text-left hover:bg-[#FBFAF8]" onClick={() => setOpenId(o.id)}>
+                  <span className="flex items-center justify-between gap-2"><span className="truncate font-semibold">{o.fullName}</span><StatusBadge status={o.onboarding} map={ONBOARDING} /></span>
+                  <span className="block truncate text-[12px] text-[#6B6760]">{o.email}</span>
+                  <span className="mt-1 block text-[12px] text-[#4A4740]">{o.properties.length} maison{o.properties.length > 1 ? 's' : ''} · {o.reservations.active} réservation{o.reservations.active > 1 ? 's' : ''} active{o.reservations.active > 1 ? 's' : ''}{!o.isActive && ' · suspendu'}</span>
+                </button></li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Card>
+
+      <OwnerDrawer owner={open} onClose={() => { setOpenId(null); if (sp.get('owner')) router.replace('/admin/owners'); }} />
+      <InviteDrawer open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o && sp.get('new')) router.replace('/admin/owners'); }} />
+    </div>
+  );
+}
+
+function OneTimeLink({ url, onDone }: { url: string; onDone: () => void }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12.5px] text-amber-900">
+      <p className="font-semibold">Lien à usage unique</p>
+      <p className="mt-0.5">Affiché une seule fois. Transmettez-le uniquement au propriétaire, par un canal sûr, si l’e-mail n’arrive pas.</p>
+      <div className="mt-2 flex gap-2">
+        <input readOnly value={url} aria-label="Lien de définition du mot de passe" className={cn(inputCls, 'font-mono text-[11.5px]')} onFocus={(e) => e.target.select()} />
+        <button type="button" className={button('outline')} onClick={async () => { try { await navigator.clipboard.writeText(url); toast.success('Lien copié.'); } catch { toast.error('Copie impossible — sélectionnez le lien.'); } }}><Copy className="size-4" /> Copier</button>
+      </div>
+      <button type="button" className={button('ghost', 'mt-2 h-7 px-2')} onClick={onDone}>J’ai transmis le lien</button>
+    </div>
+  );
+}
+
+function OwnerDrawer({ owner, onClose }: { owner: OwnerConsoleRow | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<'profile' | 'properties' | 'reservations' | 'account'>('profile');
+  const [link, setLink] = useState<string | null>(null);
+  const [assignId, setAssignId] = useState('');
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const [resId, setResId] = useState<string | null>(null);
+  useEffect(() => { setTab('profile'); setLink(null); setConfirm(null); setAssignId(''); }, [owner?.id]);
+  const houses = useQuery({ queryKey: ['admin-guesthouses'], queryFn: fetchGuesthouses, enabled: !!owner && tab === 'properties' });
+  const res = useQuery({ queryKey: ['admin-reservations', 'owner', owner?.id], queryFn: () => fetchReservations({ ownerId: owner!.id, limit: 20, demo: true, sort: 'checkin_desc' }), enabled: !!owner && tab === 'reservations' });
+  const refresh = () => { qc.invalidateQueries({ queryKey: ['admin-owners-console'] }); qc.invalidateQueries({ queryKey: ['admin-owners'] }); qc.invalidateQueries({ queryKey: ['admin-guesthouses'] }); };
+  const m = useMutation({
+    mutationFn: async (fn: () => Promise<unknown>) => fn(),
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Action impossible.'),
+  });
+  if (!owner) return <Drawer open={false} onOpenChange={() => undefined} title=""><span /></Drawer>;
+  const available = (houses.data ?? []).filter((h) => h.owner?.id !== owner.id);
+
+  return (
+    <Drawer open={!!owner} onOpenChange={(o) => !o && onClose()} title={owner.fullName} description={owner.email}>
+      <div role="tablist" className="-mx-5 -mt-4 mb-4 flex gap-1 overflow-x-auto border-b border-[#E7E4DD] px-5">
+        {([['profile', 'Profil'], ['properties', `Maisons (${owner.properties.length})`], ['reservations', 'Réservations'], ['account', 'Compte & sécurité']] as const).map(([k, l]) => (
+          <button key={k} role="tab" aria-selected={tab === k} type="button" onClick={() => setTab(k)} className={cn('h-10 shrink-0 border-b-2 px-2 text-[12.5px] font-medium', tab === k ? 'border-[#C99628] text-[#171717]' : 'border-transparent text-[#6B6760]')}>{l}</button>
+        ))}
+      </div>
+
+      {tab === 'profile' && (
+        <dl className="divide-y divide-[#F1EFEA]">
+          <Field label="Nom">{owner.fullName}</Field>
+          <Field label="E-mail"><a className="text-[#8A6514] hover:underline" href={`mailto:${owner.email}`}>{owner.email}</a></Field>
+          <Field label="Téléphone">{owner.phone ? <a className="text-[#8A6514] hover:underline" href={`tel:${owner.phone}`}>{owner.phone}</a> : '—'}</Field>
+          <Field label="Onboarding"><StatusBadge status={owner.onboarding} map={ONBOARDING} /></Field>
+          <Field label="Compte">{owner.isActive ? 'Actif' : 'Suspendu'}</Field>
+          <Field label="Inscrit le">{fmtDay(owner.createdAt)}</Field>
+          <Field label="Dernière connexion">{owner.lastLoginAt ? fmtDateTime(owner.lastLoginAt) : 'Jamais connecté'}</Field>
+          <Field label="Réservations">{owner.reservations.total} au total · {owner.reservations.active} active{owner.reservations.active > 1 ? 's' : ''} · {owner.reservations.pending} à confirmer</Field>
+        </dl>
+      )}
+
+      {tab === 'properties' && (
+        <div className="space-y-4">
+          {!owner.properties.length ? <EmptyState compact title="Aucune maison assignée" /> : (
+            <ul className="divide-y divide-[#F1EFEA] rounded-xl border border-[#E7E4DD]">
+              {owner.properties.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-2 px-3 py-2.5 text-[13px]">
+                  <Link href={`/admin/guesthouses/${p.id}`} className="min-w-0 truncate font-medium hover:text-[#8A6514]">{p.name}{p.isDemo && ' (démo)'}</Link>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className={p.published ? 'text-[12px] text-emerald-700' : 'text-[12px] text-[#8A867E]'}>{p.published ? 'Publiée' : 'Non publiée'}</span>
+                    {confirm === p.id ? (
+                      <><button type="button" className={button('danger', 'h-7 px-2')} disabled={m.isPending}
+                        onClick={() => m.mutate(async () => { await savePropertySettings(p.id, { ownerId: null }); toast.success('Maison retirée du propriétaire.'); setConfirm(null); refresh(); })}>Confirmer</button>
+                        <button type="button" className={button('ghost', 'h-7 w-7 px-0')} onClick={() => setConfirm(null)} aria-label="Annuler"><X className="size-3.5" /></button></>
+                    ) : <button type="button" className={button('ghost', 'h-7 px-2 text-red-700')} onClick={() => setConfirm(p.id)}>Retirer</button>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {confirm && <p className="text-[12px] text-amber-800">Le propriétaire perdra l’accès à cette maison et à ses réservations.</p>}
+          <div>
+            <label htmlFor="assign" className={labelCls}>Assigner une maison</label>
+            <div className="flex gap-2">
+              <select id="assign" className={selectCls} value={assignId} onChange={(e) => setAssignId(e.target.value)}>
+                <option value="">Choisir…</option>
+                {available.map((h) => <option key={h.id} value={h.id}>{h.name}{h.owner ? ` (actuellement : ${h.owner.name})` : ''}</option>)}
+              </select>
+              <button type="button" className={button('primary')} disabled={!assignId || m.isPending}
+                onClick={() => m.mutate(async () => { await savePropertySettings(assignId, { ownerId: owner.id }); toast.success('Maison assignée.'); setAssignId(''); refresh(); })}>
+                {m.isPending && <Spinner />} Assigner
+              </button>
+            </div>
+            {available.find((h) => h.id === assignId)?.owner && <p className="mt-1 text-[12px] text-amber-800">Cette maison sera retirée de son propriétaire actuel.</p>}
           </div>
         </div>
-        <div className="mt-2">
-          <button
-            disabled={inviteMut.isPending || !inviteName.trim() || !inviteEmail.trim() || inviteDomains.length === 0}
-            onClick={() =>
-              inviteMut.mutate({
-                fullName: inviteName,
-                email: inviteEmail,
-                phone: invitePhone || undefined,
-                role: 'ESTABLISHMENT_OWNER',
-                serviceDomains: inviteDomains,
-              })
-            }
-            className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-black hover:bg-amber-400 disabled:opacity-50"
-          >
-            Inviter
-          </button>
-          <p className="mt-2 text-xs text-zinc-500">
-            Un email sera envoyé au propriétaire pour définir son mot de passe puis accéder à son espace selon les catégories choisies.
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
-        </div>
-      ) : owners.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-700 py-20 text-center">
-          <UserCheck className="mx-auto mb-3 h-8 w-8 text-zinc-600" />
-          <p className="text-sm text-zinc-500">Aucun propriétaire trouvé.</p>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-800">
-          <table className="w-full text-sm">
-            <thead className="border-b border-zinc-800 bg-zinc-900/50">
-              <tr>
-                {['Propriétaire', 'Email', 'Téléphone', 'Établissements', 'Commission', 'Statut', 'Actions'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/60">
-              {owners.map((owner) => (
-                <tr key={owner._id} className="group hover:bg-zinc-900/40">
-                  {/* Avatar + name */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-bold text-black shrink-0">
-                        {owner.fullName.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium text-zinc-100 truncate max-w-[140px]">{owner.fullName}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400 text-xs">{owner.email}</td>
-                  <td className="px-4 py-3 text-zinc-500 text-xs">{owner.phone ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-zinc-500" />
-                      <span className="text-zinc-300">{owner.venueCount}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400 text-xs">—</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge owner={owner} />
-                    <div className="mt-2 flex max-w-[240px] flex-wrap gap-1">
-                      {SERVICE_DOMAIN_OPTIONS.map((opt) => {
-                        const active = (owner.serviceDomains ?? []).includes(opt.key);
-                        return (
-                          <button
-                            key={`${owner._id}-${opt.key}`}
-                            type="button"
-                            disabled={domainsMut.isPending}
-                            onClick={() => {
-                              const next = active
-                                ? (owner.serviceDomains ?? []).filter((v) => v !== opt.key)
-                                : [...(owner.serviceDomains ?? []), opt.key];
-                              domainsMut.mutate({ id: owner._id, serviceDomains: next });
-                            }}
-                            className={cn(
-                              'rounded-full border px-2 py-0.5 text-[10px] font-medium transition',
-                              active
-                                ? 'border-amber-400/40 bg-amber-400/15 text-amber-300'
-                                : 'border-zinc-700 bg-zinc-950 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Link
-                        href={`/admin/venues?ownerId=${owner._id}`}
-                        className="flex items-center gap-1 rounded border border-zinc-700 px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800 transition"
-                      >
-                        <Building2 className="h-3 w-3" />
-                        Établissements
-                        <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
-                      </Link>
-                      <button
-                        onClick={() => setCommissionTarget(owner)}
-                        className="flex items-center gap-1 rounded border border-zinc-700 px-2 py-1 text-xs text-amber-400 hover:bg-amber-400/10 transition"
-                      >
-                        <Percent className="h-3 w-3" />
-                        Commission
-                      </button>
-                      {owner.isSuspended ? (
-                        <button
-                          onClick={() => reactivateMut.mutate(owner._id)}
-                          disabled={reactivateMut.isPending}
-                          className="flex items-center gap-1 rounded border border-emerald-500/30 px-2 py-1 text-xs text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
-                        >
-                          <UserCheck className="h-3 w-3" />
-                          Réactiver
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSuspendTarget(owner)}
-                          className="flex items-center gap-1 rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 hover:bg-red-500/10 transition"
-                        >
-                          <ShieldOff className="h-3 w-3" />
-                          Suspendre
-                        </button>
-                      )}
-                      {owner.emailVerified ? (
-                        <button
-                          onClick={() => verifyMut.mutate({ id: owner._id, verify: false })}
-                          disabled={verifyMut.isPending}
-                          className="flex items-center gap-1 rounded border border-amber-500/30 px-2 py-1 text-xs text-amber-300 hover:bg-amber-500/10 transition disabled:opacity-50"
-                        >
-                          <MailX className="h-3 w-3" />
-                          Dévérifier
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => verifyMut.mutate({ id: owner._id, verify: true })}
-                          disabled={verifyMut.isPending}
-                          className="flex items-center gap-1 rounded border border-emerald-500/30 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/10 transition disabled:opacity-50"
-                        >
-                          <MailCheck className="h-3 w-3" />
-                          Vérifier
-                        </button>
-                      )}
-                    </div>
-                  </td>
+      {tab === 'reservations' && (
+        res.isLoading ? <Skeleton className="h-40" /> : !res.data?.rows.length ? <EmptyState compact title="Aucune réservation" /> : (
+          <div className="-mx-5 overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[#FBFAF8]"><tr><th className={th}>Client</th><th className={th}>Maison</th><th className={th}>Arrivée</th><th className={cn(th, 'text-right')}>Total</th><th className={th}>Statut</th></tr></thead>
+              <tbody>{res.data.rows.map((r) => (
+                <tr key={r.id} className="cursor-pointer border-t border-[#F1EFEA] hover:bg-[#FBFAF8]" onClick={() => setResId(r.id)}>
+                  <td className={td}>{r.guest.name ?? '—'}</td><td className={cn(td, 'max-w-[9rem] truncate')}>{r.property?.name}</td><td className={td}>{fmtStayDay(r.checkIn, { day: 'numeric', month: 'short' })}</td>
+                  <td className={cn(td, 'text-right tabular-nums')}>{fmtTND(r.total)}</td><td className={td}><StatusBadge status={r.status} /></td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              ))}</tbody>
+            </table>
+            <ReservationDrawer id={resId} open={!!resId} onOpenChange={(o) => !o && setResId(null)} />
+          </div>
+        )
       )}
 
-      {/* Dialogs */}
-      {suspendTarget && (
-        <SuspendDialog
-          owner={suspendTarget}
-          onClose={() => setSuspendTarget(null)}
-          onConfirm={(reason) => suspendMut.mutate({ id: suspendTarget._id, reason })}
-        />
+      {tab === 'account' && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-[#E7E4DD] p-4">
+            <p className="flex items-center gap-2 text-[13.5px] font-semibold"><KeyRound className="size-4 text-[#8A6514]" /> Mot de passe</p>
+            <p className="mt-1 text-[12.5px] text-[#6B6760]">Envoie un lien à usage unique (24 h). Le mot de passe actuel reste valide tant que le lien n’est pas utilisé. Aucun mot de passe n’est jamais affiché.</p>
+            {link ? <div className="mt-3"><OneTimeLink url={link} onDone={() => setLink(null)} /></div> : (
+              <button type="button" className={button('outline', 'mt-3')} disabled={m.isPending}
+                onClick={() => m.mutate(async () => { const r = await sendPasswordLink(owner.id, true); setLink(r.setupLink); toast.success('Lien envoyé par e-mail.'); })}>
+                {m.isPending ? <Spinner /> : <Mail className="size-4" />} Envoyer un lien de réinitialisation
+              </button>
+            )}
+          </div>
+          <div className={cn('rounded-xl border p-4', owner.isActive ? 'border-red-200' : 'border-emerald-200')}>
+            <p className="flex items-center gap-2 text-[13.5px] font-semibold">{owner.isActive ? <ShieldOff className="size-4 text-red-700" /> : <ShieldCheck className="size-4 text-emerald-700" />} {owner.isActive ? 'Suspendre le compte' : 'Réactiver le compte'}</p>
+            <p className="mt-1 text-[12.5px] text-[#6B6760]">{owner.isActive ? 'Déconnecte immédiatement le propriétaire et bloque son accès. Ses maisons et réservations restent intactes.' : 'Le propriétaire pourra de nouveau se connecter.'}</p>
+            {confirm === 'status' ? (
+              <div className="mt-3 flex gap-2">
+                <button type="button" className={button(owner.isActive ? 'danger' : 'success')} disabled={m.isPending}
+                  onClick={() => m.mutate(async () => { await setUserActive(owner.id, !owner.isActive); toast.success(owner.isActive ? 'Compte suspendu.' : 'Compte réactivé.'); setConfirm(null); refresh(); })}>
+                  {m.isPending && <Spinner />} Confirmer
+                </button>
+                <button type="button" className={button('ghost')} onClick={() => setConfirm(null)}>Annuler</button>
+              </div>
+            ) : <button type="button" className={button(owner.isActive ? 'danger' : 'outline', 'mt-3')} onClick={() => setConfirm('status')}>{owner.isActive ? 'Suspendre' : 'Réactiver'}</button>}
+          </div>
+        </div>
       )}
-      {commissionTarget && (
-        <CommissionDialog
-          owner={commissionTarget}
-          onClose={() => setCommissionTarget(null)}
-          onConfirm={(rate) => commissionMut.mutate({ id: commissionTarget._id, rate })}
-        />
-      )}
-    </div>
+    </Drawer>
   );
+}
+
+function InviteDrawer({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const qc = useQueryClient();
+  const houses = useQuery({ queryKey: ['admin-guesthouses'], queryFn: fetchGuesthouses, enabled: open });
+  const [f, setF] = useState({ fullName: '', email: '', phone: '', venueIds: [] as string[], sendInvite: true });
+  const [link, setLink] = useState<string | null>(null);
+  const m = useMutation({
+    mutationFn: () => createOwner({ fullName: f.fullName.trim(), email: f.email.trim(), phone: f.phone.trim() || undefined, venueIds: f.venueIds, sendInvite: f.sendInvite }),
+    onSuccess: (d) => {
+      toast.success(f.sendInvite ? 'Propriétaire créé — invitation envoyée.' : 'Propriétaire créé.');
+      setLink(d.setupLink);
+      qc.invalidateQueries({ queryKey: ['admin-owners-console'] }); qc.invalidateQueries({ queryKey: ['admin-owners'] }); qc.invalidateQueries({ queryKey: ['admin-guesthouses'] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'Création impossible.'),
+  });
+  const close = () => { onOpenChange(false); setLink(null); setF({ fullName: '', email: '', phone: '', venueIds: [], sendInvite: true }); };
+  const valid = f.fullName.trim().length >= 2 && /\S+@\S+\.\S+/.test(f.email);
+  return (
+    <Drawer open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())} title="Inviter un propriétaire" description="Le compte est créé sans mot de passe utilisable : le propriétaire choisit le sien via un lien sécurisé (72 h)."
+      footer={!link && <div className="flex justify-end gap-2"><button type="button" className={button('ghost')} onClick={close}>Annuler</button><button type="submit" form="invite" className={button('primary')} disabled={!valid || m.isPending}>{m.isPending && <Spinner />} Créer le compte</button></div>}>
+      {link ? <OneTimeLink url={link} onDone={close} /> : (
+        <form id="invite" className="space-y-4" onSubmit={(e) => { e.preventDefault(); if (valid) m.mutate(); }}>
+          <div><label htmlFor="i-name" className={labelCls}>Nom complet *</label><input id="i-name" className={inputCls} value={f.fullName} onChange={(e) => setF({ ...f, fullName: e.target.value })} required maxLength={120} /></div>
+          <div><label htmlFor="i-email" className={labelCls}>E-mail *</label><input id="i-email" type="email" className={inputCls} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required /></div>
+          <div><label htmlFor="i-phone" className={labelCls}>Téléphone</label><input id="i-phone" type="tel" className={inputCls} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} maxLength={30} /></div>
+          <fieldset>
+            <legend className={labelCls}>Maisons à assigner</legend>
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-[#E7E4DD] p-2">
+              {(houses.data ?? []).map((h) => (
+                <label key={h.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-[12.5px] hover:bg-[#FBFAF8]">
+                  <input type="checkbox" className="size-4 accent-[#C99628]" checked={f.venueIds.includes(h.id)} onChange={(e) => setF({ ...f, venueIds: e.target.checked ? [...f.venueIds, h.id] : f.venueIds.filter((x) => x !== h.id) })} />
+                  <span className="truncate">{h.name}</span>{h.owner && <span className="shrink-0 text-[11px] text-amber-800">déjà : {h.owner.name}</span>}
+                </label>
+              ))}
+              {!houses.data?.length && <p className="px-1.5 py-1 text-[12px] text-[#8A867E]">Aucune maison.</p>}
+            </div>
+          </fieldset>
+          <label className="flex cursor-pointer items-center gap-2 text-[13px]"><input type="checkbox" className="size-4 accent-[#C99628]" checked={f.sendInvite} onChange={(e) => setF({ ...f, sendInvite: e.target.checked })} /> Envoyer l’invitation par e-mail</label>
+        </form>
+      )}
+    </Drawer>
+  );
+}
+
+export default function OwnersPage() {
+  return <Suspense fallback={<Skeleton className="h-96" />}><OwnersInner /></Suspense>;
 }

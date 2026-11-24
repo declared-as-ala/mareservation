@@ -1,4 +1,5 @@
 import { API_BASE } from './base-url';
+import { useAuthStore } from '@/stores/auth';
 
 export type DayStatus = 'available' | 'reserved' | 'pending' | 'blocked' | 'past' | 'unconfigured';
 
@@ -118,9 +119,15 @@ export class BookingApiError extends Error {
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = useAuthStore.getState().accessToken;
   const res = await fetch(`${API_BASE}/api/v1/bookings${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      // Signed-in guests: lets the API attach the booking to their account (Mes réservations).
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
     cache: 'no-store',
   });
   const body = await res.json().catch(() => ({}));

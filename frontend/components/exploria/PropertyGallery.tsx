@@ -41,7 +41,7 @@ export function PropertyGallery({ images, name }: { images: string[]; name: stri
             className={`relative overflow-hidden bg-[#161617] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-amber-400 ${i === 0 && shown.length >= 3 ? 'sm:col-span-2 sm:row-span-2' : ''} ${i > 0 ? 'hidden sm:block' : ''}`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={`${name} — photo ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} className="size-full object-cover transition-transform duration-500 hover:scale-[1.03] motion-reduce:transition-none" />
+            <img src={src} alt={`${name} — photo ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} className="size-full object-cover transition-transform duration-700 ease-[cubic-bezier(.22,1,.36,1)] hover:scale-[1.04] motion-reduce:transition-none" />
           </button>
         ))}
       </div>
@@ -56,7 +56,7 @@ export function PropertyGallery({ images, name }: { images: string[]; name: stri
           role="dialog"
           aria-modal="true"
           aria-label={`Photos de ${name}`}
-          className="on-dark fixed inset-0 z-[80] flex items-center justify-center bg-black/95"
+          className="on-dark ex-sheet-in fixed inset-0 z-[80] flex items-center justify-center bg-black/95"
           onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
           onTouchEnd={(e) => {
             if (touchX == null) return;
@@ -66,7 +66,7 @@ export function PropertyGallery({ images, name }: { images: string[]; name: stri
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={images[open]} alt={`${name} — photo ${open + 1}`} className="max-h-[86dvh] max-w-[94vw] object-contain" />
+          <img key={open} src={images[open]} alt={`${name} — photo ${open + 1}`} className="ex-pop max-h-[86dvh] max-w-[94vw] rounded-lg object-contain" />
           <p className="absolute left-1/2 top-[max(1rem,env(safe-area-inset-top))] -translate-x-1/2 text-sm text-white/70">{open + 1} / {count}</p>
           <button type="button" onClick={() => setOpen(null)} aria-label="Fermer" className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20"><X className="size-5" /></button>
           {count > 1 && (

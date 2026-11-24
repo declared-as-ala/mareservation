@@ -90,7 +90,7 @@ export default function RestaurationPage() {
           </span>
           <h1 className="mt-3 font-serif text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-4xl md:text-5xl">
             Restaurants &amp; Cafés,{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">au même endroit.</span>
+            <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">au même endroit.</span>
           </h1>
           <p className="mt-2.5 max-w-xl text-sm text-white/55 sm:text-base">
             Choisissez votre humeur — une table gastronomique ou un café cosy.

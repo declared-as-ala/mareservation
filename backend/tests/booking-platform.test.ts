@@ -418,3 +418,19 @@ describe('accounts: setup links, reset, suspension', () => {
     expect(login.status).toBe(403);
   });
 });
+
+describe('customer registration', () => {
+  it('enforces the strong password policy, saves the phone, rejects duplicates and never accepts a role from the client', async () => {
+    const base = { fullName: 'Nour Client', email: 'nour.client@example.com', password: 'Solide#2026x', phone: '+216 22 333 444', role: 'ADMIN' };
+    expect((await request(app).post('/api/v1/auth/register').send({ ...base, password: 'abcdef' })).status).toBe(400);
+    expect((await request(app).post('/api/v1/auth/register').send({ ...base, phone: '12' })).status).toBe(400);
+    const ok = await request(app).post('/api/v1/auth/register').send(base);
+    expect(ok.status).toBe(201);
+    expect(ok.body.user.role).toBe('CUSTOMER');
+    const u = await M.User.findOne({ email: base.email }).lean();
+    expect(u.phone).toBe('+21622333444');
+    expect((await request(app).post('/api/v1/auth/register').send(base)).status).toBe(409);
+    const login = await request(app).post('/api/v1/auth/login').send({ email: base.email, password: base.password });
+    expect(login.status).toBe(200);
+  });
+});

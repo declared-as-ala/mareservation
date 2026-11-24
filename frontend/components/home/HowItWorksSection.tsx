@@ -102,8 +102,8 @@ export function HowItWorksSection() {
         {/* CTA */}
         <div className="relative z-20 mt-10 text-center md:mt-14">
           <Link
-            href="/accommodations"
-            className="group relative z-20 inline-flex min-h-12 touch-manipulation items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-8 text-sm font-semibold text-black shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-amber-500/40 active:translate-y-0"
+            href="/maisons-d-hotes"
+            className="group relative z-20 inline-flex min-h-12 touch-manipulation items-center gap-2 rounded-full bg-[#e0a527] hover:bg-[#eab33a] px-8 text-sm font-semibold text-black shadow-lg shadow-amber-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-amber-500/40 active:translate-y-0"
           >
             Commencer l&apos;exploration
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />

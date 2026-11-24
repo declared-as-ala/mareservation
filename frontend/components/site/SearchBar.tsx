@@ -3,7 +3,7 @@
 /**
  * HostMe-style search: one connected bar (Où · Arrivée · Départ · Voyageurs · Rechercher) on desktop,
  * stacked fields on mobile. Destinations come from real data + the 24 governorates; the search opens
- * the Explorer (/accommodations) with every filter pre-filled in the URL.
+ * the Explorer (/maisons-d-hotes) with every filter pre-filled in the URL.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -153,7 +153,7 @@ export function SearchBar({ variant = 'hero', initial }: { variant?: 'hero' | 'c
     if (adults) p.set('adults', String(adults));
     if (children) p.set('children', String(children));
     setPanel(null);
-    router.push(`/accommodations${p.toString() ? `?${p}` : ''}`);
+    router.push(`/maisons-d-hotes${p.toString() ? `?${p}` : ''}`);
   };
 
   const guestsLabel = adults + children > 0 ? `${adults + children} ${t('card.guests')}` : t('search.addGuests');
@@ -179,15 +179,14 @@ export function SearchBar({ variant = 'hero', initial }: { variant?: 'hero' | 'c
           <span className={cn('truncate text-[15px]', checkOut ? 'text-white' : 'text-neutral-400')}>{checkOut ? short(checkOut) : t('search.addDate')}</span>
         </button>
         <span className="my-4 w-px bg-white/12" aria-hidden="true" />
-        <div className={cn(seg, 'flex-[1.2] flex-row items-center gap-3 pe-2', panel === 'guests' && 'bg-white/[0.08]')}>
-          <button type="button" onClick={() => setPanel(panel === 'guests' ? null : 'guests')} className="flex min-w-0 flex-1 flex-col text-start">
-            <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-300">{t('search.guests')}</span>
-            <span className={cn('truncate text-[15px]', adults + children ? 'text-white' : 'text-neutral-400')}>{guestsLabel}</span>
-          </button>
-          <button type="submit" className={cn('inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-300 to-amber-500 font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.35)] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white', compact ? 'size-10' : 'h-12 px-6')}>
+        <button type="button" onClick={() => setPanel(panel === 'guests' ? null : 'guests')} className={cn(seg, 'flex-[1.15]', panel === 'guests' && 'bg-white/[0.08]')}>
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-amber-300">{t('search.guests')}</span>
+          <span className={cn('truncate text-[15px]', adults + children ? 'text-white' : 'text-neutral-400')}>{guestsLabel}</span>
+        </button>
+        <div className="flex shrink-0 items-center pe-2 ps-1">
+          <button type="submit" className={cn('inline-flex items-center justify-center gap-2 rounded-full bg-[#e0a527] font-semibold text-[#17140f] transition-colors hover:bg-[#eab33a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white', compact ? 'size-10' : 'h-12 px-5')}>
             <Search className="size-[18px]" aria-hidden="true" />
-            {!compact && <span>{t('search.submit')}</span>}
-            {compact && <span className="sr-only">{t('search.submit')}</span>}
+            {compact ? <span className="sr-only">{t('search.submit')}</span> : <span className="hidden lg:inline">{t('search.submit')}</span>}
           </button>
         </div>
       </div>
@@ -217,7 +216,7 @@ export function SearchBar({ variant = 'hero', initial }: { variant?: 'hero' | 'c
             </span>
           </button>
         </div>
-        <button type="submit" className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-500 py-3.5 font-bold text-black">
+        <button type="submit" className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] py-3.5 font-bold text-black">
           <Search className="size-5" aria-hidden="true" /> {t('search.submit')}
         </button>
       </div>
@@ -225,7 +224,7 @@ export function SearchBar({ variant = 'hero', initial }: { variant?: 'hero' | 'c
       {/* Panels */}
       {panel && (
         <div className={cn(
-          'z-50 rounded-[1.6rem] border border-white/12 bg-[#141415] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.7)]',
+          'ex-pop z-50 rounded-[1.6rem] border border-white/12 bg-[#141415] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.7)]',
           'fixed inset-x-3 bottom-3 max-h-[80dvh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))] md:absolute md:inset-x-auto md:bottom-auto md:top-[calc(100%+0.75rem)] md:max-h-none',
           panel === 'where' && 'md:start-0 md:w-[26rem]',
           panel === 'dates' && 'md:start-1/2 md:w-[44rem] md:-translate-x-1/2 rtl:md:translate-x-1/2',
@@ -260,7 +259,7 @@ export function SearchBar({ variant = 'hero', initial }: { variant?: 'hero' | 'c
             <>
               <Counter label={t('search.adults')} hint={t('search.adultsHint')} value={adults} min={0} onChange={setAdults} />
               <Counter label={t('search.children')} hint={t('search.childrenHint')} value={children} min={0} onChange={(n) => { setChildren(n); if (n > 0 && adults === 0) setAdults(1); }} />
-              <button type="button" onClick={() => submit()} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 font-bold text-black"><Search className="size-4" aria-hidden="true" />{t('search.submit')}</button>
+              <button type="button" onClick={() => submit()} className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] font-bold text-black"><Search className="size-4" aria-hidden="true" />{t('search.submit')}</button>
             </>
           )}
         </div>

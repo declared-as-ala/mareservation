@@ -119,7 +119,7 @@ function Tracker() {
         </div>
       )}
 
-      <Link href={s.venueSlug ? `/accommodation/${s.venueSlug}` : '/accommodations'} className="inline-flex h-12 items-center rounded-2xl border border-white/15 px-6 text-sm font-bold text-white hover:bg-white/10">
+      <Link href={s.venueSlug ? `/maison-d-hote/${s.venueSlug}` : '/maisons-d-hotes'} className="inline-flex h-12 items-center rounded-2xl border border-white/15 px-6 text-sm font-bold text-white hover:bg-white/10">
         Retour à la maison d&apos;hôtes
       </Link>
     </div>

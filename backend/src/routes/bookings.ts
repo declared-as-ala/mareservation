@@ -38,6 +38,7 @@ import {
 import { notifyBookingEvent } from '../services/bookingEmails';
 import { publishAvailabilityEvent } from '../services/availabilityEvents';
 import { logger } from '../config/logger';
+import { optionalUserId } from '../middlewares/auth.middleware';
 import { FEATURE_KEYS, TUNISIA_GOVERNORATES } from '../config/tunisia';
 
 const router = Router();
@@ -330,6 +331,8 @@ router.post('/requests', writeLimiter, async (req: Request, res: Response) => {
       guest: parsed.data.guest,
       specialRequest: parsed.data.specialRequest,
       idempotencyKey,
+      // Signed-in guest: link the booking to the account so it appears in "Mes réservations".
+      userId: optionalUserId(req),
     });
     if (!result.ok) return res.status(result.status).json({ error: result.error, code: result.code });
 

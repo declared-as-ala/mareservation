@@ -29,6 +29,15 @@ const PRIVATE_PATHS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // French, keyword-rich URLs. Old English URLs answer 308 (permanent) so links and indexed pages
+  // transfer to the new addresses; query strings (?where=…) are preserved automatically.
+  async redirects() {
+    return [
+      { source: '/accommodations', destination: '/maisons-d-hotes', permanent: true },
+      { source: '/accommodation/:slug', destination: '/maison-d-hote/:slug', permanent: true },
+      { source: '/maison-d-hote', destination: '/maisons-d-hotes', permanent: true },
+    ];
+  },
   async rewrites() {
     return [
       {

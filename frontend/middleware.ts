@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDefaultRedirectForRole, isOwnerRole, resolvePostLoginRedirect, sanitizeReturnTo } from '@/lib/auth/redirect';
 import { API_BASE } from '@/lib/api/base-url';
-import { isHiddenCategoryPath } from '@/lib/publicCatalog';
+import { isHiddenCategoryPath, maisonsOnlyRedirect } from '@/lib/publicCatalog';
 
 // ── Cookie-based JWT decode (no secret needed for expiry check) ──
 
@@ -94,6 +94,36 @@ const PUBLIC_PATTERNS = [
   /^\/logo/,
 ];
 
+/** Legacy admin section → replacement (temporary 307 so they can be revived without cache issues). */
+const RETIRED_ADMIN: Record<string, string> = {
+  calendrier: '/admin/reservations/calendar',
+  plateforme: '/admin/settings?tab=emails',
+  'hotels-approval': '/admin/applications',
+  partners: '/admin/applications',
+  'maisons-dhote': '/admin/guesthouses',
+  venues: '/admin/guesthouses',
+  hotels: '/admin/guesthouses',
+  scenes: '/admin/guesthouses',
+  cafes: '/admin/guesthouses',
+  restaurants: '/admin/guesthouses',
+  cinema: '/admin/guesthouses',
+  coworking: '/admin/guesthouses',
+  'event-spaces': '/admin/guesthouses',
+  events: '/admin/guesthouses',
+  'events-moderation': '/admin/guesthouses',
+  users: '/admin/customers',
+  moderation: '/admin/dashboard',
+  payouts: '/admin/dashboard',
+  support: '/admin/dashboard',
+  'audit-logs': '/admin/dashboard',
+  categories: '/admin/dashboard',
+  tags: '/admin/dashboard',
+  'banner-slides': '/admin/dashboard',
+  vedette: '/admin/dashboard',
+  'sos-conseil': '/admin/dashboard',
+  scanner: '/admin/dashboard',
+};
+
 // ── Middleware ──────────────────────────────────────────────────
 
 export function middleware(request: NextRequest) {
@@ -105,17 +135,39 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Retired super-admin sections (guesthouse-only admin). Code and data are kept; URLs land on the new modules.
+  if (pathname.startsWith('/admin/')) {
+    const seg = pathname.split('/')[2] ?? '';
+    const target = RETIRED_ADMIN[seg];
+    if (target) return NextResponse.redirect(new URL(target, request.url), 307);
+  }
+
+  // Legacy customer area (/dashboard/*, old dark shell) → the current account pages.
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    const m = pathname.match(/^\/dashboard\/reservations\/([^/]+)/);
+    const target = m ? `/mes-reservations/${m[1]}`
+      : pathname === '/dashboard' || pathname.startsWith('/dashboard/reservations') ? '/mes-reservations'
+      : '/profile';
+    return NextResponse.redirect(new URL(target, request.url), 308);
+  }
+
+  // Multi-category screens (explorer, search, cart) → maisons search while only maisons are public.
+  const maisonsTarget = maisonsOnlyRedirect(pathname, request.nextUrl.searchParams);
+  if (maisonsTarget) {
+    return NextResponse.redirect(new URL(maisonsTarget, request.url), 307);
+  }
+
   // ── Public catalogue gate (maisons d'hôtes only at launch) ───
   // Hidden categories keep their code/data but are not publicly reachable.
-  // /hotel(s) maps to the accommodation pages (permanent redirect);
+  // /hotel(s) maps to the maison d'hôte pages (permanent redirect);
   // everything else answers a real 404 and is marked noindex.
   if (isHiddenCategoryPath(pathname)) {
     if (pathname === '/hotels' || pathname === '/hotel') {
-      return NextResponse.redirect(new URL('/accommodations', request.url), 308);
+      return NextResponse.redirect(new URL('/maisons-d-hotes', request.url), 308);
     }
     if (pathname.startsWith('/hotel/')) {
       return NextResponse.redirect(
-        new URL(pathname.replace(/^\/hotel\//, '/accommodation/'), request.url),
+        new URL(pathname.replace(/^\/hotel\//, '/maison-d-hote/'), request.url),
         308
       );
     }
@@ -244,5 +296,8 @@ export const config = {
     // Category gate (see lib/publicCatalog.ts)
     '/(cafes?|restaurants?|restauration|cinema|evenements?|event-space|coworking|sorties|bien-etre|hotels?|lieu|sos-conseil)/:path*',
     '/(cafes?|restaurants?|restauration|cinema|evenements?|event-space|coworking|sorties|bien-etre|hotels?|lieu|sos-conseil)',
+    // Multi-category screens (see maisonsOnlyRedirect)
+    '/(explorer|recherche|panier|checkout)/:path*',
+    '/(explorer|recherche|panier|checkout)',
   ],
 };

@@ -48,7 +48,7 @@ export default function CommentCaMarchePage() {
           <p className="mt-2 text-white/75">Visitez notre maison d’hôtes de démonstration en 360°.</p>
         </div>
         <Link
-          href="/accommodations"
+          href="/maisons-d-hotes"
           className="inline-flex h-13 shrink-0 items-center rounded-full bg-amber-400 px-8 py-4 text-[0.8rem] font-semibold uppercase tracking-[0.16em] text-black transition-colors hover:bg-amber-300"
         >
           Explorer les maisons

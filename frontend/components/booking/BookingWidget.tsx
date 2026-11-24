@@ -270,7 +270,7 @@ export function BookingWidget({ venueKey, venueName, tourAnchor = '#visite', com
             ) : quote.isLoading ? (
               <p className="flex items-center gap-2 text-sm text-neutral-400"><Loader2 className="size-4 animate-spin" aria-hidden="true" /> Vérification…</p>
             ) : okQuote ? (
-              <div className="space-y-1.5 text-sm">
+              <div className="ex-fade-up space-y-1.5 text-sm">
                 <p className="flex items-center gap-2 font-semibold text-emerald-300"><span className="size-2.5 rounded-full bg-emerald-400" aria-hidden="true" /> Disponible</p>
                 <p className="text-neutral-300">{okQuote.room.name}</p>
                 {okQuote.subtotal != null && (
@@ -282,7 +282,7 @@ export function BookingWidget({ venueKey, venueName, tourAnchor = '#visite', com
                 )}
                 <p className="flex items-baseline justify-between border-t border-white/10 pt-2">
                   <span className="text-neutral-300">Total</span>
-                  <span className="font-serif text-2xl font-semibold text-amber-400">{okQuote.total != null ? formatMoney(okQuote.total) : 'Tarif à confirmer'}</span>
+                  <span key={okQuote.total ?? 'na'} className="ex-pop font-serif text-2xl font-semibold text-amber-400 tabular-nums">{okQuote.total != null ? formatMoney(okQuote.total) : 'Tarif à confirmer'}</span>
                 </p>
               </div>
             ) : (
@@ -292,7 +292,7 @@ export function BookingWidget({ venueKey, venueName, tourAnchor = '#visite', com
 
           {bookable ? (
             <button type="button" disabled={!okQuote || okQuote.total == null} onClick={() => setDialogOpen(true)}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-base font-bold text-black shadow-[0_10px_28px_rgba(245,158,11,0.35)] transition-all hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none">
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] text-base font-bold text-black transition-all active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none">
               {instant ? 'Réserver maintenant' : 'Demander à réserver'}
             </button>
           ) : (

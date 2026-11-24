@@ -1,6 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export type AuditAction =
+  | 'APPLICATION_APPROVED'
+  | 'APPLICATION_REJECTED'
+  | 'APPLICATION_UPDATED'
   | 'LOGIN'
   | 'LOGOUT'
   | 'PASSWORD_RESET'
@@ -65,7 +68,7 @@ export type AuditAction =
 export interface IAuditLog extends Document {
   userId?: mongoose.Types.ObjectId;
   action: AuditAction;
-  entityType?: 'user' | 'reservation' | 'venue' | 'event' | 'payment' | 'setting' | 'support_case' | 'payout';
+  entityType?: 'user' | 'reservation' | 'venue' | 'event' | 'payment' | 'setting' | 'support_case' | 'payout' | 'application';
   entityId?: mongoose.Types.ObjectId;
   ipAddress?: string;
   userAgent?: string;
@@ -96,9 +99,10 @@ const AuditLogSchema = new Schema<IAuditLog>(
         'PAYOUT_HELD', 'PAYOUT_REJECTED',
         'SUPPORT_CASE_CREATED', 'SUPPORT_CASE_REPLIED', 'SUPPORT_CASE_UPDATED', 'SUPPORT_CASE_CLOSED',
         'BOOKING_SETTINGS_CHANGED', 'RESERVATION_COMPLETED', 'EMAIL_TEST_SENT', 'EMAIL_RETRY', 'PASSWORD_RESET_LINK_ISSUED', 'OWNER_ASSIGNED', 'USER_SUSPENDED', 'USER_REACTIVATED',
+        'APPLICATION_APPROVED', 'APPLICATION_REJECTED', 'APPLICATION_UPDATED',
       ]
     },
-    entityType: { type: String, enum: ['user', 'reservation', 'venue', 'event', 'payment', 'setting', 'support_case', 'payout'] },
+    entityType: { type: String, enum: ['user', 'reservation', 'venue', 'event', 'payment', 'setting', 'support_case', 'payout', 'application'] },
     entityId: { type: Schema.Types.ObjectId },
     ipAddress: { type: String },
     userAgent: { type: String },

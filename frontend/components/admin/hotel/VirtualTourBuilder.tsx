@@ -786,7 +786,7 @@ export function VirtualTourBuilder({ venueId, roomId, initialScenes, initialHots
                     e.stopPropagation();
                     setShow360Preview(true);
                   }}
-                  className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/55 bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-black shadow-[0_4px_14px_rgba(245,158,11,0.45)] transition-all hover:scale-105"
+                  className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-amber-400/55 bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-black transition-all hover:scale-105"
                 >
                   <Layers className="size-3.5" />
                   Aperçu 360°

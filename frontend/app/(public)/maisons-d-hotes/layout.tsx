@@ -5,9 +5,9 @@ export const metadata: Metadata = {
   description:
     "Découvrez les maisons d'hôtes de Tunisie, visitez-les en 360° et vérifiez la disponibilité en temps réel avant de réserver.",
   // Search result URLs (?city=&checkIn=…) all canonicalise to the listing itself.
-  alternates: { canonical: '/accommodations' },
+  alternates: { canonical: '/maisons-d-hotes' },
 };
 
-export default function AccommodationsLayout({ children }: { children: React.ReactNode }) {
+export default function MaisonsDHotesLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

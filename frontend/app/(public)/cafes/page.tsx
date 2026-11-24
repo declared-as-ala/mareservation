@@ -79,7 +79,7 @@ export default function CafesPage() {
           </span>
           <h1 className="mt-4 font-serif text-3xl font-black leading-[1.04] tracking-tight text-white sm:text-4xl md:text-5xl">
             Trouvez votre{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+            <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">
               spot
             </span>{' '}
             préféré.

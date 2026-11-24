@@ -8,7 +8,7 @@ export function getVenueHref(venue: { type?: string | null; slug?: string | null
   switch (venue.type) {
     case 'HOTEL':
     case 'MAISON_DHOTE':
-      return `/accommodation/${id}`;
+      return `/maison-d-hote/${id}`;
     case 'COWORKING':
       return `/coworking/${id}`;
     case 'CINEMA':

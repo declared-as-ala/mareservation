@@ -42,7 +42,7 @@ export function SimilarGuesthouses({ currentId, governorate }: { currentId: stri
       <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {data.map((r: any) => (
           <li key={r.id}>
-            <Link href={`/accommodation/${r.slug}`} className="group block overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#111112] hover:border-white/25">
+            <Link href={`/maison-d-hote/${r.slug}`} className="group block overflow-hidden rounded-[1.35rem] border border-white/10 bg-[#111112] hover:border-white/25">
               <div className="aspect-[4/3] bg-[#1a1a1b]">
                 {r.coverImage && (
                   // eslint-disable-next-line @next/next/no-img-element

@@ -157,7 +157,7 @@ export default function OwnerMyEstablishmentPage() {
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-4 py-2 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] px-4 py-2 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5"
           >
             <Plus className="size-4" />
             Nouvel établissement

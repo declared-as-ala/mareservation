@@ -57,8 +57,8 @@ function getHomeVenueHref(venue: CardVenue): string {
 
 /* ─── Category quick-access tiles ─── */
 const CATEGORIES = [
-  { title: "Maisons d'hôtes", subtitle: 'Visites 360°', href: '/accommodations', Icon: BedDouble },
-  { title: 'Visite 360°', subtitle: 'Maison de démonstration', href: '/accommodations', Icon: Globe },
+  { title: "Maisons d'hôtes", subtitle: 'Visites 360°', href: '/maisons-d-hotes', Icon: BedDouble },
+  { title: 'Visite 360°', subtitle: 'Maison de démonstration', href: '/maisons-d-hotes', Icon: Globe },
   { title: 'Propriétaires', subtitle: 'Présentez votre maison', href: '/contact', Icon: Briefcase },
 ];
 
@@ -276,8 +276,8 @@ function MobileImmersiveCTA() {
 
           {/* Primary CTA — large, always visible */}
           <Link
-            href="/accommodations"
-            className="group relative mt-2.5 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-[15px] font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.45)] transition-all active:scale-[0.98]"
+            href="/maisons-d-hotes"
+            className="group relative mt-2.5 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] text-[15px] font-black text-black transition-all active:scale-[0.98]"
           >
             <span className="relative z-10">Découvrir la visite 360°</span>
             <ArrowRight className="relative z-10 size-4 transition-transform group-active:translate-x-1" />
@@ -344,7 +344,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
               <span aria-hidden className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-amber-400/0 via-amber-400/80 to-amber-400/0" />
             </span>
             ,<br />en{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+            <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">
               360°
             </span>
             .
@@ -358,8 +358,8 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
           {/* Modern CTA group */}
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
-              href="/accommodations"
-              className="group relative inline-flex h-[50px] items-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-7 text-[15px] font-black text-black shadow-[0_12px_32px_rgba(245,158,11,0.40)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(245,158,11,0.55)]"
+              href="/maisons-d-hotes"
+              className="group relative inline-flex h-[50px] items-center gap-2 overflow-hidden rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] px-7 text-[15px] font-black text-black transition-all hover:-translate-y-0.5 hover:"
             >
               <span className="relative z-10">Découvrir la visite 360°</span>
               <ArrowRight className="relative z-10 size-[18px] transition-transform group-hover:translate-x-1" />
@@ -416,7 +416,7 @@ function DesktopScreen({ venues }: { venues: CardVenue[] }) {
               Accès rapide
             </p>
             <Link
-              href="/accommodations"
+              href="/maisons-d-hotes"
               className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/55 transition-colors hover:text-amber-300"
             >
               Tout explorer <ArrowRight className="size-3" />
@@ -578,7 +578,7 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
                     </span>
                   )}
                 </div>
-                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)]">
+                <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-black">
                   Découvrir
                   <ArrowRight className="size-3.5" />
                 </div>
@@ -603,7 +603,7 @@ function DesktopAutoFeatured({ venues }: { venues: CardVenue[] }) {
                 {active && !paused && (
                   <span
                     key={`seg-${i}-${idx}`}
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-300 to-amber-500"
+                    className="absolute inset-y-0 left-0 bg-[#e0a527] hover:bg-[#eab33a]"
                     style={{ animation: 'autoRotateBar 3s linear forwards' }}
                   />
                 )}

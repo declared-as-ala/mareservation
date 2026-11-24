@@ -34,34 +34,34 @@ function EmailVerifiedContent() {
   const isSuccess = success === 'true';
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-950 to-black" />
+    <div className="relative flex min-h-[70vh] items-center justify-center overflow-hidden py-14">
+      
       <div className={`absolute -top-40 -left-40 h-96 w-96 rounded-full blur-[120px] ${isSuccess ? 'bg-emerald-500/8' : 'bg-red-500/8'}`} />
-      <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-amber-600/6 blur-[120px]" />
+      <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-amber-200/30 blur-[120px]" />
 
       <div className={`relative z-10 w-full max-w-md px-4 text-center transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden p-8">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
+        <div className="rounded-3xl border border-[#17140f]/10 bg-white p-7 shadow-[0_1px_0_rgba(23,20,15,0.04),0_18px_50px_rgba(23,20,15,0.08)] sm:p-9">
+          
 
           {isSuccess ? (
             <>
               <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <CheckCircle2 className="size-10 text-emerald-400" />
+                <CheckCircle2 className="size-10 text-emerald-600" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">Email vérifié !</h1>
-              <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+              <h1 className="mb-2 font-serif text-[1.75rem] leading-tight text-[#17140f]">Email vérifié !</h1>
+              <p className="mb-8 text-sm leading-relaxed text-[#5f584d]">
                 Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant profiter de toutes les fonctionnalités de Exploria360.
               </p>
               <div className="flex flex-col gap-3">
                 <Link
-                  href="/explorer"
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-black font-semibold text-sm hover:from-amber-300 hover:via-amber-400 hover:to-amber-300 shadow-lg shadow-amber-500/25 transition-all duration-300 hover:-translate-y-0.5"
+                  href="/maisons-d-hotes"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-[#e0a527] text-sm font-semibold text-[#17140f] shadow-[0_8px_20px_rgba(176,125,18,0.25)] transition-colors hover:bg-[#f0b93a]"
                 >
-                  Explorer les lieux
+                  Découvrir les maisons d’hôtes
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-white/[0.10] text-zinc-400 text-sm font-medium hover:text-white hover:border-white/[0.15] hover:bg-white/[0.04] transition-all"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-[#17140f]/12 text-sm font-medium text-[#3b362e] transition-colors hover:bg-[#17140f]/[0.04]"
                 >
                   Se connecter
                 </Link>
@@ -70,22 +70,22 @@ function EmailVerifiedContent() {
           ) : (
             <>
               <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
-                <XCircle className="size-10 text-red-400" />
+                <XCircle className="size-10 text-red-600" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">Lien expiré</h1>
+              <h1 className="mb-2 font-serif text-[1.75rem] leading-tight text-[#17140f]">Lien expiré</h1>
               <p className="text-zinc-400 text-sm leading-relaxed mb-6">
                 Ce lien de vérification est invalide ou a expiré. Les liens sont valides pendant 24 heures.
               </p>
 
               {resendDone ? (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-400 mb-6 flex items-center gap-2 justify-center">
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-600 mb-6 flex items-center gap-2 justify-center">
                   <CheckCircle2 className="size-4" />
                   Email de vérification envoyé !
                 </div>
               ) : (
                 <>
                   {resendError && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400 mb-4 text-center">
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-600 mb-4 text-center">
                       {resendError}
                     </div>
                   )}
@@ -106,7 +106,7 @@ function EmailVerifiedContent() {
 
               <Link
                 href="/login"
-                className="inline-flex h-11 items-center justify-center w-full rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 text-black font-semibold text-sm hover:from-amber-300 hover:via-amber-400 hover:to-amber-300 shadow-lg shadow-amber-500/25 transition-all duration-300 hover:-translate-y-0.5"
+                className="inline-flex h-11 items-center justify-center w-full rounded-full bg-[#e0a527] text-sm font-semibold text-[#17140f] shadow-[0_8px_20px_rgba(176,125,18,0.25)] transition-colors hover:bg-[#f0b93a]"
               >
                 Retour à la connexion
               </Link>
@@ -128,7 +128,7 @@ function EmailVerifiedContent() {
 export default function EmailVerifiedPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-black">
+      <div className="flex min-h-[70vh] items-center justify-center">
         <div className="size-8 rounded-full border-2 border-amber-400/20 border-t-amber-400 animate-spin" />
       </div>
     }>

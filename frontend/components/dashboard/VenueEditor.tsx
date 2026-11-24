@@ -253,7 +253,7 @@ export function VenueEditor({ venue, onPatch, extraTabs = [] }: VenueEditorProps
                 onClick={handleSave}
                 disabled={saving}
                 className={cn(
-                  'flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-5 py-2 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all',
+                  'flex items-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] px-5 py-2 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all',
                   'hover:-translate-y-0.5 hover:shadow-amber-400/40 disabled:cursor-not-allowed disabled:opacity-60'
                 )}
               >

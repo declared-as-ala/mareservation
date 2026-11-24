@@ -27,6 +27,7 @@ export interface IVenue extends Document {
   phone?: string;
   coverImage?: string;
   gallery?: string[];
+  galleryMeta?: { url: string; alt?: string }[];
   categoryIds?: Types.ObjectId[];
   amenities?: string[];
   /** Official hotel star rating (1-5). Null/undefined for non-hotel venues or unrated. */
@@ -104,6 +105,8 @@ const VenueSchema = new Schema<IVenue>(
     phone: { type: String },
     coverImage: { type: String },
     gallery: { type: [String], default: [] },
+    /** Optional per-image alt text for the gallery (url → alt). */
+    galleryMeta: { type: [{ _id: false, url: { type: String, required: true }, alt: { type: String, maxlength: 200 } }], default: undefined },
     categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
     amenities: { type: [String], default: [] },
     stars: { type: Number, min: 1, max: 5 },

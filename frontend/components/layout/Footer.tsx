@@ -11,7 +11,7 @@ import {
 
 /* ─────────────────── Data ─────────────────── */
 const explore = [
-  { label: "Maisons d'hôtes", href: '/accommodations' },
+  { label: "Maisons d'hôtes", href: '/maisons-d-hotes' },
   { label: 'Expérience 360°', href: '/#experience-360' },
 ];
 

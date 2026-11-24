@@ -68,7 +68,7 @@ export function HostApplicationForm() {
       <label className="text-sm text-neutral-300 sm:col-span-2">Parlez-nous de votre maison (facultatif)<textarea name="message" rows={4} maxLength={3000} className={`${field} h-auto py-3`} /></label>
       <div className="absolute -left-[9999px] h-0 overflow-hidden" aria-hidden="true"><label>Ne pas remplir<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       {error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300 sm:col-span-2">{error}</p>}
-      <button type="submit" disabled={state === 'sending'} className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-500 font-bold text-black disabled:opacity-60 sm:col-span-2">
+      <button type="submit" disabled={state === 'sending'} className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] font-bold text-black disabled:opacity-60 sm:col-span-2">
         {state === 'sending' && <Loader2 className="size-5 animate-spin" aria-hidden="true" />} Envoyer ma candidature
       </button>
       <p className="text-xs text-neutral-500 sm:col-span-2">Vos coordonnées servent uniquement à traiter votre candidature (voir notre politique de confidentialité).</p>

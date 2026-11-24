@@ -88,7 +88,7 @@ export default function RestaurantsPage() {
           </span>
           <h1 className="mt-4 font-serif text-3xl font-black leading-[1.04] tracking-tight text-white sm:text-4xl md:text-5xl">
             Réservez votre table,{' '}
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+            <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">
               ce soir.
             </span>
           </h1>
@@ -150,7 +150,7 @@ export default function RestaurantsPage() {
                     className={cn(
                       'snap-start shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all duration-150',
                       slot === s
-                        ? 'border-amber-400/60 bg-amber-400/15 text-amber-300 shadow-[0_2px_12px_rgba(245,158,11,0.25)]'
+                        ? 'border-amber-400/60 bg-amber-400/15 text-amber-300'
                         : 'border-white/[0.07] bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white/90'
                     )}
                   >
@@ -164,7 +164,7 @@ export default function RestaurantsPage() {
             <button
               type="button"
               onClick={() => setTrouverOpen(true)}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all hover:-translate-y-0.5 active:scale-95"
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black transition-all hover:-translate-y-0.5 active:scale-95"
             >
               <Search className="size-4" />
               Trouver

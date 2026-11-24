@@ -38,7 +38,7 @@ export function DestinationsExplorer({ destinations }: { destinations: { name: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [counts]
   );
-  const href = (name: string) => `/accommodations?where=${encodeURIComponent(name)}`;
+  const href = (name: string) => `/maisons-d-hotes?where=${encodeURIComponent(name)}`;
 
   return (
     <section aria-labelledby="dest-title" className="mx-auto max-w-[1600px] px-4 py-16 sm:px-6 lg:px-10 lg:py-24">
@@ -53,7 +53,7 @@ export function DestinationsExplorer({ destinations }: { destinations: { name: s
         </Link>
       </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10">
+      <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10">
         <div className="relative h-80 overflow-hidden rounded-[1.6rem] border border-white/10 shadow-[0_20px_60px_rgba(23,20,15,0.10)] sm:h-[26rem] lg:order-2 lg:h-auto lg:min-h-[34rem]">
           <TunisiaMap
             className="absolute inset-0"
@@ -64,7 +64,7 @@ export function DestinationsExplorer({ destinations }: { destinations: { name: s
           />
         </div>
 
-        <ul className="grid content-start gap-2.5 sm:grid-cols-2 lg:order-1 lg:grid-cols-1">
+        <ul className="grid grid-cols-1 content-start gap-2.5 sm:grid-cols-2 lg:order-1 lg:grid-cols-1">
           {DESTINATIONS.map(({ name, region, note, icon: Icon }) => {
             const n = countOf(name);
             return (

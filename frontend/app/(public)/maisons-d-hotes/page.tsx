@@ -13,7 +13,6 @@ import { BedDouble, Compass, List, Map as MapIcon, MapPin, Minus, Plus, Search, 
 import { FEATURES, GOVERNORATES, featureLabel, searchGuesthouses, type SearchResult } from '@/lib/api/bookings';
 import { formatMoney } from '@/lib/booking/dates';
 import { SearchBar } from '@/components/site/SearchBar';
-import { CategoryRail } from '@/components/site/home/HomeSections';
 
 const TunisiaMap = dynamic(() => import('@/components/map/TunisiaMap').then((m) => m.TunisiaMap), {
   ssr: false,
@@ -50,13 +49,13 @@ function Stepper({ label, value, min, max, onChange }: { label: string; value: n
   );
 }
 
-function PropertyCard({ r, nights, active, onHover }: { r: SearchResult; nights: number; active: boolean; onHover: (id: string | null) => void }) {
+function PropertyCard({ r, nights, active, onHover, index = 0 }: { r: SearchResult; nights: number; active: boolean; onHover: (id: string | null) => void; index?: number }) {
   const location = [r.city, r.governorate && r.governorate !== r.city ? r.governorate : null].filter(Boolean).join(', ');
   return (
-    <li id={`card-${r.id}`} onMouseEnter={() => onHover(r.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(r.id)} onBlur={() => onHover(null)}>
+    <li id={`card-${r.id}`} className="ex-fade-up" style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }} onMouseEnter={() => onHover(r.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(r.id)} onBlur={() => onHover(null)}>
       <Link
-        href={`/accommodation/${r.slug}`}
-        className={`group flex h-full flex-col overflow-hidden rounded-[1.35rem] border bg-[#111112] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 ${active ? 'border-amber-400/70' : 'border-white/10 hover:border-white/25'}`}
+        href={`/maison-d-hote/${r.slug}`}
+        className={`ex-lift group flex h-full flex-col overflow-hidden rounded-[1.35rem] border bg-[#111112] transition-[border-color,box-shadow,transform] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 ${active ? 'border-amber-400/70' : 'border-white/10 hover:border-white/25'}`}
       >
         <div className="on-dark relative aspect-[4/3] overflow-hidden bg-[#1a1a1b]">
           {r.coverImage ? (
@@ -246,14 +245,13 @@ function Discovery() {
             </div>
             <SearchBar key={sp.toString()} variant="compact" initial={{ where: get('where') || get('governorate'), checkIn: get('checkIn'), checkOut: get('checkOut'), adults: Number(get('adults')) || 0, children: Number(get('children')) || 0 }} />
           </div>
-          <CategoryRail className="mt-5" activeQuery={(() => { const k = ['features', 'maxPrice', 'tour', 'instant'].find((x) => get(x)); return k ? `${k}=${get(k)}` : undefined; })()} />
         </div>
       </header>
 
       {/* Toolbar (sticky) */}
       <div className="sticky top-[4.5rem] z-20 border-b border-white/10 bg-[#0B0B0C]/92 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2.5">
-          <button type="button" onClick={() => setFiltersOpen(true)} className={`inline-flex h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-semibold hover:border-amber-400 ${view !== 'map' ? 'xl:hidden' : ''}`}>
+          <button type="button" onClick={() => setFiltersOpen(true)} className="ex-press inline-flex h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-semibold hover:border-amber-400">
             <SlidersHorizontal className="size-4" aria-hidden="true" /> Filtres{activeFilterCount ? <span className="grid size-5 place-items-center rounded-full bg-amber-400 text-[0.7rem] text-black">{activeFilterCount}</span> : null}
           </button>
           <div className="hidden gap-2 lg:flex">
@@ -278,42 +276,42 @@ function Discovery() {
         </div>
       </div>
 
-      {/* Results + map */}
-      <main className={`mx-auto max-w-[1600px] ${view === 'split' ? 'md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1.1fr)_minmax(0,1fr)]' : view === 'list' ? 'xl:grid xl:grid-cols-[17rem_minmax(0,1fr)]' : ''}`}>
-        {view !== 'map' && (
-          <aside aria-label="Filtres" className="hidden border-e border-white/10 px-6 py-6 xl:block">
-            <div className="sticky top-[9rem] max-h-[calc(100dvh-10rem)] overflow-y-auto pe-1 [scrollbar-width:thin]">
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-serif text-xl">Filtres</h2>
-                {activeFilterCount > 0 && <button type="button" onClick={() => setParams({ minPrice: null, maxPrice: null, bedrooms: null, features: null, instant: null, tour: null, bbox: null })} className="text-xs text-amber-300 underline">Effacer</button>}
-              </div>
-              {filtersBody}
-            </div>
-          </aside>
-        )}
-        <section ref={listRef} aria-label="Résultats" className={`px-4 py-6 sm:px-6 lg:px-10 ${view === 'map' ? 'md:hidden' : ''} ${mobileMap ? 'hidden md:block' : ''}`}>
+      {/* Results + map — two balanced columns on desktop, list-first on mobile */}
+      <main className={`mx-auto max-w-[1600px] ${view === 'split' ? 'lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(24rem,1fr)]' : ''}`}>
+        <section ref={listRef} aria-label="Résultats" className={`min-w-0 px-4 py-6 sm:px-6 lg:px-8 ${view === 'map' ? 'lg:hidden' : ''}`}>
           {isError && <p role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-300">{(error as Error)?.message || 'La recherche a échoué.'}</p>}
           {!isLoading && !isError && results.length === 0 && (
-            <div className="rounded-[1.5rem] border border-white/10 bg-[#111112] p-10 text-center">
+            <div className="rounded-[1.5rem] border border-white/10 bg-[#111112] p-10 text-center ex-fade-up">
               <p className="font-serif text-2xl">Aucune maison ne correspond.</p>
               <p className="mt-2 text-sm text-neutral-400">Élargissez les dates, la zone ou retirez un filtre.</p>
               <button type="button" onClick={clearAll} className="mt-6 h-11 rounded-full border border-white/20 px-6 text-sm font-semibold hover:border-amber-400">Réinitialiser la recherche</button>
             </div>
           )}
-          {get('where') && (
-            <button type="button" onClick={() => setParams({ where: null })} className="mb-4 me-2 inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 text-xs font-semibold text-amber-200">
-              {get('where')} <X className="size-3.5" aria-hidden="true" />
-            </button>
+          {(get('where') || get('bbox')) && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {get('where') && (
+                <button type="button" onClick={() => setParams({ where: null })} className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 text-xs font-semibold text-amber-200">
+                  {get('where')} <X className="size-3.5" aria-hidden="true" />
+                </button>
+              )}
+              {get('bbox') && (
+                <button type="button" onClick={() => setParams({ bbox: null })} className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 text-xs font-semibold text-amber-200">
+                  Zone de la carte <X className="size-3.5" aria-hidden="true" />
+                </button>
+              )}
+            </div>
           )}
-          {get('bbox') && (
-            <button type="button" onClick={() => setParams({ bbox: null })} className="mb-4 inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 text-xs font-semibold text-amber-200">
-              Zone de la carte <X className="size-3.5" aria-hidden="true" />
-            </button>
-          )}
-          <ul className={`grid gap-5 ${view === 'list' ? 'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'sm:grid-cols-2'}`}>
-            {isLoading && !data && Array.from({ length: 4 }, (_, i) => <li key={i} className="h-[22rem] animate-pulse rounded-[1.35rem] bg-[#111112]" />)}
-            {results.map((r) => (
-              <PropertyCard key={r.id} r={r} nights={nights} active={hovered === r.id || selected === r.id} onHover={setHovered} />
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17.5rem),1fr))] gap-x-5 gap-y-7">
+            {isLoading && !data && Array.from({ length: 4 }, (_, i) => (
+              <li key={i} aria-hidden="true">
+                <div className="ex-skeleton aspect-[4/3] rounded-[1.35rem]" />
+                <div className="ex-skeleton mt-4 h-4 w-1/3 rounded-full" />
+                <div className="ex-skeleton mt-3 h-6 w-3/4 rounded-full" />
+                <div className="ex-skeleton mt-3 h-4 w-1/2 rounded-full" />
+              </li>
+            ))}
+            {results.map((r, i) => (
+              <PropertyCard key={r.id} r={r} nights={nights} active={hovered === r.id || selected === r.id} onHover={setHovered} index={i} />
             ))}
           </ul>
           {results.length > 0 && mapped.length < results.length && (
@@ -321,53 +319,58 @@ function Discovery() {
           )}
         </section>
 
-        <section aria-label="Carte des maisons d’hôtes" className={`${view === 'list' ? 'md:hidden' : ''} ${mobileMap ? 'block' : 'hidden md:block'}`}>
-          <div className={`relative ${view === 'map' ? 'h-[calc(100dvh-12.5rem)]' : 'h-[calc(100dvh-8.5rem)] md:sticky md:top-[8.4rem]'}`}>
-            <TunisiaMap
-              className="size-full"
-              markers={markers}
-              highlightedId={hovered}
-              selectedId={selected}
-              onSelect={setSelected}
-              onBoundsChange={(bbox) => setPendingBbox(bbox)}
-            />
-            {pendingBbox && pendingBbox !== get('bbox') && (
-              <button type="button" onClick={() => { setParams({ bbox: pendingBbox }); setPendingBbox(null); }} className="absolute left-1/2 top-4 z-[500] -translate-x-1/2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black shadow-xl">
-                Rechercher dans cette zone
-              </button>
-            )}
-            {!isLoading && markers.length === 0 && (
-              <p className="pointer-events-none absolute inset-x-4 bottom-6 z-[500] rounded-2xl bg-black/75 p-4 text-center text-sm text-neutral-300">Aucune maison de cette sélection n’a encore de position GPS vérifiée.</p>
-            )}
-            {selectedResult && (
-              <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[600] md:bottom-4 md:left-4 md:right-auto md:w-80">
-                <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111112] shadow-2xl">
-                  <button type="button" aria-label="Fermer l’aperçu" onClick={() => setSelected(null)} className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-black/70 text-white"><X className="size-4" /></button>
-                  <Link href={`/accommodation/${selectedResult.slug}`} className="flex gap-3 p-3">
-                    {selectedResult.coverImage && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={selectedResult.coverImage} alt="" className="size-20 shrink-0 rounded-xl object-cover" />
-                    )}
-                    <span className="min-w-0">
-                      <span className="block truncate font-serif text-lg text-white">{selectedResult.name}</span>
-                      <span className="block text-xs text-neutral-400">{[selectedResult.city, selectedResult.governorate].filter(Boolean).join(', ')}</span>
-                      <span className="mt-1 block text-sm font-semibold text-amber-300">{selectedResult.availability?.total != null ? `${formatMoney(selectedResult.availability.total)} · ${nights} nuit(s)` : selectedResult.fromPrice != null ? `Dès ${formatMoney(selectedResult.fromPrice)} / nuit` : 'Voir la maison'}</span>
-                    </span>
-                  </Link>
+        <section
+          aria-label="Carte des maisons d’hôtes"
+          className={`${view === 'list' ? 'lg:hidden' : ''} ${mobileMap ? 'fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-[4.5rem] z-[45] ex-sheet-in md:bottom-0 lg:static lg:z-auto' : 'hidden lg:block'}`}
+        >
+          <div className={`relative ${mobileMap ? 'h-full' : ''} ${view === 'map' ? 'lg:h-[calc(100dvh-12.5rem)]' : 'lg:sticky lg:top-[8.4rem] lg:h-[calc(100dvh-8.4rem)] lg:p-3 lg:ps-0'}`}>
+            <div className="relative size-full overflow-hidden lg:rounded-[1.4rem] lg:shadow-[0_18px_50px_rgba(23,20,15,0.12)]">
+              <TunisiaMap
+                className="size-full"
+                markers={markers}
+                highlightedId={hovered}
+                selectedId={selected}
+                onSelect={setSelected}
+                onBoundsChange={(bbox) => setPendingBbox(bbox)}
+              />
+              {pendingBbox && pendingBbox !== get('bbox') && (
+                <button type="button" onClick={() => { setParams({ bbox: pendingBbox }); setPendingBbox(null); }} className="on-dark ex-pop absolute left-1/2 top-4 z-[500] -translate-x-1/2 rounded-full bg-[#17140f] px-5 py-2.5 text-sm font-semibold text-white shadow-xl">
+                  Rechercher dans cette zone
+                </button>
+              )}
+              {!isLoading && markers.length === 0 && (
+                <p className="on-dark pointer-events-none absolute inset-x-4 bottom-6 z-[500] rounded-2xl bg-black/75 p-4 text-center text-sm text-white">Aucune maison de cette sélection n’a encore de position GPS vérifiée.</p>
+              )}
+              {selectedResult && (
+                <div className="ex-pop absolute inset-x-3 bottom-20 z-[600] lg:bottom-4 lg:left-4 lg:right-auto lg:w-80">
+                  <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111112] shadow-2xl">
+                    <button type="button" aria-label="Fermer l’aperçu" onClick={() => setSelected(null)} className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-black/70 text-white"><X className="size-4" /></button>
+                    <Link href={`/maison-d-hote/${selectedResult.slug}`} className="flex gap-3 p-3">
+                      {selectedResult.coverImage && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={selectedResult.coverImage} alt="" className="size-20 shrink-0 rounded-xl object-cover" />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block truncate font-serif text-lg text-white">{selectedResult.name}</span>
+                        <span className="block text-xs text-neutral-400">{[selectedResult.city, selectedResult.governorate].filter(Boolean).join(', ')}</span>
+                        <span className="mt-1 block text-sm font-semibold text-amber-300">{selectedResult.availability?.total != null ? `${formatMoney(selectedResult.availability.total)} · ${nights} nuit(s)` : selectedResult.fromPrice != null ? `Dès ${formatMoney(selectedResult.fromPrice)} / nuit` : 'Voir la maison'}</span>
+                      </span>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </section>
       </main>
 
-      {/* Mobile floating list/map switch */}
+      {/* Mobile: "Voir la carte" / "Voir la liste" floating control */}
       <button
         type="button"
         onClick={() => { setMobileMap((m) => !m); setSelected(null); }}
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] left-1/2 z-40 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-white px-6 text-sm font-bold text-black shadow-2xl md:hidden"
+        className="on-dark ex-press fixed bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-1/2 z-50 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-[#17140f] px-6 text-sm font-bold text-white shadow-[0_12px_30px_rgba(0,0,0,0.35)] lg:hidden"
       >
-        {mobileMap ? <><List className="size-4" aria-hidden="true" /> Liste</> : <><MapIcon className="size-4" aria-hidden="true" /> Carte</>}
+        {mobileMap ? <><List className="size-4" aria-hidden="true" /> Voir la liste</> : <><MapIcon className="size-4" aria-hidden="true" /> Voir la carte</>}
       </button>
 
       {/* Filters: right panel on desktop, bottom sheet on mobile */}
@@ -392,7 +395,7 @@ function Discovery() {
   );
 }
 
-export default function AccommodationsPage() {
+export default function MaisonsDHotesPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0B0B0C]" />}>
       <Discovery />

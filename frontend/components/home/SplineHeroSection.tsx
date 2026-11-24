@@ -64,7 +64,7 @@ export function SplineHeroSection() {
           {/* Headline — tighter, fits within ~60% width to leave room for orb */}
           <h2 className="max-w-[68%] font-serif text-[26px] font-black leading-[1.05] tracking-tight text-white">
             Réservez ce que{' '}
-            <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">
+            <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">
               vous voyez
             </span>
             , en 360°.
@@ -79,7 +79,7 @@ export function SplineHeroSection() {
           <div className="flex flex-col gap-2">
             <Link
               href="/explorer"
-              className="group inline-flex h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-[0_8px_24px_rgba(245,158,11,0.32)] transition-all active:scale-[0.98]"
+              className="group inline-flex h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 text-sm font-bold text-black transition-all active:scale-[0.98]"
             >
               Explorer en 360°
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -135,7 +135,7 @@ export function SplineHeroSection() {
               {/* Headline */}
               <h1 className="font-serif text-4xl font-black leading-[1.08] tracking-tight text-white lg:text-5xl">
                 Réservez ce que{' '}
-                <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+                <span className="bg-[#e0a527] hover:bg-[#eab33a] bg-clip-text text-transparent">
                   vous voyez
                 </span>
                 , en 360°.
@@ -151,7 +151,7 @@ export function SplineHeroSection() {
               <div className="mt-7 flex items-center gap-3">
                 <Link
                   href="/explorer"
-                  className="group inline-flex h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-7 text-sm font-bold text-black shadow-[0_8px_30px_rgba(245,158,11,0.30)] transition-all duration-300 hover:-translate-y-0.5"
+                  className="group inline-flex h-[46px] items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-7 text-sm font-bold text-black transition-all duration-300 hover:-translate-y-0.5"
                 >
                   Explorer en 360°
                   <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />

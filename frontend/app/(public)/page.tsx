@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { BecomeHostSection, CategoryRail, Experience360Section, FeaturedSection, HomeHero } from '@/components/site/home/HomeSections';
+import { BecomeHostSection, Experience360Section, FeaturedSection, HomeHero } from '@/components/site/home/HomeSections';
 import { DestinationsExplorer } from '@/components/site/home/DestinationsExplorer';
+import { Reveal } from '@/components/site/motion';
 import { getHomeDataServer, SITE_URL } from '@/lib/serverApi';
 import { jsonLd } from '@/lib/seo';
 
@@ -22,19 +23,16 @@ export default async function HomePage() {
     name: 'Exploria360',
     url: SITE_URL,
     inLanguage: 'fr',
-    potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/accommodations?where={search_term_string}`, 'query-input': 'required name=search_term_string' },
+    potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/maisons-d-hotes?where={search_term_string}`, 'query-input': 'required name=search_term_string' },
   };
   return (
     <div className="bg-[#0B0B0C] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(websiteLd) }} />
       <HomeHero />
-      <nav aria-label="Catégories" className="mx-auto max-w-[1600px] border-b border-white/10 px-4 pt-6 sm:px-6 lg:px-10">
-        <CategoryRail />
-      </nav>
       <FeaturedSection results={data.results} />
-      <DestinationsExplorer destinations={data.destinations} />
-      <Experience360Section venue={data.tourVenue} />
-      <BecomeHostSection />
+      <Reveal><DestinationsExplorer destinations={data.destinations} /></Reveal>
+      <Reveal><Experience360Section venue={data.tourVenue} /></Reveal>
+      <Reveal><BecomeHostSection /></Reveal>
     </div>
   );
 }

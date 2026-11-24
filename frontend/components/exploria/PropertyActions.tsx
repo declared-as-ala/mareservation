@@ -27,7 +27,7 @@ export function Tour360Button({ url, name, poster }: { url: string; name: string
         <Rotate3d className="size-5" aria-hidden="true" /> Explorer cette maison en 360°
       </button>
       {open && (
-        <div role="dialog" aria-modal="true" aria-label={`Visite 360° — ${name}`} className="on-dark fixed inset-0 z-[90] flex flex-col bg-black/95 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-6">
+        <div role="dialog" aria-modal="true" aria-label={`Visite 360° — ${name}`} className="on-dark ex-pop fixed inset-0 z-[90] flex flex-col bg-black/95 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:p-6">
           <div className="mb-3 flex items-center justify-between gap-3 text-white">
             <p className="truncate font-serif text-xl">{name} — visite 360°</p>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fermer la visite" className="grid size-11 shrink-0 place-items-center rounded-full bg-white/10 hover:bg-white/20"><X className="size-5" /></button>
@@ -79,14 +79,14 @@ export function MobileBookingBar({ venueKey, venueName, fromPrice, demo }: { ven
             {fromPrice != null ? <p className="text-white"><span className="text-lg font-bold">{formatMoney(fromPrice)}</span> <span className="text-sm text-neutral-400">/ nuit</span></p> : <p className="text-sm text-neutral-300">Voir les disponibilités</p>}
             {demo && <p className="text-xs text-amber-300">Démonstration</p>}
           </div>
-          <button type="button" onClick={() => setOpen(true)} className="h-12 shrink-0 rounded-2xl bg-gradient-to-b from-amber-300 to-amber-500 px-6 font-bold text-black">Réserver</button>
+          <button type="button" onClick={() => setOpen(true)} className="h-12 shrink-0 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] px-6 font-bold text-black">Réserver</button>
         </div>
       </div>
       <div className="h-20 lg:hidden" aria-hidden="true" />
       {open && (
         <div className="fixed inset-0 z-[65] lg:hidden" role="dialog" aria-modal="true" aria-label="Réservation">
           <button type="button" aria-label="Fermer" className="absolute inset-0 bg-black/75" onClick={() => setOpen(false)} />
-          <div id="reserver" className="absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-[1.75rem] border border-white/10 bg-[#0B0B0C] pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div id="reserver" className="ex-sheet-in absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-[1.75rem] border border-white/10 bg-[#0B0B0C] pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="sticky top-0 z-10 flex items-center justify-between bg-[#0B0B0C] px-4 py-3">
               <span className="mx-auto h-1.5 w-12 rounded-full bg-white/20" aria-hidden="true" />
               <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="absolute end-3 top-2 grid size-10 place-items-center rounded-full border border-white/15 text-white"><X className="size-4" /></button>

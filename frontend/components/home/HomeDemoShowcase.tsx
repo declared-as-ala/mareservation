@@ -29,7 +29,7 @@ export function HomeDemoShowcase() {
   });
   const venue = (data ?? []).find((v) => v.immersiveUrl);
   const tourUrl = venue?.immersiveUrl || DEFAULT_TOUR_URL;
-  const href = venue ? getVenueHref(venue) : '/accommodations';
+  const href = venue ? getVenueHref(venue) : '/maisons-d-hotes';
 
   return (
     <section
@@ -64,7 +64,7 @@ export function HomeDemoShowcase() {
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link
                 href={href}
-                className="group inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-6 text-sm font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.35)] transition-all hover:brightness-110 active:scale-[0.98]"
+                className="group inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] px-6 text-sm font-black text-black transition-all active:scale-[0.98]"
               >
                 Voir la fiche
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />

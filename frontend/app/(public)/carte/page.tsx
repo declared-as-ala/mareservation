@@ -50,14 +50,14 @@ export default function MapPage() {
           <option value="">Toute la Tunisie</option>
           {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
         </select>
-        <Link href="/accommodations" className="inline-flex h-12 items-center rounded-2xl bg-amber-400 px-4 text-sm font-bold text-black shadow-xl">Liste + filtres</Link>
+        <Link href="/maisons-d-hotes" className="inline-flex h-12 items-center rounded-2xl bg-amber-400 px-4 text-sm font-bold text-black shadow-xl">Liste + filtres</Link>
       </div>
 
       {sel && (
         <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-[600] sm:left-4 sm:right-auto sm:w-96">
           <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#111112] shadow-2xl">
             <button type="button" aria-label="Fermer" onClick={() => setSelected(null)} className="absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-black/70"><X className="size-4" /></button>
-            <Link href={`/accommodation/${sel.slug}`} className="flex gap-3 p-3">
+            <Link href={`/maison-d-hote/${sel.slug}`} className="flex gap-3 p-3">
               {sel.coverImage && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={sel.coverImage} alt="" className="size-24 shrink-0 rounded-xl object-cover" />

@@ -6,3 +6,6 @@ api/index.mjs
 .env.*.local
 *.log
 .DS_Store
+
+# Local dev credentials written by `npm run dev:memory -- --accounts`
+.dev-accounts.local.txt

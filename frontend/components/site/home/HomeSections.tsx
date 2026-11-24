@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { Reveal, Stagger, StaggerItem } from '@/components/site/motion';
 import {
   ArrowRight, BedDouble, ChevronLeft, ChevronRight, Eye, Gem, Heart, Landmark, MapPin, Monitor, Mountain, Rotate3d,
   ShieldCheck, Sunset, Trees, Users, Wallet, Waves, Zap, Baby,
@@ -39,7 +41,7 @@ export function CategoryRail({ activeQuery, className }: { activeQuery?: string;
         {CATEGORIES.map(({ label, icon: Icon, query }) => {
           const active = activeQuery === query;
           return (
-            <Link key={label} href={`/accommodations?${query}`} aria-current={active ? 'true' : undefined}
+            <Link key={label} href={`/maisons-d-hotes?${query}`} aria-current={active ? 'true' : undefined}
               className={cn('group flex min-w-[6.75rem] shrink-0 snap-start flex-col items-center gap-2 border-b-2 px-3 pb-3 pt-2 text-center transition-colors',
                 active ? 'border-amber-400 text-amber-200' : 'border-transparent text-neutral-400 hover:border-white/30 hover:text-white')}>
               <Icon className={cn('size-6 stroke-[1.4]', active ? 'text-amber-300' : 'text-neutral-300 group-hover:text-amber-300')} aria-hidden="true" />
@@ -56,23 +58,37 @@ export function CategoryRail({ activeQuery, className }: { activeQuery?: string;
 
 export function HomeHero() {
   const { t } = useI18n();
+  const ref = useRef<HTMLElement>(null);
+  // Subtle parallax: the photo drifts slower than the page (transform only, disabled by reduced motion).
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const imgY = useTransform(scrollYProgress, [0, 1], ['0%', '12%']);
+  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', '-8%']);
+  const ease = [0.22, 1, 0.36, 1] as const;
   return (
-    <section aria-labelledby="hero-title" className="on-dark relative flex min-h-[640px] items-center justify-center overflow-hidden pt-[4.5rem] text-white md:h-[82vh] md:max-h-[880px] md:min-h-[620px]">
-      <picture>
-        <source media="(max-width: 767px)" srcSet="/demo/hero-960.webp" type="image/webp" />
-        <source srcSet="/demo/hero.webp" type="image/webp" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/demo/hero.jpg" alt="" aria-hidden="true" fetchPriority="high" className="absolute inset-0 size-full object-cover" />
-      </picture>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/60" aria-hidden="true" />
-      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col items-center px-4 pb-12 text-center sm:px-6 lg:px-10">
-        <h1 id="hero-title" className="max-w-4xl font-serif text-[clamp(2.3rem,6vw,4.6rem)] font-medium leading-[1.04] [text-shadow:0_4px_30px_rgba(0,0,0,0.45)]">
-          {t('hero.title')}
-          <span className="mt-2 block bg-gradient-to-r from-amber-200 via-amber-300 to-amber-500 bg-clip-text text-[0.62em] italic text-transparent">{t('hero.subtitle')}</span>
+    <section ref={ref} aria-labelledby="hero-title" className="on-dark relative flex min-h-[640px] items-center justify-center overflow-hidden pt-[4.5rem] text-white md:h-[78vh] md:max-h-[820px] md:min-h-[600px]">
+      <motion.div className="absolute inset-0" style={{ y: imgY }} initial={{ scale: 1.08 }} animate={{ scale: 1 }} transition={{ duration: 1.8, ease }}>
+        <picture>
+          <source media="(max-width: 767px)" srcSet="/demo/hero-960.webp" type="image/webp" />
+          <source srcSet="/demo/hero.webp" type="image/webp" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/demo/hero.jpg" alt="" aria-hidden="true" fetchPriority="high" className="size-full object-cover" />
+        </picture>
+      </motion.div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/35 to-black/65" aria-hidden="true" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/50 to-transparent" aria-hidden="true" />
+      <motion.div style={{ y: contentY }} className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-col items-center px-4 pb-12 text-center sm:px-6 lg:px-10">
+        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease, delay: 0.05 }} className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200 backdrop-blur">
+          <span className="size-1.5 rounded-full bg-amber-400" aria-hidden="true" /> Visites 360° · Tunisie
+        </motion.p>
+        <h1 id="hero-title" className="max-w-4xl font-serif text-[clamp(2.1rem,4.4vw,3.6rem)] font-semibold leading-[1.06] [text-shadow:0_2px_24px_rgba(0,0,0,0.35)]">
+          <motion.span className="block" initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.12 }}>{t('hero.title')}</motion.span>
+          <motion.span className="mt-3 block text-[0.5em] font-medium tracking-[-0.01em] text-[#f1c661]" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.26 }}>{t('hero.subtitle')}</motion.span>
         </h1>
-        <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">{t('hero.lead')}</p>
-        <div className="mt-9 flex w-full justify-center"><SearchBar variant="hero" /></div>
-      </div>
+        <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.38 }} className="mt-5 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg">{t('hero.lead')}</motion.p>
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease, delay: 0.5 }} className="mt-9 flex w-full justify-center">
+          <SearchBar variant="hero" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
@@ -80,8 +96,8 @@ export function HomeHero() {
 export function PropertyCardMini({ r }: { r: SearchResult }) {
   const { t } = useI18n();
   return (
-    <Link href={`/accommodation/${r.slug}`} className="group block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400 rounded-[1.4rem]">
-      <div className="on-dark relative aspect-[4/3.4] overflow-hidden rounded-[1.4rem] bg-[#161617]">
+    <Link href={`/maison-d-hote/${r.slug}`} className="group block rounded-[1.4rem] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400">
+      <div className="on-dark ex-lift relative aspect-[4/3.4] overflow-hidden rounded-[1.4rem] bg-[#161617] transition-[transform,box-shadow]">
         {r.coverImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={r.coverImage} alt={`${r.name}`} loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.05] motion-reduce:transition-none" />
@@ -132,7 +148,7 @@ export function DestinationsSection({ destinations }: { destinations: { name: st
       <ul className="mt-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {items.map((d, i) => (
           <li key={d.name} className={cn(i === 0 && 'col-span-2 row-span-2 lg:col-span-2')}>
-            <Link href={`/accommodations?where=${encodeURIComponent(d.name)}`} className="on-dark group relative flex h-full min-h-[11rem] overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(120%_90%_at_20%_0%,rgba(251,191,36,0.16),transparent_60%),linear-gradient(160deg,#1a1712,#0d0d0e)] focus-visible:outline-2 focus-visible:outline-amber-400 sm:min-h-[13rem]">
+            <Link href={`/maisons-d-hotes?where=${encodeURIComponent(d.name)}`} className="on-dark group relative flex h-full min-h-[11rem] overflow-hidden rounded-[1.4rem] border border-white/10 bg-[radial-gradient(120%_90%_at_20%_0%,rgba(251,191,36,0.16),transparent_60%),linear-gradient(160deg,#1a1712,#0d0d0e)] focus-visible:outline-2 focus-visible:outline-amber-400 sm:min-h-[13rem]">
               {d.image && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={d.image} alt="" loading="lazy" className="absolute inset-0 size-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105 motion-reduce:transition-none" />
@@ -161,11 +177,11 @@ export function FeaturedSection({ results }: { results: SearchResult[] }) {
           <h2 id="feat-title" className="font-serif text-[clamp(1.9rem,3.6vw,2.8rem)] text-white">{t('home.featured')}</h2>
           <p className="mt-2 text-neutral-400">{t('home.featuredLead')}</p>
         </div>
-        <Link href="/accommodations" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-amber-300 hover:text-amber-200">{t('home.seeAll')} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" /></Link>
+        <Link href="/maisons-d-hotes" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-amber-300 hover:text-amber-200">{t('home.seeAll')} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" /></Link>
       </div>
-      <ul className="mt-8 grid gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">
-        {results.slice(0, 8).map((r) => <li key={r.id}><PropertyCardMini r={r} /></li>)}
-      </ul>
+      <Stagger className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-5 sm:gap-y-9 sm:overflow-visible sm:px-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
+        {results.slice(0, 8).map((r) => <StaggerItem key={r.id} className="w-[80%] shrink-0 snap-start sm:w-auto">{<PropertyCardMini r={r} />}</StaggerItem>)}
+      </Stagger>
     </section>
   );
 }
@@ -191,7 +207,7 @@ export function Experience360Section({ venue }: { venue: Venue | null }) {
               <li key={text} className="flex gap-3.5 text-neutral-200"><span className="grid size-10 shrink-0 place-items-center rounded-full border border-amber-400/40 text-amber-300"><Icon className="size-[18px]" aria-hidden="true" /></span><span className="pt-2">{text}</span></li>
             ))}
           </ul>
-          <Link href="/accommodations?tour=1" className="mt-9 inline-flex h-13 items-center gap-2 rounded-full bg-gradient-to-b from-amber-300 to-amber-500 px-7 py-4 font-bold text-black shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:brightness-110">
+          <Link href="/maisons-d-hotes?tour=1" className="mt-9 inline-flex h-13 items-center gap-2 rounded-full bg-[#e0a527] hover:bg-[#eab33a] px-7 py-4 font-bold text-black">
             <Rotate3d className="size-5" aria-hidden="true" /> {t('home.360.cta')}
           </Link>
         </div>
@@ -217,7 +233,7 @@ export function BecomeHostSection() {
         <div className="relative max-w-2xl">
           <h2 id="host-title" className="font-serif text-[clamp(2rem,4vw,3.2rem)] leading-[1.05] text-white">{t('home.host.title')}</h2>
           <p className="mt-4 text-lg leading-relaxed text-neutral-300">{t('home.host.lead')}</p>
-          <Link href="/devenir-hote" className="mt-8 inline-flex h-13 items-center gap-2 rounded-full bg-gradient-to-b from-amber-300 to-amber-500 px-7 py-4 font-bold text-black hover:brightness-110">
+          <Link href="/devenir-hote" className="mt-8 inline-flex h-13 items-center gap-2 rounded-full bg-[#e0a527] hover:bg-[#eab33a] px-7 py-4 font-bold text-black">
             {t('home.host.cta')} <ArrowRight className="size-5 rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>

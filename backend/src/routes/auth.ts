@@ -16,7 +16,7 @@ const router = Router();
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: Number(process.env.LOGIN_RATE_LIMIT) || 5,
   message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -73,9 +73,12 @@ function clearRefreshCookie(res: Response) {
 }
 
 // POST /api/auth/register and POST /api/auth/signup (body.name accepted as fullName)
-router.post(['/register', '/signup'], async (req, res) => {
+const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: Number(process.env.REGISTER_LIMIT) || 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Trop de créations de compte. Réessayez plus tard.' } });
+
+router.post(['/register', '/signup'], registerLimiter, async (req, res) => {
   try {
-    let { fullName, email, password, role } = req.body;
+    let { fullName, email, password } = req.body;
+    const rawPhone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
     if (!fullName && req.body.name) fullName = req.body.name;
 
     if (!fullName || typeof fullName !== 'string' || !fullName.trim()) {
@@ -90,8 +93,19 @@ router.post(['/register', '/signup'], async (req, res) => {
     if (!password || typeof password !== 'string') {
       return res.status(400).json({ error: 'Le mot de passe est obligatoire.' });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+    // Same strength policy as password reset / change.
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return res.status(400).json({ error: strength.errors[0] ?? 'Mot de passe trop faible.', errors: strength.errors });
+    }
+    let phone: string | undefined;
+    if (rawPhone) {
+      const digits = rawPhone.replace(/[\s().-]/g, '');
+      // Tunisia: 8 digits (optionally +216 / 00216), or an international number (+ and 8–15 digits).
+      if (!/^(?:(?:\+|00)216)?[2-9]\d{7}$/.test(digits) && !/^\+\d{8,15}$/.test(digits)) {
+        return res.status(400).json({ error: 'Numéro de téléphone invalide.', field: 'phone' });
+      }
+      phone = digits;
     }
 
     const emailLower = email.trim().toLowerCase();
@@ -103,10 +117,11 @@ router.post(['/register', '/signup'], async (req, res) => {
     // Only CUSTOMER can self-register; ADMIN is created by seed
     const allowedRole = 'CUSTOMER';
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const user = new User({
-      fullName: fullName.trim(),
+      fullName: fullName.trim().slice(0, 120),
       email: emailLower,
+      phone,
       passwordHash,
       role: allowedRole,
     });

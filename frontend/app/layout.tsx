@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import type { CSSProperties } from "react";
+import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Providers } from "./providers";
+
+// Self-hosted at build time by next/font (no runtime request to Google, no layout shift).
+const geist = Geist({ subsets: ["latin", "latin-ext"], display: "swap", variable: "--font-geist" });
+const geistMono = Geist_Mono({ subsets: ["latin"], display: "swap", variable: "--font-geist-mono" });
+const plexArabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-arabic" });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.exploria360.com";
 
@@ -37,17 +42,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const fontVars = {
-    "--font-inter": "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-    "--font-fira-code": "Fira Code, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace",
-    "--font-playfair": "Playfair Display, Georgia, Cambria, Times New Roman, Times, serif",
-  } as CSSProperties;
-
   return (
-    <html lang="fr" className="dark" suppressHydrationWarning>
-      <body className="antialiased" style={fontVars}>
+    <html lang="fr" className={`dark ${geist.variable} ${geistMono.variable} ${plexArabic.variable}`} suppressHydrationWarning>
+      <body className="antialiased">
         <Providers>{children}</Providers>
-        <Toaster position="top-center" richColors />
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );

@@ -532,8 +532,8 @@ async function main(): Promise<void> {
   });
 
   console.log('\n✨ Fresh catalog seeded. Visit:');
-  console.log('   /accommodation/riad-azura       — Hôtel · 5 rooms × 3 types, 360° per room');
-  console.log("   /accommodation/dar-el-medina    — Maison d'hôte · 3 rooms × 2 types");
+  console.log('   /maison-d-hote/riad-azura       — Hôtel · 5 rooms × 3 types, 360° per room');
+  console.log("   /maison-d-hote/dar-el-medina    — Maison d'hôte · 3 rooms × 2 types");
   console.log('   /restaurant/la-table-dor        — Restaurant · venue 360°');
   console.log('   /cafe/cafe-lumiere              — Café · venue 360°');
   console.log('   /cafe/skyline-rooftop-bar       — Bar & Rooftop · venue 360°');

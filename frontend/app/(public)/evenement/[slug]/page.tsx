@@ -536,7 +536,7 @@ export default function EventDetailPage() {
             type="button"
             onClick={() => setMobileBookingOpen(true)}
             disabled={eventAvail.isSoldOut}
-            className="flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-6 text-sm font-black text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95 disabled:opacity-60"
+            className="flex h-12 shrink-0 items-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] px-6 text-sm font-black text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95 disabled:opacity-60"
           >
             <Ticket className="size-4" />
             {eventAvail.isSoldOut ? 'Complet' : 'Reserver'}

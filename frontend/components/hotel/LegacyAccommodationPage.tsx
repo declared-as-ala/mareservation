@@ -514,7 +514,7 @@ function BookingWidget({
         <button
           type="button"
           onClick={handleBook}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40"
         >
           <Sparkles className="size-4" />
           Réserver maintenant
@@ -1108,7 +1108,7 @@ export default function HotelDetailPage() {
                   <button
                     type="button"
                     onClick={() => setBookingModalOpen(true)}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40 active:translate-y-0"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40 active:translate-y-0"
                   >
                     <Sparkles className="size-4" />
                     Réserver maintenant
@@ -1146,7 +1146,7 @@ export default function HotelDetailPage() {
                   <button
                     type="button"
                     onClick={() => setBookingModalOpen(true)}
-                    className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 px-5 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95"
+                    className="flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] px-5 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all active:scale-95"
                   >
                     <Sparkles className="size-4" />
                     Réserver

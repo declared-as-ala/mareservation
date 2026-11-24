@@ -70,9 +70,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-fira-code);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-geist), var(--font-arabic), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* One family across the product: "serif" headings now use Geist display settings (see .font-serif). */
+  --font-serif: var(--font-geist), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -402,7 +403,25 @@
 .theme-light {
   --lt-page: #FAF7F1; --lt-surface: #FFFFFF; --lt-surface-2: #F3EEE4; --lt-ink: #17140F;
   --lt-line: rgba(23,20,15,.12); --lt-gold-ink: #8A5A00;
+  /* shadcn tokens, light: <html class="dark"> stays for the admin, so token-based components
+     (Input, Tabs, Card, Button…) would otherwise render dark on the public site. */
+  --background: #FAF7F1; --foreground: #17140F;
+  --card: #FFFFFF; --card-foreground: #17140F; --popover: #FFFFFF; --popover-foreground: #17140F;
+  --primary: #E0A527; --primary-foreground: #17140F;
+  --secondary: #F3EEE4; --secondary-foreground: #17140F;
+  --muted: #F3EEE4; --muted-foreground: #5F584D;
+  --accent: #F3EEE4; --accent-foreground: #17140F;
+  --border: rgba(23,20,15,.12); --input: rgba(23,20,15,.16); --ring: #B07D12;
   background-color: var(--lt-page); color: var(--lt-ink); color-scheme: light;
+}
+.theme-light .on-dark {
+  --background: oklch(0.08 0 0); --foreground: oklch(0.92 0 0);
+  --card: oklch(0.11 0 0); --card-foreground: oklch(0.92 0 0); --popover: oklch(0.11 0 0); --popover-foreground: oklch(0.92 0 0);
+  --primary: oklch(0.80 0.16 85); --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(0.14 0 0); --secondary-foreground: oklch(0.92 0 0);
+  --muted: oklch(0.14 0 0); --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.16 0 0); --accent-foreground: oklch(0.92 0 0);
+  --border: oklch(0.22 0 0); --input: oklch(0.22 0 0); --ring: oklch(0.80 0.16 85);
 }
 .theme-light input:not(.on-dark *), .theme-light select:not(.on-dark *), .theme-light textarea:not(.on-dark *) { color-scheme: light; }
 .theme-light .leaflet-container { background: #e8e2d6 !important; }
@@ -552,11 +571,7 @@
 .theme-light .hover\:text-amber-400:hover:not(.on-dark, .on-dark *),
 .theme-light .group-hover\:text-amber-300:hover:not(.on-dark, .on-dark *),
 .theme-light .group-hover\:text-amber-100:hover:not(.on-dark, .on-dark *) { color: var(--lt-gold-ink) !important; }
-.theme-light .placeholder\:text-neutral-400::placeholder:not(.on-dark, .on-dark *),
-.theme-light .placeholder\:text-neutral-500::placeholder:not(.on-dark, .on-dark *),
-.theme-light .placeholder\:text-neutral-600::placeholder:not(.on-dark, .on-dark *),
-.theme-light .placeholder\:text-white\/55::placeholder:not(.on-dark, .on-dark *),
-.theme-light .placeholder\:text-white\/50::placeholder:not(.on-dark, .on-dark *) { color: #7d7466 !important; }
+.theme-light :is(.placeholder\:text-neutral-400, .placeholder\:text-neutral-500, .placeholder\:text-neutral-600, .placeholder\:text-white\/55, .placeholder\:text-white\/50):not(.on-dark, .on-dark *)::placeholder { color: #7d7466 !important; }
 .theme-light .border-white\/10:not(.on-dark, .on-dark *),
 .theme-light .border-white\/12:not(.on-dark, .on-dark *),
 .theme-light .border-white\/15:not(.on-dark, .on-dark *),
@@ -588,3 +603,100 @@
 .ex-locate--error { color: #b91c1c !important; }
 @keyframes ex-spin { to { transform: rotate(360deg); } }
 .leaflet-container .maplibregl-canvas { outline: none; }
+
+/* ════════════ Exploria360 design tokens & motion system ════════════
+   Motion: transform/opacity only, critically damped feel (no overshoot), fast routine interactions,
+   cross-fade fallback under prefers-reduced-motion. */
+:root {
+  --ex-gold: #d4a537; --ex-gold-strong: #f5b81c; --ex-ink: #17140f; --ex-ivory: #faf7f1; --ex-charcoal: #111112;
+  --ex-radius-sm: 12px; --ex-radius-md: 18px; --ex-radius-lg: 24px; --ex-radius-xl: 32px;
+  --ex-shadow-1: 0 1px 2px rgba(23,20,15,.06), 0 8px 24px rgba(23,20,15,.08);
+  --ex-shadow-2: 0 2px 4px rgba(23,20,15,.06), 0 24px 60px rgba(23,20,15,.14);
+  --ex-ease-out: cubic-bezier(.22, 1, .36, 1);       /* expo-like decelerate */
+  --ex-ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ex-dur-fast: 140ms; --ex-dur: 240ms; --ex-dur-slow: 520ms;
+}
+
+/* Display typography: tighter tracking as size grows */
+.font-serif { letter-spacing: -0.02em; font-weight: 600 !important; font-optical-sizing: auto; }
+h1.font-serif, h2.font-serif { letter-spacing: -0.032em; line-height: 1.08; }
+html[dir="rtl"] body, html[lang="ar"] body { font-family: var(--font-arabic), var(--font-geist), sans-serif; }
+html[dir="rtl"] .font-serif { letter-spacing: 0; }
+body { font-feature-settings: "ss01", "cv11"; -webkit-font-smoothing: antialiased; }
+.tabular-nums, [class*="TND"] { font-variant-numeric: tabular-nums; }
+
+/* Entrance & feedback utilities */
+@keyframes ex-fade-up { from { opacity: 0; transform: translate3d(0, 14px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ex-pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes ex-sheet-in { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ex-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+.ex-fade-up { animation: ex-fade-up var(--ex-dur-slow) var(--ex-ease-out) both; }
+.ex-pop { animation: ex-pop var(--ex-dur) var(--ex-ease-out) both; transform-origin: top center; }
+.ex-sheet-in { animation: ex-sheet-in 320ms var(--ex-ease-out) both; }
+.ex-skeleton { background: linear-gradient(90deg, rgba(23,20,15,.06) 25%, rgba(23,20,15,.11) 37%, rgba(23,20,15,.06) 63%); background-size: 400% 100%; animation: ex-shimmer 1.4s ease infinite; }
+.ex-lift { will-change: transform; transition-duration: var(--ex-dur); transition-timing-function: var(--ex-ease-out); }
+@media (hover: hover) { .ex-lift:hover { transform: translate3d(0, -4px, 0); box-shadow: var(--ex-shadow-2); } }
+.ex-press { transition: transform var(--ex-dur-fast) var(--ex-ease-out); }
+.ex-press:active { transform: scale(.97); }
+/* Press feedback on every public button / CTA (on pointer-down, instant) */
+.theme-light button:not(:disabled):active, .theme-light a[class*="rounded-full"]:active, .theme-light a[class*="rounded-2xl"]:active { transform: scale(.97); transition: transform var(--ex-dur-fast) var(--ex-ease-out); }
+.theme-light button[aria-label^="20"]:active { transform: scale(.92); }
+
+/* Translucent navbar material */
+header.fixed { backdrop-filter: saturate(170%) blur(18px); -webkit-backdrop-filter: saturate(170%) blur(18px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-fade-up, .ex-pop, .ex-sheet-in { animation: ex-fade 200ms ease both; }
+  @keyframes ex-fade { from { opacity: 0; } to { opacity: 1; } }
+  .ex-lift:hover, .ex-press:active, .theme-light button:active { transform: none !important; }
+  .ex-skeleton { animation: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  header.fixed { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* Zinc palette (shared cards, empty states, skeletons, account pages) on light pages.
+   Attribute selectors cover every opacity variant (bg-zinc-900/70 …); .on-dark keeps photo/360° areas dark. */
+.theme-light :is([class*=" bg-zinc-9"], [class^="bg-zinc-9"]):not(.on-dark, .on-dark *) { background-color: var(--lt-surface) !important; }
+.theme-light :is([class*=" bg-zinc-8"], [class^="bg-zinc-8"], [class*=" bg-zinc-7"], [class^="bg-zinc-7"]):not(.on-dark, .on-dark *) { background-color: rgba(23,20,15,.05) !important; }
+.theme-light :is([class*=" border-zinc-7"], [class^="border-zinc-7"], [class*=" border-zinc-8"], [class^="border-zinc-8"]):not(.on-dark, .on-dark *) { border-color: var(--lt-line) !important; }
+.theme-light :is([class*=" divide-zinc-8"], [class^="divide-zinc-8"]) > :not(:last-child):not(.on-dark, .on-dark *) { border-color: var(--lt-line) !important; }
+.theme-light :is(.text-zinc-50, .text-zinc-100, .text-zinc-200):not(.on-dark, .on-dark *) { color: var(--lt-ink) !important; }
+.theme-light :is(.text-zinc-500, .text-zinc-600, .text-zinc-700):not(.on-dark, .on-dark *) { color: #847b6d !important; }
+.theme-light :is([class*="placeholder:text-zinc-"])::placeholder { color: #7d7466 !important; }
+
+/* Design-system components carry their own colours: keep them out of the light-theme remapping. */
+.theme-light .ds-btn.text-white, .theme-light .ds-btn .text-white { color: #fff !important; }
+.theme-light .ds-input input, .theme-light .ds-field label { color: inherit; }
+.theme-light .ds-field label { color: #3b362e !important; }
+.theme-light .ds-input input { color: #17140f !important; }
+
+/* Super-admin console (html.admin-light is set by app/(admin)/layout.tsx) */
+html.admin-light, html.admin-light body { background-color: #F8F7F4; color: #171717; color-scheme: light; }
+/* The public light remap adds a card shadow to every .bg-white — keep the console's own (lighter) shadows. */
+html.admin-light.theme-light .bg-white:not(.on-dark, .on-dark *) { box-shadow: revert-layer; }
+/* Scroll containers must contain their absolutely-positioned descendants (sr-only labels in table headers),
+   otherwise those escape the horizontal scroller and widen the whole page on mobile. */
+html.admin-light .overflow-x-auto { position: relative; }
+/* Admin modals & drawers: soft, light backdrop instead of near-black */
+html.admin-light [data-slot="dialog-overlay"], html.admin-light [data-slot="sheet-overlay"] { background-color: rgba(23, 23, 23, 0.28) !important; backdrop-filter: blur(3px); }
+
+/* ── Form fields on light pages (public site + admin) ─────────
+   Placeholders were invisible when a field inherited a dark-theme placeholder colour: give every light field a
+   readable default, then polish hover / focus / disabled states. .on-dark areas keep their own styling. */
+.theme-light :is(input, textarea):not(.on-dark *)::placeholder { color: #8f897d; opacity: 1; }
+.theme-light :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), textarea, select):not(.on-dark *) {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.theme-light :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select):not(.on-dark *):hover:not(:focus):not(:disabled) { border-color: rgba(23, 20, 15, .28); }
+html.admin-light :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select):not(.on-dark *):focus-visible {
+  border-color: #C99628 !important; box-shadow: 0 0 0 3px rgba(201, 150, 40, .18) !important; outline: none;
+}
+html.admin-light :is(input, textarea, select):disabled:not(.on-dark *) { background-color: #F4F2EE; color: #8A867E; cursor: not-allowed; }
+/* Admin selects: consistent chevron instead of the native arrow */
+html.admin-light select:not(.on-dark *):not([multiple]) {
+  appearance: none; -webkit-appearance: none; padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B6760' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center; background-size: 16px;
+}
+html.admin-light input[type=date]:not(.on-dark *) { color-scheme: light; }

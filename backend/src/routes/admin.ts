@@ -1529,11 +1529,15 @@ router.get('/settings', async (_req, res) => {
 
 router.patch('/settings', async (req, res) => {
   try {
-    const payload = { ...req.body };
-    if ('maintenanceMode' in payload) {
-      payload.isMaintenanceMode = payload.maintenanceMode;
-      delete payload.maintenanceMode;
+    const raw = { ...(req.body ?? {}) };
+    if ('maintenanceMode' in raw) {
+      raw.isMaintenanceMode = raw.maintenanceMode;
+      delete raw.maintenanceMode;
     }
+    // Only fields declared on the AppSettings schema (no arbitrary keys, no operators).
+    const allowed = new Set(Object.keys(AppSettings.schema.paths).map((p) => p.split('.')[0]).filter((k) => !['_id', '__v', 'createdAt', 'updatedAt'].includes(k)));
+    const payload: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(raw)) if (allowed.has(k) && !k.startsWith('$')) payload[k] = v;
     const settings = await AppSettings.findOneAndUpdate({}, { $set: payload }, { new: true, upsert: true });
     res.json({ success: true, data: settings });
   } catch (error) {

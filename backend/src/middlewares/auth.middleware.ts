@@ -31,6 +31,21 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
+/**
+ * Optional authentication for public endpoints: returns the user id when a valid Bearer token
+ * (or access cookie) is present, undefined otherwise. Never rejects the request.
+ */
+export function optionalUserId(req: Request): string | undefined {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.accessToken;
+    if (!token) return undefined;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as { userId?: string };
+    return typeof decoded.userId === 'string' ? decoded.userId : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (req.userRole !== 'ADMIN') {
     res.status(403).json({ success: false, error: 'Admin access required', message: 'Accès administrateur requis.' });

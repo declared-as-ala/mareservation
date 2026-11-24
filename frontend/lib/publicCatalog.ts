@@ -60,6 +60,23 @@ export function isHiddenCategoryPath(pathname: string): boolean {
   );
 }
 
+/**
+ * Generic multi-category screens (all-category explorer, global search, table/ticket cart and
+ * its checkout). While maisons d'hôtes are the only public category they have nothing of their
+ * own to show, so they redirect to the maisons search. They come back as soon as another
+ * category is enabled.
+ */
+const MULTI_CATEGORY_PATHS = ['/explorer', '/recherche', '/panier', '/checkout'];
+
+/** Target URL (with the search term kept) when `pathname` should go to the maisons search. */
+export function maisonsOnlyRedirect(pathname: string, search: URLSearchParams): string | null {
+  const types = getPublicVenueTypes();
+  if (types.length !== 1 || types[0] !== 'MAISON_DHOTE') return null;
+  if (!MULTI_CATEGORY_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) return null;
+  const q = search.get('q') || search.get('city');
+  return q ? `/maisons-d-hotes?where=${encodeURIComponent(q)}` : '/maisons-d-hotes';
+}
+
 export function isPublicVenueType(type?: string | null): boolean {
   return !!type && getPublicVenueTypes().includes(type.toUpperCase());
 }

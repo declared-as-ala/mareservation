@@ -532,9 +532,9 @@ function ExplorerVenueCard({ venue }: { venue: any }) {
   const href      = getVenueHref(venue);
   const img       = venue.coverImage ?? venue.media?.find((m: any) => m.kind === 'HERO_IMAGE')?.url ?? null;
   const { label, Icon } = getTypeMeta(venue);
-  // Price only shown for accommodation types (HOTEL or MAISON_DHOTE)
-  const isAccommodation = venue.type === 'HOTEL' || venue.type === 'MAISON_DHOTE';
-  const price = isAccommodation
+  // Price only shown for lodging types (HOTEL or MAISON_DHOTE)
+  const isLodging = venue.type === 'HOTEL' || venue.type === 'MAISON_DHOTE';
+  const price = isLodging
     ? ((venue.startingPrice as number) ?? (venue.priceRangeMin as number) ?? null)
     : null;
 

@@ -115,14 +115,14 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${uid}-title`}
-        className="relative max-h-[94dvh] w-full max-w-xl overflow-y-auto rounded-t-[1.75rem] border border-white/10 bg-[#111112] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[1.75rem] sm:p-8"
+        className="ex-sheet-in relative max-h-[94dvh] w-full max-w-xl overflow-y-auto rounded-t-[1.75rem] border border-white/10 bg-[#111112] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[1.75rem] sm:p-8"
       >
         <button type="button" onClick={onClose} aria-label="Fermer" className="absolute right-4 top-4 inline-flex size-10 items-center justify-center rounded-full text-neutral-400 hover:bg-white/10 hover:text-white">
           <X className="size-5" />
         </button>
 
         {done ? (
-          <div role="status" aria-live="polite" className="pt-2 text-center">
+          <div role="status" aria-live="polite" className="ex-fade-up pt-2 text-center">
             <CheckCircle2 className="mx-auto size-14 text-emerald-400" aria-hidden="true" />
             <h2 id={`${uid}-title`} className="mt-4 font-serif text-3xl font-black text-white">{confirmed ? 'Réservation confirmée' : 'Demande envoyée'}</h2>
             {done.isDemo && <p className="mx-auto mt-3 max-w-sm rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-200">DÉMO — réservation simulée : aucun séjour réel, aucun paiement.</p>}
@@ -235,7 +235,7 @@ export function BookingRequestDialog({ open, onClose, venueName, params, quote, 
             )}
 
             <button type="submit" disabled={sending}
-              className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-base font-black text-black shadow-[0_10px_28px_rgba(245,158,11,0.35)] transition hover:brightness-110 disabled:opacity-60">
+              className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#e0a527] hover:bg-[#eab33a] text-base font-black text-black transition disabled:opacity-60">
               {sending && <Loader2 className="size-5 animate-spin" aria-hidden="true" />}
               {instant ? 'Confirmer ma réservation' : 'Envoyer ma demande de réservation'}
             </button>

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const venue = await getVenueServer(slug);
   if (!venue) return { title: 'Maison d’hôtes introuvable', robots: { index: false, follow: false } };
 
-  const path = `/accommodation/${slug}`;
+  const path = `/maison-d-hote/${slug}`;
   if (venue.isDemo) {
     // A demonstration listing must not be presented to search engines as a genuine, bookable guesthouse.
     return {
@@ -39,12 +39,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function AccommodationPage({ params }: Props) {
+export default async function MaisonDHotePage({ params }: Props) {
   const { slug } = await params;
   const venue = await getVenueServer(slug);
   if (!venue) notFound();
 
-  const path = `/accommodation/${slug}`;
+  const path = `/maison-d-hote/${slug}`;
   if (venue.isDemo) return <PropertyPage venue={venue} path={path} />;
 
   // Real maisons: structured data from verified fields only + the shared page with the booking widget.
@@ -60,7 +60,7 @@ export default async function AccommodationPage({ params }: Props) {
           __html: jsonLd(
             breadcrumbJsonLd([
               { name: 'Accueil', path: '/' },
-              { name: 'Maisons d’hôtes', path: '/accommodations' },
+              { name: 'Maisons d’hôtes', path: '/maisons-d-hotes' },
               { name: venue.name, path },
             ])
           ),

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BarChart3, BellRing, CalendarRange, Camera, CheckCircle2, Eye, KeyRound, Rotate3d, ShieldCheck, Wallet } from 'lucide-react';
 import { HostApplicationForm } from './HostApplicationForm';
 import { jsonLd } from '@/lib/seo';
+import { Reveal } from '@/components/site/motion';
 
 export const metadata: Metadata = {
   title: "Devenir hôte — mettez votre maison d'hôtes en ligne",
@@ -58,8 +59,8 @@ export default function BecomeHostPage() {
           <h1 className="mt-4 max-w-3xl font-serif text-[clamp(2.4rem,6vw,4.8rem)] leading-[1.02]">Faites visiter votre maison avant même qu’on y entre.</h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/80">Exploria360 met votre maison d’hôtes en ligne avec une visite 360°, un calendrier en temps réel et des réservations directes.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <a href="#candidature" className="inline-flex h-14 items-center rounded-full bg-gradient-to-b from-amber-300 to-amber-500 px-8 font-bold text-black shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:brightness-110">Devenir partenaire Exploria360</a>
-            <Link href="/accommodation/maison-hotes-demo-exploria360" className="inline-flex h-14 items-center rounded-full border border-white/35 px-8 font-semibold text-white hover:border-amber-400 hover:text-amber-200">Voir un exemple de fiche</Link>
+            <a href="#candidature" className="inline-flex h-14 items-center rounded-full bg-[#e0a527] hover:bg-[#eab33a] px-8 font-bold text-black">Devenir partenaire Exploria360</a>
+            <Link href="/maison-d-hote/maison-hotes-demo-exploria360" className="inline-flex h-14 items-center rounded-full border border-white/35 px-8 font-semibold text-white hover:border-amber-400 hover:text-amber-200">Voir un exemple de fiche</Link>
           </div>
         </div>
       </section>
@@ -67,15 +68,15 @@ export default function BecomeHostPage() {
       {/* Why */}
       <section aria-labelledby="why-title" className="mx-auto max-w-[1600px] px-4 py-20 sm:px-6 lg:px-10">
         <h2 id="why-title" className="max-w-2xl font-serif text-[clamp(2rem,4vw,3.2rem)] leading-[1.05]">Pourquoi publier votre maison sur Exploria360 ?</h2>
-        <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Reveal><ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {WHY.map(({ icon: Icon, title, text }) => (
-            <li key={title} className="rounded-[1.5rem] border border-white/10 bg-[#111112] p-7 transition-colors hover:border-amber-400/40">
+            <li key={title} className="ex-lift rounded-[1.5rem] border border-white/10 bg-[#111112] p-7 transition-[transform,box-shadow,border-color] hover:border-amber-400/40">
               <span className="grid size-12 place-items-center rounded-2xl border border-amber-400/40 text-amber-300"><Icon className="size-6" aria-hidden="true" /></span>
               <h3 className="mt-5 font-serif text-2xl">{title}</h3>
               <p className="mt-2 leading-relaxed text-neutral-400">{text}</p>
             </li>
           ))}
-        </ul>
+        </ul></Reveal>
       </section>
 
       {/* Dashboard preview */}
@@ -91,7 +92,7 @@ export default function BecomeHostPage() {
             </ul>
           </div>
           {/* Illustrative preview (not real data) */}
-          <figure aria-label="Aperçu illustratif du tableau de bord propriétaire" className="rounded-[1.6rem] border border-white/10 bg-[#111112] p-5 shadow-2xl">
+          <Reveal y={28}><figure aria-label="Aperçu illustratif du tableau de bord propriétaire" className="rounded-[1.6rem] border border-white/10 bg-[#111112] p-5 shadow-2xl">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[['Arrivées', CalendarRange], ['En attente', BellRing], ['Occupation', BarChart3], ['Accès', KeyRound]].map(([l, Icon]: any) => (
                 <div key={l} className="rounded-xl border border-white/10 bg-[#0B0B0C] p-3">
@@ -108,14 +109,14 @@ export default function BecomeHostPage() {
               })}
             </div>
             <figcaption className="mt-4 flex items-center gap-2 text-xs text-neutral-500"><Camera className="size-3.5" aria-hidden="true" /> Illustration de l’interface — vert : disponible · rouge : réservé · orange : en attente · gris : bloqué</figcaption>
-          </figure>
+          </figure></Reveal>
         </div>
       </section>
 
       {/* Steps */}
       <section aria-labelledby="steps-title" className="mx-auto max-w-[1600px] px-4 py-20 sm:px-6 lg:px-10">
         <h2 id="steps-title" className="font-serif text-[clamp(2rem,4vw,3.2rem)] leading-[1.05]">Comment ça marche</h2>
-        <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Reveal><ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s) => (
             <li key={s.n} className="relative rounded-[1.5rem] border border-white/10 p-7">
               <span className="font-serif text-5xl text-amber-400/80">{s.n}</span>
@@ -123,7 +124,7 @@ export default function BecomeHostPage() {
               <p className="mt-2 leading-relaxed text-neutral-400">{s.text}</p>
             </li>
           ))}
-        </ol>
+        </ol></Reveal>
       </section>
 
       {/* Form + FAQ */}

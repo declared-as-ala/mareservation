@@ -313,7 +313,7 @@ export function RoomTypeCard({ group, nights, onView360, className }: RoomTypeCa
               <button
                 type="button"
                 onClick={() => onView360(group)}
-                className="group/btn inline-flex h-11 items-center gap-1.5 rounded-2xl border-2 border-amber-400/55 bg-amber-400/[0.10] px-4 text-[12px] font-black uppercase tracking-wide text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-400/[0.18] hover:shadow-[0_4px_18px_rgba(245,158,11,0.30)] active:scale-95"
+                className="group/btn inline-flex h-11 items-center gap-1.5 rounded-2xl border-2 border-amber-400/55 bg-amber-400/[0.10] px-4 text-[12px] font-black uppercase tracking-wide text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-400/[0.18] hover: active:scale-95"
               >
                 <Video className="size-4" />
                 <span className="hidden sm:inline">Visite 360°</span>

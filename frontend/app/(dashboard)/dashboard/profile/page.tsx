@@ -1,28 +1,20 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
+/**
+ * Customer account page (served at /profile). Light ivory & gold, real data only:
+ * identity, reservation counts from /reservations/me, profile form and password change.
+ */
+import { useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth';
 import { changePassword, updateMyProfile } from '@/lib/api/auth';
+import { fetchMyReservations } from '@/lib/api/reservations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import {
-  Bell,
-  CalendarDays,
-  ChevronRight,
-  Loader2,
-  Lock,
-  Mail,
-  MapPin,
-  Settings2,
-  ShieldCheck,
-  Smartphone,
-  UserRound,
-} from 'lucide-react';
+import { CalendarCheck2, CalendarDays, ChevronRight, Clock3, Loader2, Lock, ShieldCheck, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type FieldErrors = {
@@ -49,61 +41,34 @@ function initialsFromName(name?: string, email?: string) {
   return (email ?? 'U').slice(0, 2).toUpperCase();
 }
 
-function AccountStat({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/70 px-4 py-4">
-      <div className="flex size-11 items-center justify-center rounded-full border border-amber-400/20 bg-amber-400/10 text-amber-300">
-        <Icon className="size-4" />
-      </div>
-      <div>
-        <p className="text-2xl font-semibold text-zinc-100">{value}</p>
-        <p className="text-xs text-zinc-500">{label}</p>
-      </div>
-    </div>
+const fieldClass =
+  'h-12 rounded-xl border-[#17140f]/12 bg-white dark:bg-white text-[#17140f] placeholder:text-[#9a9183] focus-visible:border-[#b07d12] focus-visible:ring-[#e0a527]/30';
+const labelClass = 'text-sm font-medium text-[#3b362e]';
+const cardClass = 'rounded-3xl border border-[#17140f]/10 bg-white p-5 shadow-[0_1px_0_rgba(23,20,15,0.04),0_10px_30px_rgba(23,20,15,0.05)] sm:p-7';
+const primaryBtn = 'h-11 rounded-full bg-[#e0a527] px-6 font-semibold text-[#17140f] hover:bg-[#f0b93a] w-full sm:w-auto';
+
+function Stat({ label, value, icon: Icon, href }: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; href?: string }) {
+  const body = (
+    <>
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f6ead0] text-[#8a5a00]">
+        <Icon className="size-[18px]" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-lg font-semibold tabular-nums leading-tight text-[#17140f]">{value}</span>
+        <span className="block truncate text-xs text-[#847b6d]">{label}</span>
+      </span>
+    </>
+  );
+  const cls = 'flex items-center gap-3 rounded-2xl border border-[#17140f]/10 bg-[#faf7f1] p-3.5';
+  return href ? (
+    <Link href={href} className={cn(cls, 'transition-colors hover:border-[#b07d12]/40')}>{body}</Link>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }
 
-function SideInfoCard({
-  icon: Icon,
-  title,
-  description,
-  cta,
-  accent = 'text-amber-300',
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  cta: string;
-  accent?: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.94),rgba(10,10,11,0.96))] p-5 shadow-[0_16px_50px_rgba(0,0,0,0.28)]">
-      <div className="mb-4 flex items-start gap-3">
-        <div className={cn('flex size-11 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/90', accent)}>
-          <Icon className="size-4" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">{description}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-300 transition-colors hover:text-amber-200"
-      >
-        {cta}
-        <ChevronRight className="size-4" />
-      </button>
-    </div>
-  );
+function FieldError({ id, children }: { id: string; children?: string }) {
+  return children ? <p id={id} className="text-xs font-medium text-red-700">{children}</p> : null;
 }
 
 export default function ProfilePage() {
@@ -115,6 +80,21 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [passwordErrors, setPasswordErrors] = useState<PasswordErrors>({});
+
+  const { data: reservations, isLoading: reservationsLoading } = useQuery({
+    queryKey: ['reservations', 'me'],
+    queryFn: fetchMyReservations,
+    enabled: !!user,
+  });
+  const counts = useMemo(() => {
+    const list = reservations ?? [];
+    const now = Date.now();
+    const s = (r: (typeof list)[number]) => String(r.status ?? '').toUpperCase();
+    return {
+      upcoming: list.filter((r) => ['CONFIRMED', 'CHECKED_IN'].includes(s(r)) && new Date(r.endAt ?? r.startAt).getTime() >= now).length,
+      pending: list.filter((r) => s(r) === 'PENDING').length,
+    };
+  }, [reservations]);
 
   const updateMutation = useMutation({
     mutationFn: updateMyProfile,
@@ -128,10 +108,10 @@ export default function ProfilePage() {
         emailVerified: updatedUser.emailVerified,
         createdAt: updatedUser.createdAt,
       });
-      toast.success('Profil mis a jour avec succes.');
+      toast.success('Profil mis à jour.');
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Erreur lors de la mise a jour du profil.';
+      const message = error instanceof Error ? error.message : 'Erreur lors de la mise à jour du profil.';
       toast.error(message);
     },
   });
@@ -142,7 +122,7 @@ export default function ProfilePage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast.success('Mot de passe modifie avec succes.');
+      toast.success('Mot de passe modifié.');
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : 'Erreur lors du changement de mot de passe.';
@@ -156,11 +136,11 @@ export default function ProfilePage() {
     const trimmedPhone = phone.trim();
 
     if (trimmedName.length < 2) {
-      nextErrors.fullName = 'Le nom complet doit contenir au moins 2 caracteres.';
+      nextErrors.fullName = 'Le nom complet doit contenir au moins 2 caractères.';
     }
 
     if (trimmedPhone && !/^[0-9+\s().-]{6,30}$/.test(trimmedPhone)) {
-      nextErrors.phone = 'Numero de telephone invalide.';
+      nextErrors.phone = 'Numéro de téléphone invalide.';
     }
 
     setErrors(nextErrors);
@@ -171,7 +151,7 @@ export default function ProfilePage() {
     const nextErrors: PasswordErrors = {};
 
     if (!currentPassword.trim()) nextErrors.currentPassword = 'Mot de passe actuel requis.';
-    if (newPassword.length < 8) nextErrors.newPassword = 'Le nouveau mot de passe doit contenir au moins 8 caracteres.';
+    if (newPassword.length < 8) nextErrors.newPassword = 'Au moins 8 caractères.';
     if (newPassword !== confirmPassword) nextErrors.confirmPassword = 'Les mots de passe ne correspondent pas.';
 
     setPasswordErrors(nextErrors);
@@ -196,333 +176,195 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6">
-        <p className="text-sm text-zinc-400">Chargement de votre profil...</p>
+      <div className="mx-auto flex min-h-[50vh] max-w-4xl items-center justify-center px-4">
+        <p className="flex items-center gap-2 text-sm text-[#5f584d]">
+          <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Chargement de votre profil…
+        </p>
       </div>
     );
   }
 
   const initials = initialsFromName(user.fullName, user.email);
-  const roleLabel = user.role === 'ADMIN' ? 'Administrateur' : 'Client';
+  const roleLabel = user.role === 'ADMIN' ? 'Administrateur' : user.role === 'ESTABLISHMENT_OWNER' ? 'Hôte' : 'Voyageur';
   const memberSince = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-    : 'ce mois';
+    : null;
+  const loadingValue = '…';
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="h-1 w-12 rounded-full bg-amber-400" />
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-100">Parametres du compte</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Gerez vos informations personnelles, la securite de votre compte et vos preferences.
-        </p>
-      </div>
-
-      <section className="overflow-hidden rounded-[28px] border border-amber-400/15 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_26%),linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-        <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)] lg:p-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex size-24 items-center justify-center rounded-full border-4 border-amber-300/20 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600 text-3xl font-bold text-black shadow-[0_16px_36px_rgba(212,175,55,0.4)]">
-                  {initials}
-                </div>
-                <div>
-                  <h2 className="text-3xl font-semibold text-zinc-100">{user.fullName}</h2>
-                  <p className="mt-1 text-sm text-zinc-400">{user.email}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Badge className="border-amber-400/20 bg-amber-400/10 px-3 py-1 text-amber-300">
-                      <UserRound className="mr-1 size-3.5" />
-                      {roleLabel}
-                    </Badge>
-                    <Badge
-                      className={cn(
-                        'px-3 py-1',
-                        user.emailVerified
-                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                          : 'border-zinc-700 bg-zinc-800 text-zinc-300'
-                      )}
-                    >
-                      <ShieldCheck className="mr-1 size-3.5" />
-                      {user.emailVerified ? 'Email verifie' : 'Verification en attente'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="border-amber-400/40 bg-amber-400/10 text-amber-200 hover:bg-amber-400/15 hover:text-amber-100"
-              >
-                Modifier le profil
-              </Button>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <AccountStat label="Reservations ce mois" value="24" icon={CalendarDays} />
-              <AccountStat label="Favoris enregistres" value="12" icon={MapPin} />
-              <AccountStat label="Membre depuis" value={memberSince} icon={ShieldCheck} />
-            </div>
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-10 sm:px-6 sm:py-14">
+      {/* Identity */}
+      <section className={cardClass} aria-labelledby="profil-titre">
+        <div className="flex items-center gap-4">
+          <div className="grid size-16 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#f0c25a] to-[#c98f14] text-xl font-bold text-[#17140f] shadow-[0_8px_20px_rgba(176,125,18,0.28)] sm:size-20 sm:text-2xl" aria-hidden="true">
+            {initials}
           </div>
-
-          <div className="rounded-[24px] border border-zinc-800/80 bg-zinc-950/70 p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-amber-300">
-                <ShieldCheck className="size-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-zinc-100">Securite du compte</h3>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  Protegez votre compte et gardez le controle sur vos acces.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between rounded-2xl border border-zinc-800/80 bg-zinc-900/70 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-100">Email</p>
-                  <p className="text-xs text-zinc-500">
-                    {user.emailVerified ? 'Verification active' : 'Verification recommandee'}
-                  </p>
-                </div>
-                <Mail className="size-4 text-zinc-500" />
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-zinc-800/80 bg-zinc-900/70 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-100">Mot de passe</p>
-                  <p className="text-xs text-zinc-500">Mettre a jour regulierement</p>
-                </div>
-                <Lock className="size-4 text-zinc-500" />
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-zinc-800/80 bg-zinc-900/70 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-zinc-100">Telephone</p>
-                  <p className="text-xs text-zinc-500">{user.phone?.trim() ? user.phone : 'A renseigner'}</p>
-                </div>
-                <Smartphone className="size-4 text-zinc-500" />
-              </div>
-            </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a5a00]">Mon compte</p>
+            <h1 id="profil-titre" className="truncate font-serif text-[clamp(1.6rem,4vw,2.2rem)] leading-tight text-[#17140f]">{user.fullName}</h1>
+            <p className="truncate text-sm text-[#5f584d]">{user.email}</p>
           </div>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f6ead0] px-3 py-1 text-xs font-semibold text-[#6f4700]">
+            <UserRound className="size-3.5" aria-hidden="true" /> {roleLabel}
+          </span>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold',
+              user.emailVerified ? 'bg-emerald-100 text-emerald-900' : 'bg-[#17140f]/[0.06] text-[#5f584d]'
+            )}
+          >
+            <ShieldCheck className="size-3.5" aria-hidden="true" />
+            {user.emailVerified ? 'Email vérifié' : 'Email non vérifié'}
+          </span>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          <Stat label="Séjours à venir" value={reservationsLoading ? loadingValue : String(counts.upcoming)} icon={CalendarCheck2} href="/mes-reservations" />
+          <Stat label="Demandes en attente" value={reservationsLoading ? loadingValue : String(counts.pending)} icon={Clock3} href="/mes-reservations" />
+          {memberSince && <Stat label="Membre depuis" value={memberSince} icon={CalendarDays} />}
+        </div>
+
+        <Link
+          href="/mes-reservations"
+          className="mt-4 flex items-center justify-between rounded-2xl border border-[#17140f]/10 px-4 py-3 text-sm font-semibold text-[#17140f] transition-colors hover:border-[#b07d12]/40 hover:bg-[#faf7f1]"
+        >
+          Voir mes réservations
+          <ChevronRight className="size-4 text-[#8a5a00] rtl:rotate-180" aria-hidden="true" />
+        </Link>
       </section>
 
-      <Tabs defaultValue="informations" className="space-y-5">
-        <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b border-zinc-800 bg-transparent p-0">
-          <TabsTrigger
-            value="informations"
-            className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
-          >
-            Informations
-          </TabsTrigger>
-          <TabsTrigger
-            value="securite"
-            className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
-          >
-            Securite
-          </TabsTrigger>
-          <TabsTrigger
-            value="notifications"
-            className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
-          >
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger
-            value="preferences"
-            className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
-          >
-            Preferences
-          </TabsTrigger>
-        </TabsList>
+      {/* Personal information */}
+      <section className={cardClass} aria-labelledby="infos-titre">
+        <h2 id="infos-titre" className="text-lg font-semibold text-[#17140f]">Informations personnelles</h2>
+        <p className="mt-1 text-sm text-[#5f584d]">Utilisées par les hôtes pour vous contacter au sujet de vos séjours.</p>
 
-        <TabsContent value="informations" className="mt-0">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_360px]">
-            <section className="rounded-[28px] border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-zinc-100">Informations personnelles</h2>
-                <p className="mt-1 text-sm text-zinc-500">Mettez a jour vos informations personnelles.</p>
-              </div>
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="fullName" className={labelClass}>Nom complet</Label>
+            <Input
+              id="fullName"
+              autoComplete="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Votre nom complet"
+              aria-invalid={!!errors.fullName}
+              aria-describedby={errors.fullName ? 'fullName-error' : undefined}
+              className={fieldClass}
+            />
+            <FieldError id="fullName-error">{errors.fullName}</FieldError>
+          </div>
 
-              <form className="space-y-5" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-zinc-300">
-                    Nom complet
-                  </Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Votre nom complet"
-                    className="h-12 border-zinc-800 bg-zinc-950/80 text-zinc-100"
-                  />
-                  {errors.fullName ? <p className="text-xs text-red-400">{errors.fullName}</p> : null}
-                </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="email" className={labelClass}>Email</Label>
+              <Input id="email" type="email" value={user.email} disabled className={cn(fieldClass, 'bg-[#faf7f1] dark:bg-[#faf7f1] text-[#847b6d] disabled:opacity-100')} />
+            </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-zinc-300">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      value={user.email}
-                      disabled
-                      className="h-12 border-zinc-800 bg-zinc-900/70 text-zinc-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-zinc-300">
-                      Telephone
-                    </Label>
-                    <Input
-                      id="phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+216 xx xxx xxx"
-                      className="h-12 border-zinc-800 bg-zinc-950/80 text-zinc-100"
-                    />
-                    {errors.phone ? <p className="text-xs text-red-400">{errors.phone}</p> : null}
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="min-w-[220px] bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-black hover:from-amber-200 hover:to-amber-400"
-                  disabled={updateMutation.isPending}
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    'Enregistrer les modifications'
-                  )}
-                </Button>
-              </form>
-            </section>
-
-            <div className="space-y-5">
-              <SideInfoCard
-                icon={ShieldCheck}
-                title="Securite du compte"
-                description="Protegez votre compte et gerez votre securite."
-                cta="Voir toutes les options de securite"
+            <div className="space-y-2">
+              <Label htmlFor="phone" className={labelClass}>Téléphone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+216 xx xxx xxx"
+                aria-invalid={!!errors.phone}
+                aria-describedby={errors.phone ? 'phone-error' : undefined}
+                className={fieldClass}
               />
-              <SideInfoCard
-                icon={CalendarDays}
-                title="Activite recente"
-                description="Votre espace vient d'etre consulte sur cette session. D'autres journaux d'activite peuvent etre ajoutes ensuite."
-                cta="Voir plus d'activites"
-                accent="text-emerald-300"
-              />
+              <FieldError id="phone-error">{errors.phone}</FieldError>
             </div>
           </div>
-        </TabsContent>
 
-        <TabsContent value="securite" className="mt-0">
-          <section className="max-w-3xl rounded-[28px] border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-zinc-100">Changer le mot de passe</h2>
-              <p className="mt-1 text-sm text-zinc-500">Renforcez la securite de votre compte.</p>
+          <Button type="submit" className={primaryBtn} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                Enregistrement…
+              </>
+            ) : (
+              'Enregistrer'
+            )}
+          </Button>
+        </form>
+      </section>
+
+      {/* Password */}
+      <section className={cardClass} aria-labelledby="mdp-titre">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f6ead0] text-[#8a5a00]">
+            <Lock className="size-[18px]" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 id="mdp-titre" className="text-lg font-semibold text-[#17140f]">Mot de passe</h2>
+            <p className="mt-1 text-sm text-[#5f584d]">Choisissez un mot de passe que vous n’utilisez nulle part ailleurs.</p>
+          </div>
+        </div>
+
+        <form className="mt-6 space-y-5" onSubmit={handlePasswordSubmit} noValidate>
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword" className={labelClass}>Mot de passe actuel</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              aria-invalid={!!passwordErrors.currentPassword}
+              aria-describedby={passwordErrors.currentPassword ? 'currentPassword-error' : undefined}
+              className={fieldClass}
+            />
+            <FieldError id="currentPassword-error">{passwordErrors.currentPassword}</FieldError>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className={labelClass}>Nouveau mot de passe</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                aria-invalid={!!passwordErrors.newPassword}
+                aria-describedby={passwordErrors.newPassword ? 'newPassword-error' : undefined}
+                className={fieldClass}
+              />
+              <FieldError id="newPassword-error">{passwordErrors.newPassword}</FieldError>
             </div>
 
-            <form className="space-y-5" onSubmit={handlePasswordSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-zinc-300">
-                  Mot de passe actuel
-                </Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="h-12 border-zinc-800 bg-zinc-950/80 text-zinc-100"
-                />
-                {passwordErrors.currentPassword ? <p className="text-xs text-red-400">{passwordErrors.currentPassword}</p> : null}
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-zinc-300">
-                    Nouveau mot de passe
-                  </Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="h-12 border-zinc-800 bg-zinc-950/80 text-zinc-100"
-                  />
-                  {passwordErrors.newPassword ? <p className="text-xs text-red-400">{passwordErrors.newPassword}</p> : null}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-zinc-300">
-                    Confirmer le mot de passe
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="h-12 border-zinc-800 bg-zinc-950/80 text-zinc-100"
-                  />
-                  {passwordErrors.confirmPassword ? <p className="text-xs text-red-400">{passwordErrors.confirmPassword}</p> : null}
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="min-w-[240px] bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-black hover:from-amber-200 hover:to-amber-400"
-                disabled={passwordMutation.isPending}
-              >
-                {passwordMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 size-4 animate-spin" />
-                    Mise a jour...
-                  </>
-                ) : (
-                  'Mettre a jour le mot de passe'
-                )}
-              </Button>
-            </form>
-          </section>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="mt-0">
-          <section className="max-w-3xl rounded-[28px] border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-            <div className="flex items-start gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-amber-300">
-                <Bell className="size-4" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-zinc-100">Notifications</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Cette section peut accueillir les preferences email, rappels et alertes de reservation.
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className={labelClass}>Confirmer le mot de passe</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                aria-invalid={!!passwordErrors.confirmPassword}
+                aria-describedby={passwordErrors.confirmPassword ? 'confirmPassword-error' : undefined}
+                className={fieldClass}
+              />
+              <FieldError id="confirmPassword-error">{passwordErrors.confirmPassword}</FieldError>
             </div>
-          </section>
-        </TabsContent>
+          </div>
 
-        <TabsContent value="preferences" className="mt-0">
-          <section className="max-w-3xl rounded-[28px] border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
-            <div className="flex items-start gap-3">
-              <div className="flex size-11 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-amber-300">
-                <Settings2 className="size-4" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-zinc-100">Preferences</h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Cette section peut etre etendue avec la langue, les habitudes de reservation et les choix d'affichage.
-                </p>
-              </div>
-            </div>
-          </section>
-        </TabsContent>
-      </Tabs>
+          <Button type="submit" className={primaryBtn} disabled={passwordMutation.isPending}>
+            {passwordMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                Mise à jour…
+              </>
+            ) : (
+              'Mettre à jour le mot de passe'
+            )}
+          </Button>
+        </form>
+      </section>
     </div>
   );
 }

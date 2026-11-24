@@ -6,5 +6,5 @@ export default async function HotelLegacyRedirect({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/accommodation/${slug}`);
+  redirect(`/maison-d-hote/${slug}`);
 }

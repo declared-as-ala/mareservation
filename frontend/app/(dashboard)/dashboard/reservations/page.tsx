@@ -32,16 +32,15 @@ function StatPanel({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-[24px] border border-zinc-800/80 bg-[linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.28)]">
-      <div className="flex items-center justify-between">
-        <div className="flex size-11 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
-          <Icon className="size-4" />
-        </div>
-        <span className="text-[11px] uppercase tracking-[0.24em] text-zinc-600">Compte</span>
+    <div className="flex items-center gap-3 rounded-2xl border border-[#17140f]/10 bg-white p-4 shadow-[0_1px_0_rgba(23,20,15,0.04)] sm:block sm:p-5">
+      <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#f6ead0] text-[#8a5a00]">
+        <Icon className="size-[18px]" />
       </div>
-      <p className="mt-5 text-3xl font-semibold text-zinc-100">{value}</p>
-      <p className="mt-1 text-sm font-medium text-zinc-300">{title}</p>
-      <p className="mt-1 text-xs text-zinc-500">{hint}</p>
+      <div className="min-w-0 sm:mt-4">
+        <p className="text-2xl font-semibold tabular-nums leading-none text-[#17140f] sm:text-3xl">{value}</p>
+        <p className="mt-1 truncate text-sm font-medium text-[#3b362e]">{title}</p>
+        <p className="mt-0.5 hidden text-xs text-[#847b6d] sm:block">{hint}</p>
+      </div>
     </div>
   );
 }
@@ -89,80 +88,81 @@ export default function ReservationsPage() {
   const searchedCancelled = filterBySearch(cancelled);
 
   return (
-    <div className="space-y-6">
-      <section className="overflow-hidden rounded-[28px] border border-amber-400/15 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_24%),linear-gradient(180deg,rgba(24,24,27,0.96),rgba(10,10,11,0.98))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] lg:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6 sm:py-14">
+      <section>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-xs font-medium text-amber-300">
-              <Sparkles className="size-3.5" />
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#8a5a00]">
+              <Sparkles className="size-3.5" aria-hidden="true" />
               Espace client
-            </div>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight text-zinc-100">Mes reservations</h1>
-            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Suivez vos reservations a venir, retrouvez votre historique et gerez rapidement vos confirmations.
+            </p>
+            <h1 className="mt-2 font-serif text-[clamp(1.9rem,4vw,2.6rem)] leading-tight text-[#17140f]">Mes réservations</h1>
+            <p className="mt-2 max-w-2xl text-sm text-[#5f584d]">
+              Suivez vos séjours à venir, vos demandes en attente et votre historique.
             </p>
           </div>
 
           <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#847b6d]" aria-hidden="true" />
             <Input
               type="search"
-              placeholder="Rechercher par lieu ou code..."
+              placeholder="Rechercher par maison ou code…"
+              aria-label="Rechercher une réservation"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-12 border-zinc-800 bg-zinc-950/80 pl-11 text-zinc-100 placeholder:text-zinc-600"
+              className="h-12 rounded-full border-[#17140f]/12 bg-white dark:bg-white pl-11 text-[#17140f] placeholder:text-[#9a9183]"
             />
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatPanel title="Reservations a venir" value={upcoming.length} hint="Vos prochaines sorties confirmees" icon={CalendarDays} />
-          <StatPanel title="En attente" value={pending.length} hint="Demandes en cours de traitement" icon={Clock3} />
-          <StatPanel title="Historique" value={past.length} hint="Reservations deja passees" icon={Ticket} />
-          <StatPanel title="Annulees" value={cancelled.length} hint="Reservations interrompues" icon={XCircle} />
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+          <StatPanel title="À venir" value={upcoming.length} hint="Séjours confirmés" icon={CalendarDays} />
+          <StatPanel title="En attente" value={pending.length} hint="Demandes en cours de traitement par l’hôte" icon={Clock3} />
+          <StatPanel title="Historique" value={past.length} hint="Séjours déjà passés" icon={Ticket} />
+          <StatPanel title="Annulées" value={cancelled.length} hint="Réservations annulées" icon={XCircle} />
         </div>
       </section>
 
       {isError ? (
-        <div className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-6">
+        <div>
           <EmptyState
             icon={<Calendar className="size-12" />}
-            title="Impossible de charger vos reservations"
-            description={error instanceof Error ? error.message : 'Veuillez reessayer dans un instant.'}
+            title="Impossible de charger vos réservations"
+            description={error instanceof Error ? error.message : 'Veuillez réessayer dans un instant.'}
           />
         </div>
       ) : (
         <>
           <Tabs defaultValue="upcoming" className="space-y-5">
-            <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b border-zinc-800 bg-transparent p-0">
+            <TabsList className="h-auto w-full justify-start gap-1.5 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none]">
               <TabsTrigger
                 value="pending"
-                className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
+                className="h-9 shrink-0 rounded-full border border-[#17140f]/12 bg-white px-4 text-sm font-medium text-[#5f584d] data-[state=active]:border-[#17140f] data-[state=active]:bg-[#17140f] dark:data-[state=active]:bg-[#17140f] data-[state=active]:text-white dark:data-[state=active]:text-white dark:data-[state=active]:border-[#17140f] data-[state=active]:shadow-none"
               >
                 En attente ({pending.length})
               </TabsTrigger>
               <TabsTrigger
                 value="upcoming"
-                className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
+                className="h-9 shrink-0 rounded-full border border-[#17140f]/12 bg-white px-4 text-sm font-medium text-[#5f584d] data-[state=active]:border-[#17140f] data-[state=active]:bg-[#17140f] dark:data-[state=active]:bg-[#17140f] data-[state=active]:text-white dark:data-[state=active]:text-white dark:data-[state=active]:border-[#17140f] data-[state=active]:shadow-none"
               >
-                A venir ({upcoming.length})
+                À venir ({upcoming.length})
               </TabsTrigger>
               <TabsTrigger
                 value="past"
-                className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
+                className="h-9 shrink-0 rounded-full border border-[#17140f]/12 bg-white px-4 text-sm font-medium text-[#5f584d] data-[state=active]:border-[#17140f] data-[state=active]:bg-[#17140f] dark:data-[state=active]:bg-[#17140f] data-[state=active]:text-white dark:data-[state=active]:text-white dark:data-[state=active]:border-[#17140f] data-[state=active]:shadow-none"
               >
-                Passees ({past.length})
+                Passées ({past.length})
               </TabsTrigger>
               <TabsTrigger
                 value="cancelled"
-                className="rounded-none border-b-2 border-transparent px-1 pb-3 pt-0 text-sm text-zinc-500 data-[state=active]:border-amber-400 data-[state=active]:bg-transparent data-[state=active]:text-amber-300 data-[state=active]:shadow-none"
+                className="h-9 shrink-0 rounded-full border border-[#17140f]/12 bg-white px-4 text-sm font-medium text-[#5f584d] data-[state=active]:border-[#17140f] data-[state=active]:bg-[#17140f] dark:data-[state=active]:bg-[#17140f] data-[state=active]:text-white dark:data-[state=active]:text-white dark:data-[state=active]:border-[#17140f] data-[state=active]:shadow-none"
               >
-                Annulees ({cancelled.length})
+                Annulées ({cancelled.length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending" className="mt-0">
-              <div className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-5 sm:p-6">
+              <div>
                 {isLoading ? (
                   <div className="space-y-4">
                     <ReservationCardSkeleton />
@@ -171,8 +171,8 @@ export default function ReservationsPage() {
                 ) : searchedPending.length === 0 ? (
                   <EmptyState
                     icon={<Calendar className="size-12" />}
-                    title="Aucune reservation en attente"
-                    description="Toutes vos reservations ont ete traitees."
+                    title="Aucune demande en attente"
+                    description="Toutes vos demandes ont été traitées par les hôtes."
                   />
                 ) : (
                   <div className="space-y-4">
@@ -190,7 +190,7 @@ export default function ReservationsPage() {
             </TabsContent>
 
             <TabsContent value="upcoming" className="mt-0">
-              <div className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-5 sm:p-6">
+              <div>
                 {isLoading ? (
                   <div className="space-y-4">
                     <ReservationCardSkeleton />
@@ -199,8 +199,8 @@ export default function ReservationsPage() {
                 ) : searchedUpcoming.length === 0 ? (
                   <EmptyState
                     icon={<Calendar className="size-12" />}
-                    title="Aucune reservation a venir"
-                    description="Explorez les lieux et creez votre prochaine reservation."
+                    title="Aucun séjour à venir"
+                    description="Trouvez une maison d’hôtes, visitez-la en 360° et réservez votre prochaine escapade."
                   />
                 ) : (
                   <div className="space-y-4">
@@ -218,9 +218,9 @@ export default function ReservationsPage() {
             </TabsContent>
 
             <TabsContent value="past" className="mt-0">
-              <div className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-5 sm:p-6">
+              <div>
                 {searchedPast.length === 0 ? (
-                  <EmptyState title="Aucune reservation passee" />
+                  <EmptyState title="Aucun séjour passé" />
                 ) : (
                   <div className="space-y-4">
                     {searchedPast.map((r) => (
@@ -232,9 +232,9 @@ export default function ReservationsPage() {
             </TabsContent>
 
             <TabsContent value="cancelled" className="mt-0">
-              <div className="rounded-[28px] border border-zinc-800/80 bg-zinc-900/70 p-5 sm:p-6">
+              <div>
                 {searchedCancelled.length === 0 ? (
-                  <EmptyState title="Aucune reservation annulee" />
+                  <EmptyState title="Aucune réservation annulée" />
                 ) : (
                   <div className="space-y-4">
                     {searchedCancelled.map((r) => (
@@ -248,8 +248,8 @@ export default function ReservationsPage() {
 
           {!isLoading && reservations.length === 0 ? (
             <div className="flex justify-center">
-              <Button asChild className="bg-amber-400 text-black hover:bg-amber-300">
-                <Link href="/explorer">Explorer les lieux</Link>
+              <Button asChild className="h-11 rounded-full bg-[#e0a527] px-6 font-semibold text-[#17140f] hover:bg-[#f0b93a]">
+                <Link href="/maisons-d-hotes">Découvrir les maisons d’hôtes</Link>
               </Button>
             </div>
           ) : null}

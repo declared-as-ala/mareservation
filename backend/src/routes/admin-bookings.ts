@@ -171,13 +171,33 @@ router.patch('/properties/:venueId/settings', async (req: AuthRequest, res) => {
       const owner = await User.findById(parsed.data.ownerId).select('role').lean();
       if (!owner || (owner as any).role !== 'ESTABLISHMENT_OWNER') return sendError(res, { message: "Ce compte n'est pas un propriétaire.", statusCode: 422 });
     }
+    if (parsed.data.slug && parsed.data.slug !== before.slug && (await Venue.exists({ slug: parsed.data.slug, _id: { $ne: before._id } }))) {
+      return sendError(res, { message: 'Cette adresse (slug) est déjà utilisée par une autre fiche.', statusCode: 409 });
+    }
+    // Publishing requires the essentials: never make an incomplete listing public by accident.
+    const willPublish = (parsed.data.isPublished ?? before.isPublished) !== false && (parsed.data.approvalStatus ?? before.approvalStatus ?? 'approved') === 'approved';
+    const wasPublic = before.isPublished !== false && (before.approvalStatus ?? 'approved') === 'approved';
+    if (willPublish && !wasPublic && !before.isDemo) {
+      const desc = parsed.data.description ?? before.description;
+      const addr = parsed.data.address ?? before.address;
+      const missing = [
+        (!desc || desc === 'À compléter') && 'description',
+        (!addr || addr === 'À compléter') && 'adresse',
+        !(parsed.data.coverImage ?? before.coverImage) && 'photo de couverture',
+        !(parsed.data.coordinates ?? before.coordinates?.lat != null) && 'localisation',
+      ].filter(Boolean);
+      if (missing.length) return sendError(res, { message: `Publication impossible — à compléter : ${missing.join(', ')}.`, statusCode: 422 });
+    }
     const update = toUpdate(parsed.data);
     const updated = await Venue.findByIdAndUpdate(req.params.venueId, update, { new: true, runValidators: true }).select(SETTINGS_FIELDS).lean();
     const changes: Record<string, { from: unknown; to: unknown }> = {};
     for (const k of Object.keys(parsed.data)) changes[k] = { from: before[k] ?? null, to: (parsed.data as any)[k] };
     await logAudit(req, {
       userId: req.userId as any,
-      action: 'ownerId' in parsed.data ? 'OWNER_ASSIGNED' : 'BOOKING_SETTINGS_CHANGED',
+      action: 'ownerId' in parsed.data ? 'OWNER_ASSIGNED'
+        : 'approvalStatus' in parsed.data || 'isPublished' in parsed.data
+          ? (parsed.data.approvalStatus === 'suspended' ? 'VENUE_SUSPENDED' : parsed.data.isPublished === false ? 'VENUE_UPDATED' : 'VENUE_APPROVED')
+          : 'BOOKING_SETTINGS_CHANGED',
       entityType: 'venue',
       entityId: req.params.venueId,
       details: { venue: before.name, changes },

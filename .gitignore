@@ -9,10 +9,6 @@ coverage/
 # Production
 dist/
 build/
-.next/
-frontend/.next/
-**/.next/
-**/tsconfig.tsbuildinfo
 
 # Environment variables
 .env
@@ -48,3 +44,7 @@ backend/.env
 
 # Frontend
 .env.local
+.backup/
+
+# Next.js build output / caches (any level)
+.next/

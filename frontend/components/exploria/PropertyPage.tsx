@@ -3,11 +3,13 @@ import { Bath, BedDouble, Check, ChevronRight, Clock, Hand, MapPin, Maximize2, S
 import type { Venue } from '@/lib/api/types';
 import { MobileBookingBar, ShareButton } from './PropertyActions';
 import { TourViewer } from './TourViewer';
+import { SceneTour } from './SceneTour';
 import { PropertyGallery } from './PropertyGallery';
 import { PropertyLocationMap, SimilarGuesthouses } from './PropertyExtras';
 import { BookingWidget } from '@/components/booking/BookingWidget';
 import { CANCELLATION_LABEL, featureLabel, type CancellationPolicy } from '@/lib/api/bookings';
 import { breadcrumbJsonLd, jsonLd } from '@/lib/seo';
+import { Reveal } from '@/components/site/motion';
 import { SITE_URL } from '@/lib/serverApi';
 
 const DEMO_COVER = '/demo/maison-demo-cover.jpg';
@@ -52,7 +54,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
 
   const breadcrumbs = [
     { name: 'Accueil', path: '/' },
-    { name: 'Maisons d’hôtes', path: '/accommodations' },
+    { name: 'Maisons d’hôtes', path: '/maisons-d-hotes' },
     { name: venue.name, path },
   ];
   const demoLd = {
@@ -75,7 +77,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
           <ol className="flex flex-wrap items-center gap-1.5">
             <li><Link href="/" className="hover:text-white">Accueil</Link></li>
             <ChevronRight className="size-3" aria-hidden="true" />
-            <li><Link href="/accommodations" className="hover:text-white">Maisons d’hôtes</Link></li>
+            <li><Link href="/maisons-d-hotes" className="hover:text-white">Maisons d’hôtes</Link></li>
             <ChevronRight className="size-3" aria-hidden="true" />
             <li aria-current="page" className="text-white/90">{venue.name}</li>
           </ol>
@@ -109,6 +111,8 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
           </ul>
         </section>
       )}
+      {/* 1b. No external tour: multi-scene tour built in the admin editor (renders nothing without scenes) */}
+      {!tourUrl && venue.slug && <SceneTour slug={venue.slug} name={venue.name} />}
 
       {/* 2. Photo album */}
       {photos.length > 0 && (
@@ -124,13 +128,13 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
       {/* Two columns: content + sticky reservation card */}
       <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-14 lg:px-10">
         <div className="min-w-0 space-y-14">
-          <section aria-labelledby="about-title">
+          <Reveal><section aria-labelledby="about-title">
             <p className="mb-3 text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-amber-400">{isDemo ? 'L’expérience immersive' : 'À propos'}</p>
             <h2 id="about-title" className="font-serif text-3xl font-medium">{isDemo ? 'Visiter avant de réserver.' : 'La maison'}</h2>
             <div className="mt-5 space-y-4 text-[1.02rem] leading-relaxed text-neutral-400">
               {paragraphs.length ? paragraphs.map((p, i) => <p key={i}>{p}</p>) : <p>{venue.description}</p>}
             </div>
-          </section>
+          </section></Reveal>
 
           {(features.length > 0 || amenities.length > 0) && (
             <section aria-labelledby="amen-title">
@@ -170,7 +174,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
             )}
           </section>
 
-          <section aria-labelledby="where-title">
+          <Reveal><section aria-labelledby="where-title">
             <h2 id="where-title" className="font-serif text-3xl font-medium">Localisation</h2>
             {coords ? (
               <>
@@ -180,7 +184,7 @@ export function PropertyPage({ venue, path }: { venue: Venue; path: string }) {
             ) : (
               <p className="mt-3 text-sm text-neutral-400">{isDemo ? 'Fiche de démonstration : aucune adresse n’est communiquée.' : `${location || 'Tunisie'} — la position exacte est communiquée par l’hôte après confirmation.`}</p>
             )}
-          </section>
+          </section></Reveal>
 
           {(venue.hostDisplayName || venue.hostBio) && (
             <section aria-labelledby="host-title" className="rounded-[1.4rem] border border-white/10 bg-[#111112] p-6">

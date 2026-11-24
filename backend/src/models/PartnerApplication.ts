@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type PartnerApplicationStatus = 'new' | 'in_review' | 'contacted' | 'closed';
 
@@ -10,6 +10,15 @@ export interface IPartnerApplication extends Document {
   city: string;
   message?: string;
   status: PartnerApplicationStatus;
+  /** Admin decision (Demandes d'adhésion). Absent on applications not yet decided. */
+  decision?: 'approved' | 'rejected';
+  decisionNote?: string;
+  decidedAt?: Date;
+  decidedBy?: Types.ObjectId;
+  /** Owner account / draft maison created on approval. */
+  ownerId?: Types.ObjectId;
+  venueId?: Types.ObjectId;
+  adminNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +36,13 @@ const PartnerApplicationSchema = new Schema<IPartnerApplication>(
       enum: ['new', 'in_review', 'contacted', 'closed'],
       default: 'new',
     },
+    decision: { type: String, enum: ['approved', 'rejected'] },
+    decisionNote: { type: String, trim: true, maxlength: 1000 },
+    decidedAt: { type: Date },
+    decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    ownerId: { type: Schema.Types.ObjectId, ref: 'User' },
+    venueId: { type: Schema.Types.ObjectId, ref: 'Venue' },
+    adminNotes: { type: String, trim: true, maxlength: 4000 },
   },
   { timestamps: true }
 );

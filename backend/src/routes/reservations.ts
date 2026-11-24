@@ -396,7 +396,7 @@ async function getMyReservations(req: AuthRequest, res: import('express').Respon
     .populate('tableId', 'tableNumber capacity locationLabel price isVip')
     .populate('roomId', 'roomNumber roomType capacity pricePerNight')
     .populate('seatId', 'seatNumber zone price')
-    .populate('venueId', 'name address city')
+    .populate('venueId', 'name address city slug')
     .sort({ startAt: -1 });
   res.json(list);
 }
@@ -482,7 +482,7 @@ router.get('/:id/ticket', authenticate, async (req: AuthRequest, res) => {
       _id: req.params.id,
       userId: req.userId,
     })
-      .populate('venueId', 'name address city')
+      .populate('venueId', 'name address city slug')
       .populate('tableId', 'tableNumber capacity price')
       .populate('roomId', 'roomNumber roomType pricePerNight')
       .populate('seatId', 'seatNumber zone price')

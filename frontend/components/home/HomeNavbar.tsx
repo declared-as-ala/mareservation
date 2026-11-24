@@ -28,7 +28,7 @@ import { Sheet, SheetContent, SheetTitle, SheetClose } from '@/components/ui/she
 import { PartnerApplicationModal } from '@/components/partners/PartnerApplicationModal';
 
 const primaryNav = [
-  { label: "Maisons d'hôtes", href: '/accommodations', icon: BedDouble },
+  { label: "Maisons d'hôtes", href: '/maisons-d-hotes', icon: BedDouble },
   { label: 'Expérience 360°', href: '/#experience-360', icon: Compass },
   { label: 'Propriétaires', href: '/contact', icon: BriefcaseBusiness },
 ];

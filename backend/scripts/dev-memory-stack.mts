@@ -14,6 +14,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev-memory-stack-secret-0123
 process.env.MONGODB_URI = replSet.getUri('exploria_dev');
 process.env.MONGO_URI = process.env.MONGODB_URI;
 process.env.PUBLIC_VENUE_SLUGS = process.env.PUBLIC_VENUE_SLUGS || 'maison-hotes-demo-exploria360';
+// Local testing logs in repeatedly; production keeps the default of 5 attempts / 15 min.
+process.env.LOGIN_RATE_LIMIT = process.env.LOGIN_RATE_LIMIT || '100';
 const port = Number(process.env.PORT || 3001);
 
 await mongoose.connect(process.env.MONGODB_URI);
@@ -23,6 +25,39 @@ await Venue.init();
 await upsertDemoMaison(Venue);
 // Dev: open DEMO bookings on the demo maison (as the provisioning script does in production).
 await Venue.updateOne({ slug: 'maison-hotes-demo-exploria360' }, { $set: { rentalMode: 'entire', entirePricePerNight: 250, maxGuests: 6, bookingEnabled: true, bookingMode: 'request' } });
+
+// Dev-only: `--accounts` creates a local admin and the demo maison's owner with fresh random passwords.
+// The credentials go ONLY to backend/.dev-accounts.local.txt (git-ignored, mode 600) — never to the console.
+// The in-memory DB is discarded on exit, so the accounts (and passwords) change on every start.
+if (process.argv.includes('--accounts')) {
+  const crypto = await import('node:crypto');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const bcrypt = (await import('bcryptjs')).default;
+  const { User } = await import('../src/models/User');
+  const pw = () => `Dev-${crypto.randomBytes(6).toString('hex')}-Aa9!`;
+  const accounts = [
+    { label: 'ADMIN', fullName: 'Admin Dev', email: 'admin.dev@exploria360.test', role: 'ADMIN', password: pw() },
+    { label: 'OWNER (Maison d\'Hôtes Démo)', fullName: 'Propriétaire Démo (dev)', email: 'owner.dev@exploria360.test', role: 'ESTABLISHMENT_OWNER', password: pw() },
+  ];
+  for (const a of accounts) {
+    const user = await User.create({
+      fullName: a.fullName, email: a.email, role: a.role, isActive: true, emailVerified: true,
+      ...(a.role === 'ESTABLISHMENT_OWNER' ? { serviceDomains: ['HOTEL'] } : {}),
+      passwordHash: await bcrypt.hash(a.password, 12),
+    });
+    if (a.role === 'ESTABLISHMENT_OWNER') await Venue.updateOne({ slug: 'maison-hotes-demo-exploria360' }, { $set: { ownerId: user._id } });
+  }
+  const file = path.resolve(import.meta.dirname, '../.dev-accounts.local.txt');
+  const body = [
+    '# Local in-memory dev accounts — regenerated on every `npm run dev:memory -- --accounts`.',
+    '# Valid only against the local dev API (http://localhost:3001). Login: http://localhost:3000/login',
+    '',
+    ...accounts.flatMap((a) => [a.label, `  email:    ${a.email}`, `  password: ${a.password}`, '']),
+  ].join('\n');
+  fs.writeFileSync(file, body, { mode: 0o600 });
+  console.log(`Dev accounts (admin + demo owner) written to ${file}`);
+}
 
 // Dev-only: `--bookable` adds a clearly labelled test maison with two rooms so the booking flow can be exercised.
 if (process.argv.includes('--bookable')) {

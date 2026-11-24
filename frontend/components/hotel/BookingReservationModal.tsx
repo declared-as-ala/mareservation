@@ -226,7 +226,7 @@ export function BookingReservationModal({
               <button
                 type="button"
                 onClick={handleBook}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40 active:translate-y-0"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#e0a527] hover:bg-[#eab33a] text-sm font-bold text-black shadow-lg shadow-amber-400/25 transition-all hover:-translate-y-0.5 hover:shadow-amber-400/40 active:translate-y-0"
               >
                 <Sparkles className="size-4" />
                 Réserver maintenant
